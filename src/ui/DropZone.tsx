@@ -14,7 +14,7 @@ export const SAMPLES = [
   { file: "sample-orbits.png", name: "Orbits" },
 ] as const;
 
-const sampleUrl = (file: string) => `${import.meta.env.BASE_URL}samples/${file}`;
+export const sampleUrl = (file: string): string => `${import.meta.env.BASE_URL}samples/${file}`;
 
 const dragging = signal(false);
 let input: HTMLInputElement | null = null;

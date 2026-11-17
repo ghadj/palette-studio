@@ -246,7 +246,8 @@ fieldset {
 }
 
 /* Theme menu popover (ui-contract Components "Menu popover"). */
-.theme-button {
+.theme-button,
+.menu-anchor {
   position: relative;
 }
 
@@ -273,6 +274,25 @@ fieldset {
   border-radius: var(--radius-input);
   color: var(--color-text);
   text-align: left;
+}
+
+.menu-item {
+  white-space: nowrap;
+}
+
+/* In the compact header the menus anchor to the header's right edge, so they fit at 320 px. */
+.header--compact .theme-button,
+.header--compact .menu-anchor {
+  position: static;
+}
+
+.header--compact .menu {
+  right: var(--space-4);
+}
+
+.menu-item__thumb {
+  display: block;
+  border-radius: var(--radius-input);
 }
 
 .menu-item[aria-checked="true"] {

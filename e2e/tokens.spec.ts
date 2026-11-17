@@ -109,6 +109,25 @@ test.describe("token conformance @tokens", () => {
     }
   });
 
+  test("the open Replace image menu uses tokens, with 44 px targets on phones", async ({
+    page,
+  }) => {
+    for (const theme of THEMES) {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 320, height: 568 },
+      ]) {
+        await page.emulateMedia({ colorScheme: theme });
+        await page.setViewportSize(viewport);
+        await page.goto("./?demo=mockup");
+        await page.locator("header").getByRole("button", { name: "Replace image" }).click();
+        await expect(page.getByRole("menu", { name: "Replace image" })).toBeVisible();
+        const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
+        expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
+      }
+    }
+  });
+
   test("checker self-test: an injected #123456 element is reported with its selector path, and the same element under data-user-content is not", async ({
     page,
   }) => {

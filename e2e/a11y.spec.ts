@@ -28,6 +28,17 @@ test.describe("accessibility @a11y", () => {
     }
   }
 
+  test("no axe violations with the Replace image menu open", async ({ page }) => {
+    for (const theme of THEMES) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.goto("./?demo=mockup");
+      await page.locator("header").getByRole("button", { name: "Replace image" }).click();
+      await settled(page);
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations.map((v) => `${theme} ${v.id}: ${v.help}`)).toEqual([]);
+    }
+  });
+
   test("no axe violations with the Advanced settings open", async ({ page }) => {
     for (const theme of THEMES) {
       await page.emulateMedia({ colorScheme: theme });

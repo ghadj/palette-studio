@@ -6,6 +6,7 @@
 import { ChevronDown, Redo2, Share, Undo2 } from "lucide-preact";
 import { projectName } from "../state/signals";
 import { comingSoon } from "./comingSoon";
+import { ReplaceImageButton } from "./ReplaceImageButton";
 import type { Layout } from "./Shell";
 import { ThemeButton } from "./ThemeButton";
 
@@ -43,6 +44,7 @@ export function Header({ layout }: { layout: Layout }) {
           </button>
         </nav>
         <div class="header__actions">
+          <ReplaceImageButton />
           <button type="button" class="text-button" onClick={comingSoon}>
             Undo
           </button>
@@ -62,6 +64,7 @@ export function Header({ layout }: { layout: Layout }) {
       <h1 class="visually-hidden">Palette Studio</h1>
       <ProjectButton strong />
       <div class="header__actions header__actions--icons">
+        <ReplaceImageButton />
         <button type="button" class="icon-button" aria-label="Undo" onClick={comingSoon}>
           <Undo2 size={20} strokeWidth={1.5} aria-hidden="true" />
         </button>
