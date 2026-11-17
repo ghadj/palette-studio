@@ -27,6 +27,33 @@ test.describe("security (spec 7.8)", () => {
     expect(html).not.toMatch(/\son[a-z]+\s*=/i);
   });
 
+  test("dist carries the licence notice of every runtime dependency (spec 7.10)", async ({
+    request,
+  }) => {
+    const root = process.cwd();
+    const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as {
+      dependencies: Record<string, string>;
+    };
+    const notices = readFileSync(resolve(root, "dist/licenses.md"), "utf8");
+    const names = Object.keys(pkg.dependencies);
+    expect(names.sort()).toEqual(["@preact/signals", "culori", "lucide-preact", "preact"]);
+    for (const name of names) {
+      const installed = JSON.parse(
+        readFileSync(resolve(root, "node_modules", name, "package.json"), "utf8"),
+      ) as { version: string; license: string };
+      const heading = `## ${name} - ${installed.version} (${installed.license})`;
+      const start = notices.indexOf(heading);
+      expect(start, heading).toBeGreaterThan(-1);
+      const next = notices.indexOf("\n## ", start + heading.length);
+      const body = notices.slice(start + heading.length, next < 0 ? undefined : next);
+      expect(body, name).toMatch(/Copyright/);
+      expect(body, name).toMatch(/Permission/);
+    }
+    // It is published with the site.
+    const response = await request.get("licenses.md");
+    expect(response.ok()).toBe(true);
+  });
+
   test("every request during load and use is same-origin", async ({ page, baseURL }) => {
     const origin = new URL(baseURL ?? "").origin;
     const foreign: string[] = [];

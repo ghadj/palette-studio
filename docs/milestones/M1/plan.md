@@ -246,3 +246,4 @@ Controls for later features (Undo, Redo, Share, project chevron, Materials view 
 ## Fix round (after the evaluation report)
 
 - [x] M1-F1: Replace image button and menu in the header (decision 12). Hidden on the empty screen. In the compact header both menus anchor to the header's right edge so they fit at 320 px.
+- [x] M1-F2: Vite `build.license` writes `dist/licenses.md` with the full licence text of every bundled dependency (preact, @preact/signals and @preact/signals-core, culori, lucide-preact); an e2e test checks each runtime dependency, its version and its text, and that the file is served (spec 7.10).

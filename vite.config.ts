@@ -34,6 +34,8 @@ export default defineConfig({
   plugins: [preact(), cspMeta()],
   build: {
     target: "es2022",
+    // Spec 7.10: keep each bundled dependency's licence notice in the build output.
+    license: { fileName: "licenses.md" },
   },
   preview: {
     port: 4173,
