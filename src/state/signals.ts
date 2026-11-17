@@ -24,6 +24,8 @@ export const displayImage = signal<ImageBitmap | null>(null);
 export interface ImageMessage {
   kind: "error" | "note";
   text: string;
+  /** Set on extraction errors, which the next successful extraction clears. */
+  fromExtraction?: true;
 }
 
 /** The inline message under the image: an unreadable file, or the large-image note (spec 6.3). */

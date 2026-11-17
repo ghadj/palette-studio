@@ -36,6 +36,7 @@ function applyColors(colors: ExtractedColor[]): void {
   );
   batch(() => {
     palette.value = next;
+    if (imageMessage.peek()?.fromExtraction) imageMessage.value = null;
     selectedSwatchId.value =
       selectedIndex >= 0 ? (next[Math.min(selectedIndex, next.length - 1)]?.id ?? null) : null;
   });
@@ -55,9 +56,15 @@ const scheduler = createJobScheduler<ExtractedColor[]>({
     imageMessage.value = {
       kind: "error",
       text: "The palette couldn't be extracted from this image. Try another sample size or image.",
+      fromExtraction: true,
     };
   },
 });
+
+/** Runs an extraction now, superseding any pending one. */
+export function extractNow(): void {
+  scheduler.runNow();
+}
 
 let started = false;
 
@@ -65,7 +72,7 @@ let started = false;
 export function startLiveExtraction(): void {
   if (started) return;
   started = true;
-  onImageLoaded(() => scheduler.runNow());
+  onImageLoaded(extractNow);
   let first = true;
   effect(() => {
     settings.value;
