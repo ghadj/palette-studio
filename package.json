@@ -1,0 +1,38 @@
+{
+  "name": "palette-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Client-side palette and gradient studio. Load an image, extract a palette, edit it, build gradients and export them.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "e2e": "playwright test --project=chromium --project=webkit --project=firefox --project=phone-webkit --project=phone-chromium"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.11.4",
+    "culori": "^4.0.2",
+    "lucide-preact": "^1.74.0",
+    "preact": "^11.2.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@babel/core": "^7.29.13",
+    "@biomejs/biome": "^2.6.8",
+    "@playwright/test": "^1.65.1",
+    "@preact/preset-vite": "^2.10.6",
+    "@types/culori": "^4.0.1",
+    "@types/node": "^26.6.6",
+    "preact-render-to-string": "^6.8.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

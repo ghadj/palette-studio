@@ -40,7 +40,7 @@ Part A (T1 to T8) is scaffold, CI, themes and visual tooling. Part B (T9 to T13)
   - `e2e/smoke.spec.ts` › "loads under the base path with no console errors" (Chromium, WebKit, Firefox)
   - `tests/smoke.test.ts` › "Vitest runs with strict TS and Preact JSX" (renders `<App />` to a string and finds the app root)
 - Done when: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run e2e` all pass; every asset URL in `dist/index.html` starts with the base path; no runtime dependency other than preact, @preact/signals, culori and lucide-preact.
-- [ ] Done
+- [x] Done (`npm run e2e` runs the five functional projects; tsx added as a dev dependency to run `tools/*.ts`)
 
 ### M1-T2: CI, deploy, CSP and the no-network rule
 - Files: `.github/workflows/ci.yml` (push and PR: `npm ci`, lint, typecheck, unit tests, build, bundle-size report into the job summary, Playwright smoke in Chromium, WebKit, Firefox), `.github/workflows/deploy.yml` (runs only for `main` and only after `ci.yml` succeeds, e.g. `workflow_run` with `conclusion == success`; `upload-pages-artifact` + `deploy-pages`), `vite.config.ts` (CSP meta injected by `transformIndexHtml` in build only, exact policy from 7.8), `tools/bundle-size.ts` (gzip size per JS chunk and total; warns above 150 kB, 7.7)
