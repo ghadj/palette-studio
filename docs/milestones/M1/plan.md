@@ -134,7 +134,7 @@ Part A (T1 to T8) is scaffold, CI, themes and visual tooling. Part B (T9 to T13)
   - "N larger than the distinct colors returns at most the distinct count, with no empty cluster"
   - "stops at the iteration cap when the shift never drops below 1e-4"; "of 3 restarts the lowest-error result is kept"
 - Done when: tests pass.
-- [ ] Done
+- [x] Done (one seeded PRNG runs across the restarts; each restart returns the weighted means of its final assignment, with empty clusters dropped, and its error is measured on exactly those clusters; results also report `iterations`, `converged` and `restartErrors` for the tests; about 13 ms for 6 colors and 32 ms for 32 colors on a 6,000-bin histogram in Node)
 
 ### M1-T12: Extraction pipeline with live settings
 - Files: `src/extract/postprocess.ts` (merge at ΔE OK 0.03 into a population-weighted average, sort by population, populations sum to 1), `src/extract/worker.ts` (analysis copy → histogram in the working space → median cut or k-means++ → postprocess), `src/state/signals.ts` (debounce about 120 ms, job ids, stale results dropped, previous result dims while working, progress bar only after about 300 ms, 7.4 and 6.3), `src/ui/SourcePanel.tsx` (setting rows Algorithm with k-means++ as the M1 default, Colors 2 to 32 with slider and number field, Working space; a collapsed Advanced chevron row (6.6) with Sample size, Resampling, and Seed with Randomize; decision 5)
