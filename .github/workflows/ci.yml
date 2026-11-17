@@ -72,3 +72,57 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  visual-review:
+    name: Visual review page (visual-testing.md 2)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-jammy
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run visual:review
+      - uses: actions/upload-artifact@v7
+        with:
+          name: visual-review
+          path: artifacts/visual-review/
+          retention-days: 14
+
+  visual:
+    name: Visual baselines (visual-testing.md 3)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-jammy
+    steps:
+      - uses: actions/checkout@v7
+      - id: baselines
+        name: Look for approved baselines
+        shell: bash
+        run: |
+          if compgen -G "e2e/visual/baselines/*.png" > /dev/null; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No visual baselines yet, so the comparison is skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - if: steps.baselines.outputs.present == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - if: steps.baselines.outputs.present == 'true'
+        run: npm ci
+      - if: steps.baselines.outputs.present == 'true'
+        run: npx playwright test --project=visual
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-diffs
+          path: test-results/
+          retention-days: 14

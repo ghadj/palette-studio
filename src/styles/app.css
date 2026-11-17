@@ -394,6 +394,21 @@ fieldset {
   color: var(--color-text);
 }
 
+/* A thin divider between two unselected segments, as in the mockups. */
+.segment {
+  position: relative;
+}
+
+.segment[aria-pressed="false"] + .segment[aria-pressed="false"]::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--stroke-selected) * -1);
+  top: 25%;
+  bottom: 25%;
+  width: var(--stroke);
+  background: var(--color-divider);
+}
+
 /* Swatch strip (ui-contract column 2 item 1; Components "Swatch"). */
 .swatch-strip {
   display: grid;
