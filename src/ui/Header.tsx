@@ -28,7 +28,7 @@ export function Header({ layout }: { layout: Layout }) {
       <header class="header header--desktop">
         <div class="header__brand">
           <span class="brand-dot" aria-hidden="true" />
-          <span class="app-name">Palette Studio</span>
+          <h1 class="app-name">Palette Studio</h1>
           <span class="header__slash" aria-hidden="true">
             /
           </span>
@@ -59,6 +59,7 @@ export function Header({ layout }: { layout: Layout }) {
   }
   return (
     <header class="header header--compact">
+      <h1 class="visually-hidden">Palette Studio</h1>
       <ProjectButton strong />
       <div class="header__actions header__actions--icons">
         <button type="button" class="icon-button" aria-label="Undo" onClick={comingSoon}>

@@ -41,11 +41,33 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit firefox
-      - run: npm run e2e
+      # Token and accessibility tests run in their own job below.
+      - run: npm run e2e -- --grep-invert "@tokens|@a11y"
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  tokens-a11y:
+    name: Token conformance and axe-core (visual-testing.md 1, spec 8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit firefox
+      - run: npm run e2e -- --grep "@tokens|@a11y"
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tokens-a11y-report
           path: |
             playwright-report/
             test-results/
