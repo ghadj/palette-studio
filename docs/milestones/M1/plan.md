@@ -79,7 +79,7 @@ Part A (T1 to T8) is scaffold, CI, themes and visual tooling. Part B (T9 to T13)
   - `tests/state/signals.test.ts` › "loading a project sets every field signal"; "changing one swatch notifies only subscribers of the palette signal, not of settings"
   - `tests/palette/model.test.ts` › "swatch from OKLab stores OKLCH and round-trips to the same hex"
 - Done when: tests pass; nothing in `src/state/mockup.ts` imports storage code.
-- [ ] Done
+- [x] Done (added `src/state/defaults.ts` for the 2.4 defaults and the M1 defaults of decision 5; the project name is a signal beside the Project, since 7.5 puts names on library entries; mockup-state.md gives no extraction shares, so the fixture uses equal populations of 1/6)
 
 ### M1-T6: Responsive shell in the mockup state
 - Files: `src/ui/App.tsx`, `src/ui/Header.tsx`, `src/ui/Shell.tsx` (≤ 600, 601 to 1023, ≥ 1024 px per 6.1), `src/ui/TabBar.tsx`, `src/ui/SourcePanel.tsx`, `src/ui/PalettePanel.tsx`, `src/ui/GradientPanel.tsx` (hint only), `src/ui/ExportDrawer.tsx`, `src/ui/ImageWell.tsx` (`data-user-content`), `src/ui/SwatchStrip.tsx` (`data-user-content` on swatches), `src/ui/SettingRow.tsx`, `src/ui/Footer.tsx` (decision 8), `src/ui/Toast.tsx` (inverse surface, live region, per contract Components; moved here from T13 because decision 6 needs it), `src/ui/comingSoon.ts` (one helper that every not-yet-built control calls), `src/styles/app.css` (`dvh`, `env(safe-area-inset-bottom)` on the tab bar, `touch-action`, `-webkit-touch-callout: none` and `user-select: none` on the image)
