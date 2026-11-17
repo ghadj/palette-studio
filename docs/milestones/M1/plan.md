@@ -48,7 +48,7 @@ Part A (T1 to T8) is scaffold, CI, themes and visual tooling. Part B (T9 to T13)
   - `e2e/security.spec.ts` › "production page carries the spec 7.8 CSP meta"; "dist/index.html has no inline script, no style element and no style attribute"; "every request during load and use is same-origin" (records `page.on('request')`)
   - `tests/tools/bundle-size.test.ts` › "sums gzip sizes of a fixture dist and flags totals above 150 kB"
 - Done when: both workflow files lint (`actionlint` locally if available, otherwise reviewer reads them); the dev server has no CSP; the CSP test passes against `npm run preview`.
-- [ ] Done
+- [x] Done (actionlint not available locally; workflows checked by a YAML parse and by reading. CI runs the full `npm run e2e`, which includes the smoke tests in Chromium, WebKit and Firefox)
 
 ### M1-T3: Color conversions and ΔE OK
 - Files: `src/color/convert.ts` (hex, sRGB, linear sRGB, OKLab, OKLCH, CIELAB D65, XYZ D65; culori via `culori/fn` tree-shaken imports), `src/color/delta-e.ts` (ΔE OK Euclidean), `src/export/format.ts` (`formatNumber(value, digits)` locale-independent, period separator)
