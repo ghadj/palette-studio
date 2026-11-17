@@ -70,7 +70,7 @@ Part A (T1 to T8) is scaffold, CI, themes and visual tooling. Part B (T9 to T13)
   - `tests/state/theme.test.ts` › "stored 'dark' resolves to data-theme dark"; "missing or invalid stored value resolves to System (no data-theme)"; "demo=mockup&theme=light resolves to light without reading storage"
   - `e2e/theme.spec.ts` › "first visit follows the emulated device scheme"; "choosing Dark survives a reload"; "in System, changing the emulated scheme updates colors without a reload"; "no flash: with the app bundle delayed 2 s, html already has data-theme dark and the dark surface color"; "demo mode with theme=dark writes nothing to localStorage"; "theme-color metas exist for light and dark"
 - Done when: tests pass; the theme menu is keyboard operable (Enter opens, arrows move, Esc closes) and every option is ≥ 44 px at phone width.
-- [ ] Done
+- [x] Done (the System icon is Lucide `Contrast`, the closest half-filled circle in the set; the theme-color metas also follow a manual choice so the Safari toolbar matches; a temporary header hosts the button until T6)
 
 ### M1-T5: Types, signals store and the mockup fixture
 - Files: `src/types.ts` (Project, Swatch, ExtractionSettings, ImageMeta per 7.5, M1 fields only; Swatch has id, OKLCH, alpha, name, locked, origin, population, image point, sample radius per 3.1), `src/state/signals.ts` (one signal per field; `selectedSwatchId`; `activeTab`), `src/palette/model.ts` (swatch creation from OKLab, selection helpers), `src/state/mockup.ts` (parses `demo`, `view`, `tab`, `theme`; ignores other params until their milestone; builds the "Harbor mural" project), `src/state/mockup-fixture.ts` (the six swatches, points and settings from `mockup-state.md`)

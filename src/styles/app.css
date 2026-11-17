@@ -1,0 +1,111 @@
+/*
+ * Base styles. UI uses only the variables in tokens.css (spec 6.2, 6.4): no literal colors,
+ * font sizes or radii. User content is marked with data-user-content and never themed.
+ */
+
+/* Hit size: 32 px controls on desktop, 44 px touch targets on phones (spec 6.1, 6.4). */
+:root {
+  --hit: var(--control-height);
+}
+@media (max-width: 600px) {
+  :root {
+    --hit: var(--touch-target);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Focus is always visible: a 2 px accent ring with a small offset (ui-contract Components). */
+:focus-visible {
+  outline: var(--stroke-selected) solid var(--color-accent);
+  outline-offset: var(--stroke-selected);
+}
+
+/* Reduced motion: tokens.css sets --duration-fast and --duration-slow to 0 ms; all motion uses them. */
+
+/* Icon-only pill button, such as the theme button (ui-contract Components). */
+.icon-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(var(--hit) + var(--space-3));
+  min-height: var(--hit);
+  padding: 0 var(--space-2);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+}
+
+/* Theme button and its menu popover (ui-contract "Theme button behavior", Components "Menu popover"). */
+.theme-button {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: calc(var(--space-8) * 4);
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-swatch);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.menu-item[aria-checked="true"] {
+  font-weight: var(--weight-strong);
+  color: var(--color-accent);
+}
+
+.menu-item:focus-visible {
+  outline-offset: calc(var(--stroke-selected) * -1);
+}

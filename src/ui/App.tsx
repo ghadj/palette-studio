@@ -1,7 +1,12 @@
+import { ThemeButton } from "./ThemeButton";
+
 export function App() {
   return (
     <div id="app-root" class="app">
-      <h1>Palette Studio</h1>
+      <header class="app-header">
+        <span>Palette Studio</span>
+        <ThemeButton />
+      </header>
     </div>
   );
 }
