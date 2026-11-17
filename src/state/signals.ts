@@ -15,6 +15,9 @@ export const imageMeta = signal<ImageMeta | null>(null);
 /** The project's name; it belongs to the library entry (5.5) and is shown in the header. */
 export const projectName = signal<string>("Untitled");
 
+/** URL of the image shown in the image well (the mockup image, or an object URL from T9). */
+export const imageSrc = signal<string | null>(null);
+
 // View state (not part of the project, never in undo history: spec 3.6)
 export const selectedSwatchId = signal<string | null>(null);
 export const activeTab = signal<Tab>("source");

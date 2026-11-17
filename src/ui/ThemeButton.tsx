@@ -15,7 +15,8 @@ const OPTIONS: Option[] = [
   { value: "dark", label: "Dark", Icon: Moon },
 ];
 
-export function ThemeButton() {
+/** `pill`: the desktop pill with an outline. `icon`: a plain icon button, as in the phone header. */
+export function ThemeButton({ variant = "pill" }: { variant?: "pill" | "icon" }) {
   const [open, setOpen] = useState(false);
   const wrapper = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -91,7 +92,7 @@ export function ThemeButton() {
       <button
         ref={button}
         type="button"
-        class="icon-pill"
+        class={variant === "pill" ? "icon-pill" : "icon-button"}
         aria-label={`Theme: ${current?.label ?? "System"}`}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -99,7 +100,7 @@ export function ThemeButton() {
         onClick={() => setOpen((o) => !o)}
         onKeyDown={onButtonKeyDown}
       >
-        <CurrentIcon size={20} strokeWidth={1.5} aria-hidden="true" />
+        <CurrentIcon size={20} strokeWidth={1.5} class={`icon-${choice}`} aria-hidden="true" />
       </button>
       {open && (
         <div
@@ -123,7 +124,12 @@ export function ThemeButton() {
               class="menu-item"
               onClick={() => choose(option.value)}
             >
-              <option.Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+              <option.Icon
+                size={16}
+                strokeWidth={1.5}
+                class={`icon-${option.value}`}
+                aria-hidden="true"
+              />
               <span>{option.label}</span>
             </button>
           ))}
