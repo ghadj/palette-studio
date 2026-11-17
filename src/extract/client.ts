@@ -1,15 +1,27 @@
 /**
- * The UI side of the image worker. Where OffscreenCanvas 2D isn't available in workers, the same
- * canvas resampling runs on the main thread instead (spec 7.4). Neither path loops over pixels in
+ * The UI side of the image worker. Where OffscreenCanvas 2D isn't available in workers, the master
+ * and the analysis copy are made with canvas drawing on the main thread instead, and only the
+ * analysis pixels go to the worker for extraction (spec 7.4). Neither path loops over pixels in
  * JavaScript on the main thread.
  */
-import { type AnyCanvas, displaySize, masterSize, resample } from "../image/tiers";
-import type { FromWorker, ToWorker } from "./messages";
+import {
+  type AnyCanvas,
+  analysisSize,
+  displaySize,
+  masterSize,
+  readPixels,
+  resample,
+} from "../image/tiers";
+import type { ExtractionSettings } from "../types";
+import type { FromWorker, PixelBuffer, ToWorker } from "./messages";
+import type { ExtractedColor } from "./postprocess";
 
 export interface PreparedImage {
   display: ImageBitmap;
   masterWidth: number;
   masterHeight: number;
+  /** Where the working master lives. */
+  thread: "worker" | "main";
 }
 
 /** Test hook: set on window before load to force the main-thread fallback. */
@@ -35,18 +47,15 @@ class ImageClient {
 
   private connect(): Promise<boolean> {
     if (this.offscreen) return this.offscreen;
+    const forced = (globalThis as FallbackFlag).__paletteStudioMainThread === true;
     this.offscreen = new Promise<boolean>((resolve) => {
-      if ((globalThis as FallbackFlag).__paletteStudioMainThread) {
-        resolve(false);
-        return;
-      }
       try {
         const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
         this.worker = worker;
         worker.addEventListener("message", (event: MessageEvent<FromWorker>) => {
           const message = event.data;
           if (message.type === "hello") {
-            resolve(message.offscreen);
+            resolve(message.offscreen && !forced);
             return;
           }
           const handler = this.pending.get(message.jobId);
@@ -65,19 +74,15 @@ class ImageClient {
   }
 
   private post(message: ToWorker, transfer: Transferable[] = []): void {
-    this.worker?.postMessage(message, transfer);
+    if (!this.worker) throw new Error("Workers are not available");
+    this.worker.postMessage(message, transfer);
   }
 
-  private request(message: ToWorker & { jobId: number }, transfer: Transferable[]) {
+  private request(message: ToWorker & { jobId: number }, transfer: Transferable[] = []) {
     return new Promise<FromWorker>((resolve) => {
       this.pending.set(message.jobId, resolve);
       this.post(message, transfer);
     });
-  }
-
-  /** True when the working master lives in the worker. */
-  async usesWorker(): Promise<boolean> {
-    return this.connect();
   }
 
   /** Makes the working master from a decoded image (which is consumed) and returns a display copy. */
@@ -90,6 +95,7 @@ class ImageClient {
           display: reply.display,
           masterWidth: reply.masterWidth,
           masterHeight: reply.masterHeight,
+          thread: "worker",
         };
       }
       throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
@@ -115,7 +121,28 @@ class ImageClient {
     const display = await createImageBitmap(copy);
     copy.width = 0;
     copy.height = 0;
-    return { display, masterWidth: master.width, masterHeight: master.height };
+    return { display, masterWidth: master.width, masterHeight: master.height, thread: "main" };
+  }
+
+  /** Runs extraction on the current image's analysis copy (spec 2.1, 2.4). */
+  async extract(settings: ExtractionSettings): Promise<ExtractedColor[]> {
+    const inWorker = await this.connect();
+    let pixels: PixelBuffer | null = null;
+    const transfer: Transferable[] = [];
+    if (!inWorker) {
+      if (!this.mainMaster) throw new Error("No image");
+      const size = analysisSize(this.mainMaster.width, this.mainMaster.height, settings.sampleSize);
+      const canvas = resample(this.mainMaster, size, settings.resampling, createMainCanvas);
+      const data = readPixels(canvas).data;
+      canvas.width = 0;
+      canvas.height = 0;
+      pixels = { width: size.width, height: size.height, data: data.buffer as ArrayBuffer };
+      transfer.push(pixels.data);
+    }
+    const jobId = this.nextJob++;
+    const reply = await this.request({ type: "extract", jobId, settings, pixels }, transfer);
+    if (reply.type === "extracted") return reply.colors;
+    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
   }
 }
 

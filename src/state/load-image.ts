@@ -11,6 +11,7 @@ import {
   imageMessage,
   imageMeta,
   imageSrc,
+  masterThread,
   palette,
   projectName,
   selectedSwatchId,
@@ -55,6 +56,7 @@ export async function loadImageFile(file: File): Promise<boolean> {
     batch(() => {
       displayImage.value = prepared.display;
       imageSrc.value = null;
+      masterThread.value = prepared.thread;
       imageMeta.value = { name: file.name, width: decoded.width, height: decoded.height };
       projectName.value = projectNameFromFile(file.name);
       palette.value = [];

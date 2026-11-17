@@ -551,6 +551,195 @@ fieldset {
   text-align: right;
 }
 
+.setting-row__label {
+  cursor: default;
+}
+
+.setting-row__value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+/* Select styled as a setting value: text color, right aligned, chevron after it. */
+.select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.select__control {
+  appearance: none;
+  min-height: var(--hit);
+  padding: 0 calc(var(--space-4) + var(--space-1)) 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-align: right;
+  text-align-last: right;
+  cursor: pointer;
+}
+
+.select__chevron {
+  position: absolute;
+  right: 0;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.slider-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Number field (spec 6.1: inputmode decimal, 16 px on touch so iOS doesn't zoom). */
+.number-field {
+  width: calc(var(--space-8) * 2);
+  min-height: var(--hit);
+  padding: 0 var(--space-2);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-align: right;
+}
+
+#setting-seed {
+  width: calc(var(--space-8) * 3);
+}
+
+@media (max-width: 600px), (pointer: coarse) {
+  .number-field,
+  .select__control {
+    font-size: var(--text-input-touch);
+  }
+}
+
+/* Slider (ui-contract Components "Slider"): divider-colored track, round accent thumb. */
+.slider {
+  appearance: none;
+  width: calc(var(--space-8) * 4);
+  min-width: var(--hit);
+  min-height: var(--hit);
+  margin: 0;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-divider);
+}
+
+.slider::-moz-range-track {
+  height: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-divider);
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--space-4);
+  height: var(--space-4);
+  margin-top: calc((var(--space-1) - var(--space-4)) / 2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+.slider::-moz-range-thumb {
+  width: var(--space-4);
+  height: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+@media (max-width: 600px), (pointer: coarse) {
+  .slider {
+    width: calc(var(--space-8) * 3);
+  }
+  .slider::-webkit-slider-thumb {
+    width: var(--space-6);
+    height: var(--space-6);
+    margin-top: calc((var(--space-1) - var(--space-6)) / 2);
+  }
+  .slider::-moz-range-thumb {
+    width: var(--space-6);
+    height: var(--space-6);
+  }
+}
+
+/* Chevron row (ui-contract Components): label left, chevron right, divider below. */
+.chevron-row__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--touch-target);
+  border-bottom: var(--stroke) solid var(--color-divider);
+  color: var(--color-text);
+  list-style: none;
+  cursor: pointer;
+}
+
+.chevron-row__summary::-webkit-details-marker {
+  display: none;
+}
+
+.chevron-row__chevron {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.chevron-row[open] .chevron-row__chevron {
+  transform: rotate(90deg);
+}
+
+/* Working state (spec 6.3): the previous result dims; a progress bar shows after about 300 ms. */
+.swatch-strip[data-busy] {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.progress {
+  position: relative;
+  overflow: hidden;
+  height: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-divider);
+}
+
+.progress__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  animation: progress-slide 1.2s var(--ease-out) infinite;
+}
+
+@keyframes progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress__bar {
+    width: 100%;
+    animation: none;
+  }
+}
+
 /* Tabs (ui-contract "Phone"; Components "Tab"). */
 .tabs {
   display: flex;

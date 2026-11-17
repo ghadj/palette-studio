@@ -2,6 +2,7 @@ import { batch } from "@preact/signals";
 import { render } from "preact";
 import "./styles/tokens.css";
 import "./styles/app.css";
+import { startLiveExtraction } from "./state/extraction";
 import { buildMockupState, parseMockupParams } from "./state/mockup";
 import { MOCKUP_IMAGE_PATH } from "./state/mockup-fixture";
 import {
@@ -31,6 +32,7 @@ if (mockup) {
   });
   document.title = `${state.name} · Palette Studio (demo)`;
 }
+startLiveExtraction();
 
 const root = document.getElementById("app");
 if (root) render(<App />, root);

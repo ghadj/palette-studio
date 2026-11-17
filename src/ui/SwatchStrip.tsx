@@ -3,14 +3,18 @@
  * Swatches are user content and are never themed (spec 6.2).
  */
 import { swatchHex, swatchLabel } from "../palette/model";
-import { palette, selectedSwatchId, selectSwatch } from "../state/signals";
+import { extracting, palette, selectedSwatchId, selectSwatch } from "../state/signals";
 
 export function SwatchStrip() {
   const swatches = palette.value;
   const selected = selectedSwatchId.value;
   if (swatches.length === 0) return null;
   return (
-    <fieldset class="swatch-strip" data-testid="swatch-strip">
+    <fieldset
+      class="swatch-strip"
+      data-testid="swatch-strip"
+      data-busy={extracting.value || undefined}
+    >
       <legend class="visually-hidden">Palette swatches</legend>
       {swatches.map((swatch) => {
         const hex = swatchHex(swatch);

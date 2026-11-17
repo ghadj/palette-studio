@@ -32,6 +32,15 @@ export const imageMessage = signal<ImageMessage | null>(null);
 /** True while an image is being decoded and prepared. */
 export const imageLoading = signal(false);
 
+/** Where the working master lives: in the worker, or on the main thread (fallback, spec 7.4). */
+export const masterThread = signal<"worker" | "main" | null>(null);
+
+/** True while an extraction job is running; the previous palette stays visible, dimmed (6.3). */
+export const extracting = signal(false);
+
+/** True once loading or extraction has taken longer than about 300 ms (spec 7.4, 6.3). */
+export const progressVisible = signal(false);
+
 // View state (not part of the project, never in undo history: spec 3.6)
 export const selectedSwatchId = signal<string | null>(null);
 export const activeTab = signal<Tab>("source");

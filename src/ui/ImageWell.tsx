@@ -4,7 +4,14 @@
  * markers arrive in M3.
  */
 import { useLayoutEffect, useRef } from "preact/hooks";
-import { displayImage, imageLoading, imageMessage, imageMeta, imageSrc } from "../state/signals";
+import {
+  displayImage,
+  imageLoading,
+  imageMessage,
+  imageMeta,
+  imageSrc,
+  masterThread,
+} from "../state/signals";
 import { DropZone } from "./DropZone";
 
 function DisplayCanvas({ bitmap, label }: { bitmap: ImageBitmap; label: string }) {
@@ -55,6 +62,7 @@ export function ImageWell() {
       data-busy={imageLoading.value || undefined}
       data-width={meta?.width}
       data-height={meta?.height}
+      data-master-thread={masterThread.value ?? undefined}
     >
       {content}
     </div>

@@ -41,6 +41,10 @@ test.describe("load an image (spec 2.1, 6 Input, 6.1, 6.3)", () => {
     expect(pixel).toEqual([0x1d, 0xb0, 0x7a, 255]);
     // The working master was made in the image worker (spec 7.4).
     expect(page.workers().length).toBeGreaterThan(0);
+    await expect(page.locator("[data-testid=image-well]:visible")).toHaveAttribute(
+      "data-master-thread",
+      "worker",
+    );
   });
 
   test("drop loads an image", async ({ page }) => {
@@ -135,6 +139,9 @@ test.describe("load an image (spec 2.1, 6 Input, 6.1, 6.3)", () => {
     await page.goto("./");
     await page.getByTestId("file-input").setInputFiles(fixture("exif-orientation-6.jpg"));
     await expectLoaded(page, "exif-orientation-6.jpg", 40, 80);
-    expect(page.workers()).toHaveLength(0);
+    await expect(page.locator("[data-testid=image-well]:visible")).toHaveAttribute(
+      "data-master-thread",
+      "main",
+    );
   });
 });
