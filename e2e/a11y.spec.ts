@@ -39,6 +39,22 @@ test.describe("accessibility @a11y", () => {
     }
   });
 
+  test("no axe violations with the copy-failure toast showing", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
+    });
+    for (const theme of THEMES) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto("./?demo=mockup");
+      await page.getByRole("button", { name: "Copy HEX" }).click();
+      await expect(page.getByRole("button", { name: "Dismiss" })).toBeVisible();
+      await settled(page);
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations.map((v) => `${theme} ${v.id}: ${v.help}`)).toEqual([]);
+    }
+  });
+
   test("no axe violations with the Advanced settings open", async ({ page }) => {
     for (const theme of THEMES) {
       await page.emulateMedia({ colorScheme: theme });

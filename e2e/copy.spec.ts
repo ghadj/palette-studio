@@ -71,6 +71,7 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
   });
 
   test("a clipboard failure shows a message that says why", async ({ page }) => {
+    test.slow();
     await page.addInitScript(() => {
       Object.defineProperty(navigator.clipboard, "writeText", {
         configurable: true,
@@ -86,6 +87,17 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
     await region(page).getByRole("button", { name: "Download" }).click();
     const file = await download;
     expect(file.suggestedFilename()).toBe("Harbor mural palette.css");
+    // A new failure toast stays until it is dismissed with its close button.
+    await page.getByTestId("export-drawer").getByRole("button", { name: "Copy HEX" }).click();
+    await expect(region(page)).toContainText("Couldn't copy the HEX");
+    await page.waitForTimeout(9000);
+    await expect(region(page)).toContainText("Couldn't copy the HEX");
+    const close = region(page).getByRole("button", { name: "Dismiss" });
+    const box = await close.boundingBox();
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    await close.click();
+    await expect(region(page).locator(".toast")).toHaveCount(0);
   });
 
   test("copy buttons are disabled with no palette", async ({ page }) => {

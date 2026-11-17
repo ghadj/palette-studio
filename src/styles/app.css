@@ -920,13 +920,24 @@ fieldset {
 }
 
 .toast__action {
-  min-width: var(--hit);
-  min-height: var(--hit);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   padding: 0 var(--space-2);
   border-radius: var(--radius-input);
   color: var(--color-accent-inverse);
   font-size: var(--text-sm);
   font-weight: var(--weight-strong);
+}
+
+.toast__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  margin: calc(var(--space-2) * -1) calc(var(--space-3) * -1) calc(var(--space-2) * -1) 0;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-inverse);
 }
 
 .copy-buttons {
