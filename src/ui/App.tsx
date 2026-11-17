@@ -1,3 +1,4 @@
+import { ImageInputs } from "./DropZone";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
 import { PhoneTabBar, Shell, useLayout } from "./Shell";
@@ -12,6 +13,7 @@ export function App() {
       <Footer />
       {layout === "phone" && <PhoneTabBar />}
       <Toast />
+      <ImageInputs />
     </div>
   );
 }

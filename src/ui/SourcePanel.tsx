@@ -5,7 +5,7 @@
 import { settings } from "../state/signals";
 import type { Algorithm, WorkingSpace } from "../types";
 import { comingSoon } from "./comingSoon";
-import { ImageWell } from "./ImageWell";
+import { ImageMessageBanner, ImageWell } from "./ImageWell";
 import { SettingRow } from "./SettingRow";
 import { SwatchStrip } from "./SwatchStrip";
 
@@ -55,6 +55,7 @@ export function SourcePanel({ variant }: { variant: "desktop" | "tablet" | "phon
     <div class="panel" data-panel="source">
       {variant !== "phone" && <h2 class="section-label">Source</h2>}
       <ImageWell />
+      <ImageMessageBanner />
       <ViewBar />
       {variant !== "desktop" && <SwatchStrip />}
       <div class="setting-rows" data-testid="setting-rows">

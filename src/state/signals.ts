@@ -15,8 +15,22 @@ export const imageMeta = signal<ImageMeta | null>(null);
 /** The project's name; it belongs to the library entry (5.5) and is shown in the header. */
 export const projectName = signal<string>("Untitled");
 
-/** URL of the image shown in the image well (the mockup image, or an object URL from T9). */
+/** URL of an image shown as-is in the image well: the mockup state's fixture image. */
 export const imageSrc = signal<string | null>(null);
+
+/** The display copy of a loaded image's working master (spec 7.4), drawn in the image well. */
+export const displayImage = signal<ImageBitmap | null>(null);
+
+export interface ImageMessage {
+  kind: "error" | "note";
+  text: string;
+}
+
+/** The inline message under the image: an unreadable file, or the large-image note (spec 6.3). */
+export const imageMessage = signal<ImageMessage | null>(null);
+
+/** True while an image is being decoded and prepared. */
+export const imageLoading = signal(false);
 
 // View state (not part of the project, never in undo history: spec 3.6)
 export const selectedSwatchId = signal<string | null>(null);
