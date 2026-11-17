@@ -33,6 +33,10 @@ export const M1_SCREENS: readonly Screen[] = [
     viewport: PHONE,
     device: "phone",
   },
+  // First visit, no image (spec 6.3): the drop zone with Choose image, Paste and the samples.
+  { name: "empty-desktop", path: "./", viewport: DESKTOP, device: "desktop" },
+  { name: "empty-tablet", path: "./", viewport: TABLET, device: "tablet" },
+  { name: "empty-phone", path: "./", viewport: PHONE, device: "phone" },
 ];
 
 export const THEMES = ["light", "dark"] as const;

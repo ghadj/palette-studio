@@ -90,6 +90,25 @@ test.describe("token conformance @tokens", () => {
     }
   });
 
+  test("a failed-copy toast with its Download action uses tokens, with 44 px targets on phones", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
+    });
+    for (const theme of THEMES) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto("./?demo=mockup");
+      await page.getByRole("button", { name: "Copy HEX" }).click();
+      await expect(
+        page.getByTestId("toast-region").getByRole("button", { name: "Download" }),
+      ).toBeVisible();
+      const failures = await checkTokens(page, { touchTargets: true });
+      expect(failures, `${theme}\n${describeFailures(failures)}`).toEqual([]);
+    }
+  });
+
   test("checker self-test: an injected #123456 element is reported with its selector path, and the same element under data-user-content is not", async ({
     page,
   }) => {

@@ -153,7 +153,7 @@ Part A (T1 to T8) is scaffold, CI, themes and visual tooling. Part B (T9 to T13)
   - `tests/export/palette-css.test.ts` › "mockup fixture gives ':root {\n  --palette-1: #E8693A;\n  …\n  --palette-6: #5039B0;\n}' (uppercase hex, --palette-N in palette order)"; "output is identical with the locale forced to de-DE"
   - `e2e/copy.spec.ts` › "Copy HEX puts the list on the clipboard and shows a 'Copied HEX' toast announced in a live region" (Chromium, clipboard permissions); "Copy CSS puts the :root block on the clipboard"; "a clipboard failure shows a message that says why"
 - Done when: tests pass; the toast respects reduced motion.
-- [ ] Done
+- [x] Done. Notes: `src/ui/CopyButtons.tsx` is shared by the drawer and the phone tabs; on phones the buttons show only once there is a palette. The toast gained one optional action: a failed copy says why ("the browser didn't allow access to the clipboard") and offers Download, which saves `<project> palette.txt` or `.css` (spec 6.3). Copy tests run in Chromium only, because of clipboard permissions. Extra token cases cover the failure toast. Correction to the T9 note: the empty-desktop, empty-tablet and empty-phone token and axe screens actually landed in this commit, because a T9 edit to `e2e/helpers/screens.ts` silently missed
 
 ## Screens affected (UI work only)
 

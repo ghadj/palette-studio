@@ -2,7 +2,8 @@
  * The Source column (ui-contract "Column 1: SOURCE" and phone "Source tab"): image well, view bar,
  * and the setting rows. On tablets and phones the swatch strip sits under the view bar (decision 4).
  */
-import { progressVisible } from "../state/signals";
+import { palette, progressVisible } from "../state/signals";
+import { CopyButtons } from "./CopyButtons";
 import { comingSoon } from "./comingSoon";
 import { ImageMessageBanner, ImageWell } from "./ImageWell";
 import { SettingsControls } from "./SettingsControls";
@@ -44,6 +45,7 @@ export function SourcePanel({ variant }: { variant: "desktop" | "tablet" | "phon
       <ImageMessageBanner />
       <ViewBar />
       {variant !== "desktop" && <SwatchStrip />}
+      {variant === "phone" && palette.value.length > 0 && <CopyButtons />}
       <SettingsControls />
     </div>
   );
