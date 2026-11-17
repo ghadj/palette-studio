@@ -61,7 +61,7 @@ Part A (T1 to T8) is scaffold, CI, themes and visual tooling. Part B (T9 to T13)
   - "ΔE OK of (0.50, 0, 0) and (0.52, 0, 0) is 0.02; zero for identical colors; symmetric"
   - "formatNumber(0.5, 3) is '0.500' with the default locale forced to de-DE"
 - Done when: tests pass; no color math outside `src/color/`.
-- [ ] Done
+- [x] Done (the #FF0000 hue is asserted to 2 decimals, the precision of its reference value 29.23; the actual hue is 29.2339)
 
 ### M1-T4: Design tokens and themes
 - Files: `src/styles/tokens.css` (verbatim copy of `docs/design/tokens.css`), `src/styles/app.css` (base styles, focus ring: 2 px accent with offset, reduced motion), `public/theme-init.js` (reads stored choice, sets `data-theme` before first paint; in `?demo=mockup` uses only the `theme` param and never touches localStorage), `index.html` (`<script src="…/theme-init.js">` in head before the stylesheet, `theme-color` metas with `media` for light `#ffffff` and dark `#171717`), `src/state/theme.ts` (System, Light, Dark; persistence; live `matchMedia` updates), `src/ui/ThemeButton.tsx` (pill, icon only, labelled; opens a menu with System, Light, Dark; icons half-filled circle, sun, moon from lucide-preact)
