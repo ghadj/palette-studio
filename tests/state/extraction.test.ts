@@ -32,6 +32,17 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
     expect(imageMessage.value).toBeNull();
   });
 
+  it("a stopped worker resets the working state and shows an error (evaluator note 6)", async () => {
+    const { WorkerStoppedError } = await vi.importActual<typeof import("../../src/extract/client")>(
+      "../../src/extract/client",
+    );
+    extract.mockRejectedValueOnce(new WorkerStoppedError());
+    extractNow();
+    await flush();
+    expect(extracting.value).toBe(false);
+    expect(imageMessage.value).toMatchObject({ kind: "error", fromExtraction: true });
+  });
+
   it("other messages, such as the large-image note or a file error, stay after a successful extraction", async () => {
     for (const message of [
       { kind: "note" as const, text: "This image is 31.0 megapixels, so it is scaled down." },

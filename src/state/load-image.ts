@@ -64,6 +64,12 @@ export async function loadImageFile(file: File): Promise<boolean> {
       imageMessage.value = decoded.note ? { kind: "note", text: decoded.note } : null;
     });
     previous?.close();
+    // If the worker stops later, it can rebuild the master from the original file.
+    imageClient().setRestore(async () => {
+      const again = await decodeImageFile(file);
+      if (!again.ok) throw new Error(again.message);
+      return again.bitmap;
+    });
     for (const listener of listeners) listener();
     return true;
   } finally {
