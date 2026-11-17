@@ -123,7 +123,7 @@ Part A (T1 to T8) is scaffold, CI, themes and visual tooling. Part B (T9 to T13)
   - "a 5-bit histogram never exceeds 32,768 bins"; "a 75/25 two-color image gives 2 bins with counts 3:1 and the exact OKLab means"; "pixels with alpha below 128 are ignored"; "a fully transparent image gives no bins"
   - "single-color image with N=6 returns one swatch with that color and population 1"; "two-color 75/25 image with N=2 returns both exact colors with populations 0.75 and 0.25"; "fully transparent image returns an empty palette without throwing"; "a constructed 4-bin case splits on the widest channel at the population median"; "same input twice gives identical output"
 - Done when: tests pass; functions are pure and run in Vitest without a worker.
-- [ ] Done
+- [x] Done (added `src/color/working-space.ts`, a fast per-pixel sRGB-to-working-space converter that matches convert.ts, tested against it; the alpha cutoff and bit depth are options with the 2.4 defaults 128 and 5; median cut ties break on the other channels, then bin order, for determinism)
 
 ### M1-T11: Weighted k-means++
 - Files: `src/extract/kmeans.ts` (mulberry32 seeded PRNG, k-means++ init, weighted Euclidean in the working space, restarts keep lowest error, empty clusters reseed to the farthest point, stop at max centroid shift < 1e-4 or the iteration cap; defaults 25 iterations, 3 restarts, seed 1, per 2.4 and 7.6)
