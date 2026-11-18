@@ -4,6 +4,7 @@ Verdict: PASS WITH NOTES
 Branch and commit evaluated: milestone/M1 at dd13b68. This includes M1-T1 to T13, fix round M1-F1 to F7 and layout round M1-L1 to L9; every commit message starts with its task id.
 Date: 2026-11-18
 Earlier evaluations: 3d12289 (2026-11-17) and 414ffdb (2026-11-18), both PASS WITH NOTES; their notes are tracked under "Earlier notes" below.
+Final visual re-check: 3df4c12 (2026-11-18), after ee95638 (spec and contract update) and M1-L10 (drawer border edge to edge). All checks pass: lint with no warnings, typecheck, 103 unit tests, build at 39.49 kB gzip, and e2e with 803 passed and 52 deliberate skips. L10 looks right with no regressions. Notes 1 to 3 are resolved; see "Resolution after this report".
 
 All checks pass, now with 0 lint warnings. Every acceptance item has passing evidence or is listed as a manual device check. The visual review has no blocking differences.
 
@@ -155,7 +156,7 @@ Not-drawn items built in this milestone (need design review):
 - Setting-row editing affordances and the Advanced row (Sample size, Resampling, Seed with Randomize).
 - Footer: "Your images never leave this browser.", MIT License, GitHub; top border edge to edge.
 
-User sign-off: not yet
+User sign-off: approved by the user on 2026-11-18. The user reviewed the running build and the review page at dd13b68 (shots: studio-desktop, studio-tablet, source-phone, palette-phone, gradient-phone, empty-desktop and empty-phone, each in light and dark) and approved them. In the same answer the user asked for the drawer border to run edge to edge, which M1-L10 delivered at 3df4c12; the evaluator's re-check confirmed it changes only the studio-desktop and empty-desktop shots, as intended. Look at those two shots before running `visual-baselines.yml`.
 
 ## Failures (each blocks the milestone)
 
@@ -183,10 +184,17 @@ None.
 6. **The large-image probe loads the file into an image element** (`browserDecoders.probe` in `src/image/load.ts`). Browsers normally decode an unattached image lazily; whether iOS Safari does this for a 48 MP photo is part of the real-iPhone check.
 7. **Desktop WebKit skips buttons when tabbing** unless Safari's "Press Tab to highlight each item" setting is on. That is a platform setting, not an app bug.
 
+## Resolution after this report (2026-11-18)
+
+- Notes 1 to 3: resolved. The user asked for the spec to be updated; commit ee95638 updates `docs/SPEC.md` 2.4 (2 to 12 colors), 6.1 (tabbed layout for 601 to 1023 px and landscape) and 6.6 rule 3 (Replace image in the header), and `docs/design/ui-contract.md` (header items, Tablet section).
+- Note 4 (Seed and Balanced): left for M2 by the user's choice.
+- Note 5 (phone sample size 256): still the one unreconciled spec departure. Spec 6.1 says 128 px; decision 5 keeps 256 until revisited.
+- picomatch advisories: accepted by the user on 2026-11-18 (dev-only, no fixed release); revisit when picomatch publishes a fix.
+
 ## Manual checks for a person
 
-- [ ] Confirm notes 1 to 3, and decide whether `docs/SPEC.md` 2.4, 6.1 and 6.6 and `ui-contract.md` (Tablet, Header) should be updated.
-- [ ] Decide on the picomatch advisories (dev-only; no fixed release).
+- [x] Confirm notes 1 to 3 and update the spec and contract (ee95638).
+- [x] Decide on the picomatch advisories: accepted.
 - [ ] Set Pages source to GitHub Actions. After merge, check:
   - [ ] `/<repo-name>/` makes only same-origin requests.
   - [ ] `/<repo-name>/licenses.md` is served.
@@ -207,6 +215,6 @@ None.
 - [ ] Reload with Dark chosen on a light-mode device: no flash.
 - [ ] Time to first palette for a 12 MP photo on a mid-range laptop. The automated runs measured 211–269 ms.
 - [ ] Non-text contrast (3:1) of control borders, the slider track and the disabled Seed field, in both themes.
-- [ ] Open `artifacts/visual-review/index.html`, compare with the mockups, and sign off or list changes.
+- [x] Open `artifacts/visual-review/index.html`, compare with the mockups, and sign off or list changes (approved 2026-11-18; L10 followed).
 - [ ] Design review of the not-drawn items above, including the two-row strip and Replace image's placement.
 - [ ] After sign-off, run `visual-baselines.yml` on milestone/M1 and check the committed baselines.
