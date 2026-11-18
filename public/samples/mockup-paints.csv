@@ -1,0 +1,22 @@
+brand,medium,series,code,name,hex,finish,source,confidence,notes
+Brand A,spray,Demo,A-101,Orange Soft,#EA6B3B,matte,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand B,spray,Demo,B-101,Orange Soft,#E46437,matte,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand C,acrylic,Demo,C-101,Orange Soft,#EF7049,satin,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand A,spray,Demo,A-202,Green Bright,#28B47E,matte,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand C,acrylic,Demo,C-202,Green Bright,#1FAC71,satin,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand B,acrylic,Demo,B-202,Green Bright,#28BB80,satin,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand C,acrylic,Demo,C-303,Navy Muted,#1B3C70,satin,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand A,spray,Demo,A-303,Navy Muted,#083D7A,matte,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand B,spray,Demo,B-303,Navy Muted,#0B2D5A,matte,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand B,acrylic,Demo,B-404,Pink Deep,#D75481,satin,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand A,spray,Demo,A-404,Pink Deep,#D3477A,matte,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand C,acrylic,Demo,C-404,Pink Deep,#DE5878,satin,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand A,spray,Demo,A-505,Leaf Soft,#258E31,matte,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand C,acrylic,Demo,C-505,Leaf Soft,#288228,satin,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand B,spray,Demo,B-505,Leaf Soft,#2C8A04,matte,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand C,acrylic,Demo,C-606,Violet Bright,#553CB4,satin,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand B,acrylic,Demo,B-606,Violet Bright,#4A32A6,satin,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand A,spray,Demo,A-606,Violet Bright,#5B42A4,matte,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand D,oil,Demo,D-101,Orange Soft,#E96A3B,satin,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand D,wall-paint,Demo,D-302,Navy Bright,#113769,eggshell,manufacturer,manufacturer,Fictional demo paint for the mockup state
+Brand A,spray,Demo,A-207,Green Metallic,#1CAF7A,metallic,manufacturer,manufacturer,Fictional demo paint for the mockup state

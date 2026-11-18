@@ -1,0 +1,81 @@
+/**
+ * The mockup state, ?demo=mockup (docs/design/mockup-state.md). It never reads or writes autosave,
+ * the project library or any browser storage (spec 5.5), so nothing here imports storage code.
+ * M1 reads the `view`, `tab` and `theme` parameters; the others are ignored until their milestone.
+ */
+import { hexToOklab } from "../color/convert";
+import { createSwatch } from "../palette/model";
+import type { Project, Tab, View } from "../types";
+import { SCHEMA_VERSION, SPEC_DEFAULT_SETTINGS } from "./defaults";
+import {
+  MOCKUP_IMAGE,
+  MOCKUP_PROJECT_NAME,
+  MOCKUP_SELECTED_INDEX,
+  MOCKUP_SWATCHES,
+} from "./mockup-fixture";
+
+export interface MockupParams {
+  view: View;
+  tab: Tab;
+  theme: "light" | "dark" | null;
+}
+
+export interface MockupState {
+  name: string;
+  project: Project;
+  selectedSwatchId: string | null;
+  activeView: View;
+  activeTab: Tab;
+}
+
+const VIEWS: readonly View[] = ["studio", "materials"];
+const TABS: readonly Tab[] = ["source", "palette", "gradient", "materials"];
+
+function pick<T extends string>(value: string | null, options: readonly T[], fallback: T): T {
+  return options.find((o) => o === value) ?? fallback;
+}
+
+/** Returns the mockup parameters, or null when the page is not in the mockup state. */
+export function parseMockupParams(search: string): MockupParams | null {
+  const params = new URLSearchParams(search);
+  if (params.get("demo") !== "mockup") return null;
+  const theme = params.get("theme");
+  return {
+    view: pick(params.get("view"), VIEWS, "studio"),
+    tab: pick(params.get("tab"), TABS, "source"),
+    theme: theme === "light" || theme === "dark" ? theme : null,
+  };
+}
+
+export function buildMockupState(
+  params: MockupParams | null = { view: "studio", tab: "source", theme: null },
+): MockupState {
+  const palette = MOCKUP_SWATCHES.map(({ hex, point }, i) =>
+    createSwatch(hexToOklab(hex), {
+      id: `mockup-${i + 1}`,
+      origin: "extracted",
+      locked: false,
+      sampleRadius: "auto",
+      point: { ...point },
+      // mockup-state.md gives no extraction shares for the fixture; equal shares keep the sum at 1.
+      population: 1 / MOCKUP_SWATCHES.length,
+    }),
+  );
+  return {
+    name: MOCKUP_PROJECT_NAME,
+    project: {
+      schemaVersion: SCHEMA_VERSION,
+      settings: {
+        ...SPEC_DEFAULT_SETTINGS,
+        algorithm: "balanced",
+        colors: 6,
+        workingSpace: "oklab",
+      },
+      palette,
+      image: { ...MOCKUP_IMAGE },
+    },
+    selectedSwatchId: palette[MOCKUP_SELECTED_INDEX]?.id ?? null,
+    activeView: params?.view ?? "studio",
+    activeTab: params?.tab ?? "source",
+  };
+}

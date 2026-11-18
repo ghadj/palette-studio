@@ -1,0 +1,102 @@
+/*
+ * Palette Studio design tokens (spec 6.2, 6.4).
+ *
+ * Colors are taken from the mockups in docs/mockups. Sizes follow spec 6.4.
+ * M1 copies this file to src/styles/tokens.css. UI code uses only these variables.
+ * User content (image, swatches, gradients, exports) never uses theme tokens.
+ *
+ * Contrast against --color-surface (light / dark):
+ *   text 18.1 / 15.9   text-muted 5.4 / 7.0   accent 4.8 / 6.5
+ *   border-control 3.4 / 3.5   good 3.5 / 7.3   warn 2.0 / 9.6 (warn is always paired with a text label)
+ * Toast: text-inverse on surface-inverse 18.1 / 15.9, accent-inverse 6.6 / 4.9
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* Surfaces */
+  --color-surface: light-dark(#ffffff, #171717);        /* page, panels, sheets */
+  --color-surface-sunken: light-dark(#f2f2f2, #252525); /* empty image well, banners, current library entry, "match theme" preview surround */
+
+  /* Lines */
+  --color-border: light-dark(#c9c9c9, #454545);         /* app frame, cards, panel edges (decorative) */
+  --color-border-control: light-dark(#8c8c8c, #6e6e6e); /* inputs, toggles, unselected chips: 3:1 per spec 6.2 */
+  --color-divider: light-dark(#e7e7e7, #2b2b2b);        /* row separators, slider tracks, header rule */
+
+  /* Text */
+  --color-text: light-dark(#161616, #f1f1f1);
+  --color-text-muted: light-dark(#6a6a6a, #a2a2a2);     /* section labels, hints, secondary values */
+
+  /* Accent: selection, focus, primary action (one accent only, spec 6.4) */
+  --color-accent: light-dark(#2b6fdb, #5b9cff);
+  --color-accent-soft: color-mix(in srgb, var(--color-accent) 12%, transparent);
+
+  /* Overlays: drawers, bottom sheets and toasts (spec 5.5) */
+  --color-scrim: light-dark(rgb(0 0 0 / 0.18), rgb(0 0 0 / 0.5)); /* behind the library drawer and every bottom sheet */
+  --color-surface-inverse: light-dark(#161616, #f1f1f1);  /* toasts */
+  --color-text-inverse: light-dark(#ffffff, #171717);
+  --color-accent-inverse: light-dark(#5b9cff, #2563d0);   /* toast action, such as Undo */
+
+  /* Match quality (spec 14.3) */
+  --color-good: light-dark(#1f9d4b, #3dbb6a);
+  --color-warn: light-dark(#efa91b, #f2b33a);
+
+  /* Sample-point markers keep a light outer and dark inner ring in both themes (spec 3.7) */
+  --marker-ring-outer: #ffffff;
+  --marker-ring-inner: #161616;
+
+  /* The transfer grid follows the image, not the theme: dark lines on light images, light on dark (spec 3.8) */
+  --grid-line-dark: #161616;
+  --grid-line-light: #ffffff;
+
+  /* Type (spec 6.4). No web fonts (spec 7.8). */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --text-xs: 12px;          /* uppercase section labels (letter-spacing 0.04em), hints, secondary values */
+  --text-sm: 13px;          /* body, values, buttons, chips, tabs */
+  --text-md: 15px;          /* app name, sheet and drawer titles */
+  --text-lg: 20px;          /* empty-state headings */
+  --text-input-touch: 16px; /* text inputs on touch devices, prevents iOS focus zoom (spec 6.1) */
+  --weight-regular: 400;
+  --weight-strong: 600;     /* names, selected tab, selected chip, primary button */
+
+  /* Spacing on a 4 px grid (spec 6.4) */
+  --space-1: 4px;
+  --space-2: 8px;   /* between related controls */
+  --space-3: 12px;
+  --space-4: 16px;  /* between groups, panel padding, column gutter */
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Shape */
+  --radius-input: 6px;
+  --radius-swatch: 8px;
+  --radius-card: 10px;
+  --radius-panel: 12px;
+  --radius-pill: 999px;     /* chips, toggles, pill buttons, theme button */
+
+  /* Sizes */
+  --control-height: 32px;   /* desktop */
+  --touch-target: 44px;     /* minimum on phones, and the hit area of every marker (spec 6.1) */
+  --header-height: 48px;
+  --tabbar-height: 56px;    /* phones, plus env(safe-area-inset-bottom) */
+  --stroke: 1px;
+  --stroke-selected: 2px;   /* selected card, swatch, marker, stop and the active-tab indicator */
+
+  /* Motion (spec 6.4) */
+  --duration-fast: 120ms;
+  --duration-slow: 200ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Manual theme choice (spec 6.2). light-dark() follows color-scheme. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+@media (pointer: coarse) {
+  :root { --control-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --duration-fast: 0ms; --duration-slow: 0ms; }
+}

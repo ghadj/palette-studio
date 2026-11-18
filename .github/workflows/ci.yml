@@ -1,0 +1,128 @@
+name: CI
+
+# Every push and pull request (spec 8 "Continuous integration").
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, type-check, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Bundle-size report (spec 7.7)
+        run: npx tsx tools/bundle-size.ts dist
+
+  e2e:
+    name: Playwright (Chromium, WebKit, Firefox, phones)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit firefox
+      # Token and accessibility tests run in their own job below.
+      - run: npm run e2e -- --grep-invert "@tokens|@a11y"
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  tokens-a11y:
+    name: Token conformance and axe-core (visual-testing.md 1, spec 8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit firefox
+      - run: npm run e2e -- --grep "@tokens|@a11y"
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tokens-a11y-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  visual-review:
+    name: Visual review page (visual-testing.md 2)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-jammy
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run visual:review
+      - uses: actions/upload-artifact@v7
+        with:
+          name: visual-review
+          path: artifacts/visual-review/
+          retention-days: 14
+
+  visual:
+    name: Visual baselines (visual-testing.md 3)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-jammy
+    steps:
+      - uses: actions/checkout@v7
+      - id: baselines
+        name: Look for approved baselines
+        shell: bash
+        run: |
+          if compgen -G "e2e/visual/baselines/*.png" > /dev/null; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No visual baselines yet, so the comparison is skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - if: steps.baselines.outputs.present == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - if: steps.baselines.outputs.present == 'true'
+        run: npm ci
+      - if: steps.baselines.outputs.present == 'true'
+        run: npx playwright test --project=visual
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-diffs
+          path: test-results/
+          retention-days: 14

@@ -1,0 +1,1022 @@
+/*
+ * App styles. UI uses only the variables in tokens.css (spec 6.2, 6.4): no literal colors,
+ * font sizes or radii. User content is marked with data-user-content and never themed.
+ */
+
+/*
+ * Hit size: 32 px controls on desktop, 44 px touch targets in the tabbed layout below 1024 px
+ * (spec 6.1, 6.4; decision 4 as revised).
+ */
+:root {
+  --hit: var(--control-height);
+}
+@media (max-width: 1023.98px) {
+  :root {
+    --hit: var(--touch-target);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Below 320 px wide the page stops shrinking and scrolls sideways (fix L4; spec 6.1 "from 320 px"). */
+body {
+  min-width: calc(var(--space-8) * 10);
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+a {
+  color: var(--color-text);
+}
+
+/* Focus is always visible: a 2 px accent ring with a small offset (ui-contract Components). */
+:focus-visible {
+  outline: var(--stroke-selected) solid var(--color-accent);
+  outline-offset: var(--stroke-selected);
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Reduced motion: tokens.css sets --duration-fast and --duration-slow to 0 ms; all motion uses them. */
+
+/* App frame: dvh so Safari's toolbar doesn't clip the layout (spec 6.1). */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.shell {
+  flex: 1 0 auto;
+}
+
+/*
+ * Desktop: the app fills the window. The columns take the space between the header and the export
+ * drawer and scroll inside it, so the drawer and the footer stay at the bottom (fix L3).
+ */
+.app--desktop {
+  height: 100dvh;
+  /* About 640 px: below that the page scrolls instead of squashing the columns (fix L4). */
+  min-height: calc(var(--space-8) * 20);
+}
+
+.shell--desktop {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Header (ui-contract "Header") */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--header-height);
+  padding: 0 var(--space-6);
+  border-bottom: var(--stroke) solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+/* Desktop: a three-part grid keeps the view tabs centered whatever the side groups' widths. */
+.header--desktop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: var(--space-4);
+}
+
+.header--compact {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  justify-content: space-between;
+  padding: env(safe-area-inset-top) var(--space-4) 0;
+  min-height: calc(var(--header-height) + env(safe-area-inset-top));
+}
+
+.header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.brand-dot {
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+.app-name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
+}
+
+.header__slash {
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+}
+
+.project-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  min-height: var(--hit);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-input);
+  color: var(--color-text);
+  font-size: var(--text-md);
+}
+
+.project-button--strong {
+  font-weight: var(--weight-strong);
+}
+
+.project-button__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-tabs {
+  display: flex;
+  align-self: stretch;
+  gap: var(--space-6);
+  margin-left: var(--space-8);
+}
+
+.view-tab {
+  position: relative;
+  min-height: var(--header-height);
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+}
+
+.view-tab[aria-current="page"] {
+  color: var(--color-text);
+  font-weight: var(--weight-strong);
+}
+
+.view-tab[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--stroke-selected);
+  background: var(--color-accent);
+}
+
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.header__actions--icons {
+  gap: 0;
+  flex-shrink: 0;
+}
+
+/* Desktop header grid placement (after the base rules they override). */
+.header--desktop .header__brand {
+  justify-self: start;
+  max-width: 100%;
+}
+
+.header--desktop .view-tabs {
+  margin-left: 0;
+}
+
+.header--desktop .header__actions {
+  justify-self: end;
+  margin-left: 0;
+}
+
+.text-button {
+  min-height: var(--hit);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-input);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+}
+
+/* Icon-only pill button: the desktop theme button (ui-contract Components "Theme button"). */
+.icon-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(var(--hit) + var(--space-3));
+  min-height: var(--hit);
+  padding: 0 var(--space-2);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+}
+
+/* The System icon is a half-filled circle (ui-contract "Theme button behavior"). */
+.icon-system path {
+  fill: currentColor;
+}
+
+/* Theme menu popover (ui-contract Components "Menu popover"). */
+.theme-button,
+.menu-anchor {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: calc(var(--space-8) * 4);
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-swatch);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-input);
+  color: var(--color-text);
+  text-align: left;
+}
+
+.menu-item {
+  white-space: nowrap;
+}
+
+/* In the compact header the menus anchor to the header's right edge, so they fit at 320 px. */
+.header--compact .theme-button,
+.header--compact .menu-anchor {
+  position: static;
+}
+
+.header--compact .menu {
+  right: var(--space-4);
+}
+
+.menu-item__thumb {
+  display: block;
+  border-radius: var(--radius-input);
+}
+
+.menu-item[aria-checked="true"] {
+  font-weight: var(--weight-strong);
+  color: var(--color-accent);
+}
+
+.menu-item:focus-visible {
+  outline-offset: calc(var(--stroke-selected) * -1);
+}
+
+/* Columns (ui-contract "Desktop Studio view", "Tablet") */
+.columns {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  align-items: start;
+}
+
+.columns--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.shell--desktop .columns {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.column {
+  min-width: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* The tabbed layout: one panel, centered at a readable width on wide screens. */
+.shell--phone {
+  width: 100%;
+  max-width: calc(var(--space-8) * 20);
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+/* Uppercase muted section label (ui-contract: each column starts with one). */
+.section-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+/* Image well (ui-contract column 1 item 1). Markers, callouts and selection stay off the image (spec 6.1). */
+.image-well {
+  overflow: hidden;
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-sunken);
+}
+
+.image-well__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.image-well[data-busy] .image-well__image {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+/* Drop zone (spec 6.3 "First visit, no image"). */
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: calc(var(--space-8) * 8);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.drop-zone[data-dragging] {
+  background: var(--color-accent-soft);
+  outline: var(--stroke-selected) dashed var(--color-accent);
+  outline-offset: calc(var(--stroke-selected) * -1);
+}
+
+.drop-zone__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-strong);
+}
+
+.drop-zone__actions,
+.drop-zone__samples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.sample-button {
+  overflow: hidden;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-swatch);
+}
+
+.sample-button img {
+  display: block;
+  width: calc(var(--space-8) * 2.5);
+  height: auto;
+}
+
+/* Buttons (ui-contract Components "Pill button", "Primary button"). */
+.pill-button,
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: var(--hit);
+  min-height: var(--hit);
+  padding: 0 var(--space-4);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.primary-button {
+  border: var(--stroke-selected) solid var(--color-accent);
+  background: var(--color-accent-soft);
+  font-weight: var(--weight-strong);
+}
+
+.pill-button:disabled,
+.primary-button:disabled {
+  cursor: default;
+  border-color: var(--color-divider);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+/* Inline messages (spec 6.3): plain sentences on the sunken banner surface. */
+.message-region:empty {
+  display: none;
+}
+
+.message {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+
+/* View bar (ui-contract column 1 item 2; Components "Segmented control", "Chip"). */
+.view-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.segmented {
+  display: flex;
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+}
+
+.segment,
+.chip {
+  min-width: var(--hit);
+  min-height: var(--hit);
+  padding: 0 var(--space-3);
+  border: var(--stroke-selected) solid transparent;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.segment[aria-pressed="true"],
+.chip[aria-pressed="true"] {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  font-weight: var(--weight-strong);
+}
+
+.chip {
+  border: var(--stroke) solid var(--color-border-control);
+  color: var(--color-text);
+}
+
+/* A thin divider between two unselected segments, as in the mockups. */
+.segment {
+  position: relative;
+}
+
+.segment[aria-pressed="false"] + .segment[aria-pressed="false"]::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--stroke-selected) * -1);
+  top: 25%;
+  bottom: 25%;
+  width: var(--stroke);
+  background: var(--color-divider);
+}
+
+/* Swatch strip (ui-contract column 2 item 1; Components "Swatch"). */
+.swatch-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.app--phone .swatch-strip {
+  gap: var(--space-1);
+}
+
+.swatch {
+  height: calc(var(--space-4) * 5);
+  border-radius: var(--radius-swatch);
+}
+
+.app--phone .swatch {
+  height: calc(var(--space-4) * 4);
+}
+
+.swatch[aria-pressed="true"] {
+  outline: var(--stroke-selected) solid var(--color-text);
+  outline-offset: var(--stroke-selected);
+}
+
+.swatch:focus-visible {
+  outline-color: var(--color-accent);
+}
+
+.selection-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Setting rows (ui-contract Components "Setting row"). */
+.setting-rows {
+  border-top: var(--stroke) solid var(--color-divider);
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--touch-target);
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.setting-row__label {
+  color: var(--color-text-muted);
+}
+
+.setting-row__value {
+  color: var(--color-text);
+  text-align: right;
+}
+
+.setting-row__label {
+  cursor: default;
+}
+
+.setting-row__label-group {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1) 0;
+}
+
+.setting-row__note {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.setting-row__value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+/* Select styled as a setting value: text color, right aligned, chevron after it. */
+.select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.select__control {
+  appearance: none;
+  min-height: var(--hit);
+  padding: 0 calc(var(--space-4) + var(--space-1)) 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-align: right;
+  text-align-last: right;
+  cursor: pointer;
+}
+
+.select__chevron {
+  position: absolute;
+  right: 0;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.slider-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Number field (spec 6.1: inputmode decimal, 16 px on touch so iOS doesn't zoom). */
+.number-field {
+  width: calc(var(--space-8) * 2);
+  min-height: var(--hit);
+  padding: 0 var(--space-2);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-align: right;
+}
+
+.number-field:disabled {
+  border-color: var(--color-divider);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+#setting-seed {
+  width: calc(var(--space-8) * 3);
+}
+
+@media (max-width: 1023.98px), (pointer: coarse) {
+  .number-field,
+  .select__control {
+    font-size: var(--text-input-touch);
+  }
+}
+
+/* Slider (ui-contract Components "Slider"): divider-colored track, round accent thumb. */
+.slider {
+  appearance: none;
+  width: calc(var(--space-8) * 4);
+  min-width: var(--hit);
+  min-height: var(--hit);
+  margin: 0;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-divider);
+}
+
+.slider::-moz-range-track {
+  height: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-divider);
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--space-4);
+  height: var(--space-4);
+  margin-top: calc((var(--space-1) - var(--space-4)) / 2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+.slider::-moz-range-thumb {
+  width: var(--space-4);
+  height: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+@media (max-width: 1023.98px), (pointer: coarse) {
+  .slider {
+    width: calc(var(--space-8) * 3);
+  }
+  .slider::-webkit-slider-thumb {
+    width: var(--space-6);
+    height: var(--space-6);
+    margin-top: calc((var(--space-1) - var(--space-6)) / 2);
+  }
+  .slider::-moz-range-thumb {
+    width: var(--space-6);
+    height: var(--space-6);
+  }
+}
+
+/* Chevron row (ui-contract Components): label left, chevron right, divider below. */
+.chevron-row__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--touch-target);
+  border-bottom: var(--stroke) solid var(--color-divider);
+  color: var(--color-text);
+  list-style: none;
+  cursor: pointer;
+}
+
+.chevron-row__summary::-webkit-details-marker {
+  display: none;
+}
+
+.chevron-row__chevron {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.chevron-row[open] .chevron-row__chevron {
+  transform: rotate(90deg);
+}
+
+/* Working state (spec 6.3): the previous result dims; a progress bar shows after about 300 ms. */
+.swatch-strip[data-busy] {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.progress {
+  position: relative;
+  overflow: hidden;
+  height: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-divider);
+}
+
+.progress__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  animation: progress-slide 1.2s var(--ease-out) infinite;
+}
+
+@keyframes progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress__bar {
+    width: 100%;
+    animation: none;
+  }
+}
+
+/* Tabs (ui-contract "Phone"; Components "Tab"). */
+.tabs {
+  display: flex;
+}
+
+.tab {
+  position: relative;
+  flex: 1 1 0;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--color-text);
+  font-weight: var(--weight-strong);
+}
+
+.tab[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: calc(var(--space-6) * 2);
+  height: var(--stroke-selected);
+  transform: translateX(-50%);
+  background: var(--color-accent);
+}
+
+/* Phone tab bar: clears the home indicator (spec 6.1). */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  border-top: var(--stroke) solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+.tabbar .tabs {
+  max-width: calc(var(--space-8) * 20);
+  margin: 0 auto;
+}
+
+.tabbar .tab {
+  min-height: calc(var(--tabbar-height) - var(--stroke));
+}
+
+.app--phone {
+  padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
+}
+
+/* Export drawer (ui-contract "Export drawer"). Its top border stays inside the page gutters (L11). */
+.export-drawer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 var(--space-6);
+  border-top: var(--stroke) solid var(--color-divider);
+}
+
+.shell--desktop .export-drawer {
+  flex: none;
+}
+
+.export-half {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-6);
+  padding: var(--space-4) 0;
+}
+
+.export-half + .export-half {
+  padding-left: var(--space-6);
+  border-left: var(--stroke) solid var(--color-divider);
+}
+
+.export-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+}
+
+.export-formats {
+  color: var(--color-text-muted);
+}
+
+/*
+ * Footer (M1 decision 8). Its top border runs edge to edge, past the app's safe-area padding,
+ * while its content keeps the page's side gutters (fix L5).
+ */
+.footer {
+  --footer-gutter: var(--space-6);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--space-4);
+  margin: 0 calc(env(safe-area-inset-right) * -1) 0 calc(env(safe-area-inset-left) * -1);
+  padding: var(--space-2) calc(var(--footer-gutter) + env(safe-area-inset-right)) var(--space-2)
+    calc(var(--footer-gutter) + env(safe-area-inset-left));
+  border-top: var(--stroke) solid var(--color-divider);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.app--phone .footer {
+  --footer-gutter: var(--space-4);
+}
+
+.footer__links {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.footer a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  font-size: var(--text-xs);
+}
+
+/* Toast (ui-contract Components "Toast"; spec 6.3). */
+.toast-region {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-6);
+  z-index: 30;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - var(--space-8));
+  pointer-events: none;
+}
+
+.app--phone .toast-region {
+  bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom) + var(--space-4));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  pointer-events: auto;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+  font-size: var(--text-sm);
+  animation: toast-in var(--duration-slow) var(--ease-out);
+}
+
+.toast__action {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-input);
+  color: var(--color-accent-inverse);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+}
+
+.toast__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  margin: calc(var(--space-2) * -1) calc(var(--space-3) * -1) calc(var(--space-2) * -1) 0;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-inverse);
+}
+
+.copy-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-2));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
