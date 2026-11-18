@@ -156,7 +156,10 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "a single-pixel outlier below 0.1% is not kept"
   - `e2e/extract.spec.ts` › "Exact colors with Nearest resampling on twelve-colors.png gives all 12 hexes".
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+  - Note: the outlier box takes its own share, and the N − 1 kept colors give up that share in proportion, so populations still sum to 1. A box at distance 0 from every kept color isn't added: on a single-color image, keep one outlier adds nothing.
+  - Note: keep one outlier applies to every algorithm except swatch roles, Exact colors included. With Exact colors, the outlier is a median-cut box mean, not an input color.
+  - Note: the extra unit tests cover exact ties (lower packed RGB), even-spread nearest populations, and the outlier under CIEDE2000. The "refuses algorithms that aren't built yet" test now uses swatch roles.
 
 ### M2-T6: Swatch roles
 - Files:

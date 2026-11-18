@@ -8,9 +8,12 @@ import { workingToOklab } from "../color/working-space";
 import { clampColors } from "../state/defaults";
 import type { Algorithm, ExtractionSettings } from "../types";
 import { balanced } from "./balanced";
+import { evenSpread } from "./even-spread";
+import { exactColors } from "./exact";
 import { buildHistogram, weightByVividness } from "./histogram";
 import { kmeans } from "./kmeans";
 import { type Cluster, medianCut } from "./median-cut";
+import { addOutlier } from "./outlier";
 import { type ExtractedColor, postprocess } from "./postprocess";
 import { wu } from "./wu";
 
@@ -22,6 +25,8 @@ export const AVAILABLE_ALGORITHMS = [
   "wu",
   "kmeans",
   "balanced",
+  "exact",
+  "even-spread",
 ] as const satisfies readonly Algorithm[];
 
 /** The analysis copy: RGBA pixels, row by row. */
@@ -36,35 +41,57 @@ export function extractPalette(
   settings: ExtractionSettings,
 ): ExtractedColor[] {
   const count = clampColors(settings.colors);
-  // Population vs. vividness weights the bins and ranks the result (decisions 5c and 6).
-  const vividness = settings.vividness;
+  const algorithm = settings.algorithm;
+  // Population vs. vividness weights the bins and ranks the result; exact colors and swatch roles
+  // don't use it (decisions 5c and 6).
+  const vividness = algorithm === "exact" || algorithm === "swatch-roles" ? 0 : settings.vividness;
   const histogram = buildHistogram(image.data, {
     space: settings.workingSpace,
     alphaCutoff: settings.alphaCutoff,
     bits: settings.histogramBits,
   });
   const h = weightByVividness(histogram, vividness, settings.workingSpace);
+  // Keep one outlier: extract N − 1 colors, then add the most distinct small cluster (decision 8).
+  const outlier = settings.keepOutlier && algorithm !== "swatch-roles";
+  const n = outlier ? count - 1 : count;
   let clusters: Cluster[];
-  switch (settings.algorithm) {
+  switch (algorithm) {
     case "kmeans":
       clusters = kmeans(h, {
-        k: count,
+        k: n,
         iterations: settings.iterations,
         restarts: settings.restarts,
         seed: settings.seed,
       }).clusters;
       break;
     case "median-cut":
-      clusters = medianCut(h, count);
+      clusters = medianCut(h, n);
       break;
     case "wu":
-      clusters = wu(h, count);
+      clusters = wu(h, n);
       break;
     case "balanced":
-      clusters = balanced(h, { k: count, iterations: settings.iterations });
+      clusters = balanced(h, { k: n, iterations: settings.iterations });
+      break;
+    case "exact":
+      clusters = exactColors(image.data, {
+        n,
+        space: settings.workingSpace,
+        alphaCutoff: settings.alphaCutoff,
+      });
+      break;
+    case "even-spread":
+      clusters = evenSpread(h, n);
       break;
     default:
-      throw new Error(`The ${settings.algorithm} algorithm is not available until a later version`);
+      throw new Error(`The ${algorithm} algorithm is not available until a later version`);
+  }
+  if (outlier) {
+    clusters = addOutlier(h, clusters, {
+      n: count,
+      space: settings.workingSpace,
+      metric: settings.distanceMetric,
+    });
   }
   const colors = clusters.map((c) => ({
     lab: workingToOklab(settings.workingSpace, c.color[0], c.color[1], c.color[2]),

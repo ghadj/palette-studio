@@ -6,7 +6,7 @@ import type { Algorithm, ExtractionSettings, WorkingSpace } from "../../src/type
 import { TWELVE_COLORS } from "../../tools/fixture-colors";
 import { image, pixels, row } from "./helpers";
 
-const ALGORITHMS: Algorithm[] = ["kmeans", "median-cut", "wu", "balanced"];
+const ALGORITHMS: Algorithm[] = ["kmeans", "median-cut", "wu", "balanced", "exact", "even-spread"];
 const SPACES: WorkingSpace[] = ["oklab", "cielab", "linear-srgb", "srgb"];
 const settings = (patch: Partial<ExtractionSettings>): ExtractionSettings => ({
   ...DEFAULT_SETTINGS,
@@ -95,7 +95,7 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
 
   it("refuses algorithms that aren't built yet", () => {
     expect(() =>
-      extractPalette(row(pixels([["#000000", 1]])), settings({ algorithm: "exact" })),
+      extractPalette(row(pixels([["#000000", 1]])), settings({ algorithm: "swatch-roles" })),
     ).toThrow(/not available/);
   });
 

@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { TWELVE_COLORS } from "../tools/fixture-colors";
 import { encodePng } from "../tools/png";
 import { fixture } from "./helpers/files";
 
@@ -127,6 +128,22 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     await page.getByTestId("file-input").setInputFiles(fixture("two-color.png"));
     await waitForPalette(page, 2);
     expect(await hexes(page)).toEqual(["#1DB07A", "#5039B0"]);
+  });
+
+  test("Exact colors with Nearest resampling on twelve-colors.png gives all 12 hexes", async ({
+    page,
+  }) => {
+    await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
+    await waitForPalette(page);
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "Exact colors" });
+    await page.locator("details.chevron-row:visible summary").click();
+    await page.locator("#setting-resampling:visible").selectOption({ label: "Nearest" });
+    await page.locator("#setting-colors:visible").fill("12");
+    await waitForPalette(page, 12);
+    await expect
+      .poll(async () => [...(await hexes(page))].sort())
+      .toEqual([...TWELVE_COLORS].sort());
+    await expect(page.locator("#setting-algorithm:visible")).toHaveValue("exact");
   });
 
   test("working space, sample size, resampling and seed all re-extract", async ({ page }) => {
