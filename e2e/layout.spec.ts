@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 import { box, demo, hasHorizontalScroll, isPhoneProject, PHONE_SIZES } from "./helpers/app";
 
@@ -35,6 +37,35 @@ test.describe("responsive shell (spec 6.1)", () => {
     await expect(page.getByRole("heading", { name: "Gradient export" })).toBeVisible();
     // Desktop has no bottom tab bar.
     await expect(page.locator("[data-testid=tabbar]")).toHaveCount(0);
+    expect(await hasHorizontalScroll(page)).toBe(false);
+  });
+
+  test("desktop header: the Studio and Materials tabs stay centered whatever the side groups' widths", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "desktop viewport");
+    const centered = async (width: number) => {
+      const nav = await box(page, "nav[aria-label=Views]");
+      expect(Math.abs(nav.x + nav.width / 2 - width / 2), `width ${width}`).toBeLessThanOrEqual(1);
+    };
+    for (const width of [1024, 1280, 1920]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(demo());
+      await centered(width);
+    }
+    // A long project name and the Replace image button change the side groups; the tabs stay put.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("./");
+    await centered(1280);
+    await page.getByTestId("file-input").setInputFiles({
+      name: "a remarkably long project name that will need to be truncated somewhere.png",
+      mimeType: "image/png",
+      buffer: readFileSync(resolve(process.cwd(), "tests/fixtures/two-color.png")),
+    });
+    await expect(
+      page.locator("header").getByRole("button", { name: "Replace image" }),
+    ).toBeVisible();
+    await centered(1280);
     expect(await hasHorizontalScroll(page)).toBe(false);
   });
 

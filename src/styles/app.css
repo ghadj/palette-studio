@@ -115,6 +115,27 @@ fieldset {
   background: var(--color-surface);
 }
 
+/* Desktop: a three-part grid keeps the view tabs centered whatever the side groups' widths. */
+.header--desktop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: var(--space-4);
+}
+
+.header--desktop .header__brand {
+  justify-self: start;
+  max-width: 100%;
+}
+
+.header--desktop .view-tabs {
+  margin-left: 0;
+}
+
+.header--desktop .header__actions {
+  justify-self: end;
+  margin-left: 0;
+}
+
 .header--compact {
   position: sticky;
   top: 0;
