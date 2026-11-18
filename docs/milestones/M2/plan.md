@@ -94,7 +94,8 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "works at 4, 5 and 6 bits"
   - `e2e/extract.spec.ts` › "switching to Wu re-extracts; two-color.png gives its two hexes".
 - Done when: tests pass; at 256 px and 6 colors, Wu on the 12 MP generated image is logged next to median cut (informational).
-- [ ] Done
+- [x] Done
+  - Note: the timing is logged by a unit test on the 12 MP gradient at its 256 × 192 analysis size: Wu 0.81 ms and median cut 1.06 ms for the quantizer alone (1,460 bins). The worker doesn't report its time to the page, so an e2e test can't log it. The Algorithm select now lists algorithms in spec 2.4 order.
 
 ### M2-T4: Balanced, vividness scoring, and Balanced as the default
 - Files:

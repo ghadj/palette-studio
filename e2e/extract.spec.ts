@@ -57,6 +57,19 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     expect((await hexes(page)).length).toBeGreaterThan(1);
   });
 
+  test("switching to Wu re-extracts; two-color.png gives its two hexes", async ({ page }) => {
+    await loadSample(page, "Orbits");
+    await waitForPalette(page, 6);
+    const before = await hexes(page);
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "Wu" });
+    await expect.poll(() => hexes(page)).not.toEqual(before);
+    await waitForPalette(page);
+    await expect(page.locator("#setting-algorithm:visible")).toHaveValue("wu");
+    await page.getByTestId("file-input").setInputFiles(fixture("two-color.png"));
+    await waitForPalette(page, 2);
+    expect(await hexes(page)).toEqual(["#1DB07A", "#5039B0"]);
+  });
+
   test("working space, sample size, resampling and seed all re-extract", async ({ page }) => {
     await loadSample(page, "Orbits");
     await waitForPalette(page, 6);

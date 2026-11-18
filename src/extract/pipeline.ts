@@ -6,16 +6,21 @@
 import { thresholdFor } from "../color/delta-e";
 import { workingToOklab } from "../color/working-space";
 import { clampColors } from "../state/defaults";
-import type { ExtractionSettings } from "../types";
+import type { Algorithm, ExtractionSettings } from "../types";
 import { buildHistogram } from "./histogram";
 import { kmeans } from "./kmeans";
 import { type Cluster, medianCut } from "./median-cut";
 import { type ExtractedColor, postprocess } from "./postprocess";
+import { wu } from "./wu";
 
 export type { ExtractedColor } from "./postprocess";
 
-/** Algorithms M1 builds (spec 9). The others arrive in M2. */
-export const M1_ALGORITHMS = ["kmeans", "median-cut"] as const;
+/** The algorithms built so far, in spec 2.4 order. The rest arrive later in M2. */
+export const AVAILABLE_ALGORITHMS = [
+  "median-cut",
+  "wu",
+  "kmeans",
+] as const satisfies readonly Algorithm[];
 
 /** The analysis copy: RGBA pixels, row by row. */
 export interface AnalysisImage {
@@ -46,6 +51,9 @@ export function extractPalette(
       break;
     case "median-cut":
       clusters = medianCut(h, count);
+      break;
+    case "wu":
+      clusters = wu(h, count);
       break;
     default:
       throw new Error(`The ${settings.algorithm} algorithm is not available until a later version`);

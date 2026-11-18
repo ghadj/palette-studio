@@ -6,7 +6,7 @@ import type { Algorithm, ExtractionSettings, WorkingSpace } from "../../src/type
 import { TWELVE_COLORS } from "../../tools/fixture-colors";
 import { image, pixels, row } from "./helpers";
 
-const ALGORITHMS: Algorithm[] = ["kmeans", "median-cut"];
+const ALGORITHMS: Algorithm[] = ["kmeans", "median-cut", "wu"];
 const SPACES: WorkingSpace[] = ["oklab", "cielab", "linear-srgb", "srgb"];
 const settings = (patch: Partial<ExtractionSettings>): ExtractionSettings => ({
   ...DEFAULT_SETTINGS,
@@ -14,7 +14,7 @@ const settings = (patch: Partial<ExtractionSettings>): ExtractionSettings => ({
 });
 
 describe("extraction pipeline (spec 2.1, 8)", () => {
-  it("both algorithms × 4 working spaces are stable on single-color, two-color and transparent inputs", () => {
+  it("every available algorithm × 4 working spaces are stable on single-color, two-color and transparent inputs", () => {
     const single = row(pixels([["#14386B", 100]]));
     const two = row(
       pixels([
@@ -61,8 +61,8 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
       expect(extractPalette(image, s)).toEqual(a);
     }
     // k-means depends on the seed; with these inputs a different seed gives a different palette.
-    const k1 = extractPalette(image, settings({ colors: 8, seed: 1 }));
-    const k2 = extractPalette(image, settings({ colors: 8, seed: 2 }));
+    const k1 = extractPalette(image, settings({ algorithm: "kmeans", colors: 8, seed: 1 }));
+    const k2 = extractPalette(image, settings({ algorithm: "kmeans", colors: 8, seed: 2 }));
     expect(k1).not.toEqual(k2);
   });
 
@@ -93,9 +93,9 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
     }
   });
 
-  it("refuses algorithms that M1 doesn't build", () => {
+  it("refuses algorithms that aren't built yet", () => {
     expect(() =>
-      extractPalette(row(pixels([["#000000", 1]])), settings({ algorithm: "wu" })),
+      extractPalette(row(pixels([["#000000", 1]])), settings({ algorithm: "balanced" })),
     ).toThrow(/not available/);
   });
 
