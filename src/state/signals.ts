@@ -4,7 +4,7 @@
  */
 import { batch, signal } from "@preact/signals";
 import type { ExtractionSettings, ImageMeta, Project, Swatch, Tab, View } from "../types";
-import { DEFAULT_SETTINGS, SCHEMA_VERSION } from "./defaults";
+import { clampColors, DEFAULT_SETTINGS, SCHEMA_VERSION } from "./defaults";
 
 // Project fields (7.5)
 export const schemaVersion = signal<number>(SCHEMA_VERSION);
@@ -54,7 +54,7 @@ export const demoMode = signal(false);
 export function loadProject(project: Project, name: string): void {
   batch(() => {
     schemaVersion.value = project.schemaVersion;
-    settings.value = { ...project.settings };
+    settings.value = { ...project.settings, colors: clampColors(project.settings.colors) };
     palette.value = project.palette;
     imageMeta.value = project.image;
     projectName.value = name;

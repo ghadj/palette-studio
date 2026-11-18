@@ -28,4 +28,14 @@ export const DEFAULT_SETTINGS: Readonly<ExtractionSettings> = Object.freeze({
 });
 
 export const MIN_COLORS = 2;
-export const MAX_COLORS = 32;
+/**
+ * Decision 13: palettes have at most 12 colors. This departs on purpose, by the user's choice, from
+ * spec 2.4's "2 to 32".
+ */
+export const MAX_COLORS = 12;
+
+/** Rounds and clamps a color count into 2 to 12; anything not finite becomes the default. */
+export function clampColors(value: number): number {
+  if (!Number.isFinite(value)) return SPEC_DEFAULT_SETTINGS.colors;
+  return Math.min(MAX_COLORS, Math.max(MIN_COLORS, Math.round(value)));
+}

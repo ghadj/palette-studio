@@ -6,7 +6,7 @@
 import { ChevronDown, ChevronRight } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { M1_ALGORITHMS } from "../extract/pipeline";
-import { MAX_COLORS, MIN_COLORS } from "../state/defaults";
+import { clampColors, MAX_COLORS, MIN_COLORS } from "../state/defaults";
 import { settings } from "../state/signals";
 import type { Algorithm, ExtractionSettings, Resampling, SampleSize, WorkingSpace } from "../types";
 import { SettingRow } from "./SettingRow";
@@ -115,6 +115,14 @@ function NumberField({
       aria-label={label}
       value={text ?? String(value)}
       onInput={onInput}
+      onChange={(event) => {
+        // On commit (blur or Enter), clamp out-of-range numbers instead of dropping them.
+        const n = Number((event.currentTarget as HTMLInputElement).value.trim());
+        if (Number.isFinite(n) && (event.currentTarget as HTMLInputElement).value.trim() !== "") {
+          onCommit(Math.min(max, Math.max(min, Math.round(n))));
+        }
+        setText(null);
+      }}
       onBlur={() => setText(null)}
     />
   );
@@ -154,14 +162,14 @@ export function SettingsControls() {
             step={1}
             value={s.colors}
             aria-label="Colors slider"
-            onInput={(event) => update("colors", Number(event.currentTarget.value))}
+            onInput={(event) => update("colors", clampColors(Number(event.currentTarget.value)))}
           />
           <NumberField
             id="setting-colors"
             value={s.colors}
             min={MIN_COLORS}
             max={MAX_COLORS}
-            onCommit={(v) => update("colors", v)}
+            onCommit={(v) => update("colors", clampColors(v))}
           />
         </span>
       </SettingRow>

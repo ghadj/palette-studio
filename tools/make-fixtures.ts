@@ -21,6 +21,20 @@ function solid(width: number, height: number, fill: (x: number, y: number) => nu
 
 export const TWO_COLOR = { major: "#1DB07A", minor: "#5039B0" };
 export const SINGLE_COLOR = "#14386B";
+export const TWELVE_COLORS = [
+  "#E6194B",
+  "#3CB44B",
+  "#FFE119",
+  "#4363D8",
+  "#F58231",
+  "#911EB4",
+  "#46F0F0",
+  "#F032E6",
+  "#BCF60C",
+  "#008080",
+  "#9A6324",
+  "#000075",
+];
 
 /** EXIF APP1 segment holding only Orientation (0x0112) = value. Little-endian TIFF. */
 function exifOrientation(value: number): Buffer {
@@ -69,6 +83,17 @@ async function main() {
     ),
   );
   writeFileSync(resolve(dir, "not-an-image.txt"), "This is not an image.\n");
+
+  // 120 × 20: twelve distinct flat stripes, for the 12-color strip layout (decision 13).
+  const twelve = TWELVE_COLORS.map(hexBytes);
+  writeFileSync(
+    resolve(dir, "twelve-colors.png"),
+    encodePng(
+      120,
+      20,
+      solid(120, 20, (x) => [...(twelve[Math.floor(x / 10)] ?? [0, 0, 0]), 255]),
+    ),
+  );
 
   // Stored landscape, 80 × 40: left half red, right half blue. Orientation 6 rotates it 90° clockwise,
   // so it displays as 40 × 80 portrait with red on top.

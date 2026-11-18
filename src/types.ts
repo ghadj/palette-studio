@@ -25,7 +25,7 @@ export type HistogramBits = 4 | 5 | 6;
 /** Extraction settings used in M1 (spec 2.4). Filters, ROI and scoring settings arrive in M2. */
 export interface ExtractionSettings {
   algorithm: Algorithm;
-  /** Number of colors, 2 to 32. */
+  /** Number of colors, 2 to 12 (decision 13; spec 2.4 says 32). */
   colors: number;
   workingSpace: WorkingSpace;
   /** Longest edge of the analysis copy. */

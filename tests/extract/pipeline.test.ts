@@ -73,6 +73,21 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
     expect(out).toHaveLength(2);
   });
 
+  it("never returns more than 12 colors, whatever the settings say (decision 13)", () => {
+    const runs: Array<[string, number]> = [];
+    for (let i = 0; i < 24; i += 1) {
+      const n = (i * 0x9e3779b1) >>> 0;
+      runs.push([`#${(n >>> 8).toString(16).padStart(6, "0").slice(-6)}`, 5]);
+    }
+    for (const algorithm of ALGORITHMS) {
+      const out = extractPalette(
+        pixels(runs),
+        settings({ algorithm, colors: 32, mergeThreshold: 0 }),
+      );
+      expect(out.length, algorithm).toBe(12);
+    }
+  });
+
   it("refuses algorithms that M1 doesn't build", () => {
     expect(() => extractPalette(pixels([["#000000", 1]]), settings({ algorithm: "wu" }))).toThrow(
       /not available/,

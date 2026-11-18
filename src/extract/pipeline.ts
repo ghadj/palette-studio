@@ -4,6 +4,7 @@
  * the worker runs it. Filters (step 3) arrive in M2.
  */
 import { workingToOklab } from "../color/working-space";
+import { clampColors } from "../state/defaults";
 import type { ExtractionSettings } from "../types";
 import { buildHistogram } from "./histogram";
 import { kmeans } from "./kmeans";
@@ -19,6 +20,7 @@ export function extractPalette(
   rgba: Uint8ClampedArray | Uint8Array,
   settings: ExtractionSettings,
 ): ExtractedColor[] {
+  const count = clampColors(settings.colors);
   const h = buildHistogram(rgba, {
     space: settings.workingSpace,
     alphaCutoff: settings.alphaCutoff,
@@ -28,14 +30,14 @@ export function extractPalette(
   switch (settings.algorithm) {
     case "kmeans":
       clusters = kmeans(h, {
-        k: settings.colors,
+        k: count,
         iterations: settings.iterations,
         restarts: settings.restarts,
         seed: settings.seed,
       }).clusters;
       break;
     case "median-cut":
-      clusters = medianCut(h, settings.colors);
+      clusters = medianCut(h, count);
       break;
     default:
       throw new Error(`The ${settings.algorithm} algorithm is not available until a later version`);

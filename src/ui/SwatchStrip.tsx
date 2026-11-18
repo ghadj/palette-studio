@@ -1,7 +1,9 @@
 /**
  * The swatch strip (ui-contract column 2 item 1): the swatches in one row, the selection outlined.
- * Swatches are user content and are never themed (spec 6.2).
+ * With more than 6 swatches it breaks into two even rows when one row would make them smaller than
+ * 44 px (decision 13). Swatches are user content and are never themed (spec 6.2).
  */
+import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { swatchHex, swatchLabel } from "../palette/model";
 import {
   extracting,
@@ -10,13 +12,32 @@ import {
   selectedSwatchId,
   selectSwatch,
 } from "../state/signals";
+import { stripColumns } from "./stripLayout";
 
 export function SwatchStrip() {
   const swatches = palette.value;
   const selected = selectedSwatchId.value;
-  if (swatches.length === 0) return null;
+  const strip = useRef<HTMLFieldSetElement>(null);
+  const [size, setSize] = useState({ width: 0, gap: 0 });
+  const shown = swatches.length > 0;
+  useLayoutEffect(() => {
+    const el = strip.current;
+    if (!el) return;
+    const measure = () => {
+      const gap = Number.parseFloat(getComputedStyle(el).columnGap) || 0;
+      setSize({ width: el.clientWidth, gap });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [shown]);
+  if (!shown) return null;
+  const columns = stripColumns(swatches.length, size.width, size.gap);
   return (
     <fieldset
+      ref={strip}
+      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
       class="swatch-strip"
       data-testid="swatch-strip"
       data-busy={extracting.value || imageLoading.value || undefined}
