@@ -7,7 +7,7 @@ import { CopyButtons } from "./CopyButtons";
 import { comingSoon } from "./comingSoon";
 import { ImageMessageBanner, ImageWell } from "./ImageWell";
 import { SettingsControls } from "./SettingsControls";
-import { SwatchStrip } from "./SwatchStrip";
+import { EmptyRolesNote, SwatchStrip } from "./SwatchStrip";
 
 /** View bar (spec 3.8): the views and the grid arrive in M3 and M5; Image is the current view. */
 function ViewBar() {
@@ -45,6 +45,7 @@ export function SourcePanel({ variant }: { variant: "desktop" | "phone" }) {
       <ImageMessageBanner />
       <ViewBar />
       {variant !== "desktop" && <SwatchStrip />}
+      {variant !== "desktop" && <EmptyRolesNote />}
       {variant === "phone" && palette.value.length > 0 && <CopyButtons />}
       <SettingsControls />
     </div>

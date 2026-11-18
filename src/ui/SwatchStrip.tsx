@@ -6,6 +6,7 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { swatchHex, swatchLabel } from "../palette/model";
 import {
+  emptyRoles,
   extracting,
   imageLoading,
   palette,
@@ -70,6 +71,30 @@ export function SelectionLabel() {
   return (
     <p class="selection-label" data-testid="selection-label">
       {label}
+    </p>
+  );
+}
+
+/**
+ * The sentence naming the swatch roles an extraction left empty (M2 decision 10b), such as "No
+ * color fits the Dark vibrant or Light vibrant roles." Empty when every role is filled.
+ */
+export function emptyRolesText(roles: readonly string[]): string {
+  if (roles.length === 0) return "";
+  const names =
+    roles.length === 1
+      ? (roles[0] ?? "")
+      : `${roles.slice(0, -1).join(", ")} or ${roles[roles.length - 1] ?? ""}`;
+  return `No color fits the ${names} role${roles.length === 1 ? "" : "s"}.`;
+}
+
+/** A muted note under the strip naming the empty swatch roles; the strip leaves them out. */
+export function EmptyRolesNote() {
+  const text = emptyRolesText(emptyRoles.value);
+  if (!text) return null;
+  return (
+    <p class="hint" data-testid="empty-roles">
+      {text}
     </p>
   );
 }

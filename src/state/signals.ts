@@ -40,6 +40,12 @@ export const masterThread = signal<"worker" | "main" | null>(null);
 /** True while an extraction job is running; the previous palette stays visible, dimmed (6.3). */
 export const extracting = signal(false);
 
+/**
+ * The swatch roles the last swatch-roles extraction left empty, named in a muted note under the
+ * strip (M2 decision 10b). Empty for every other algorithm. Not part of the project.
+ */
+export const emptyRoles = signal<readonly string[]>([]);
+
 /** True once loading or extraction has taken longer than about 300 ms (spec 7.4, 6.3). */
 export const progressVisible = signal(false);
 

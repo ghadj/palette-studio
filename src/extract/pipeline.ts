@@ -15,11 +15,12 @@ import { kmeans } from "./kmeans";
 import { type Cluster, medianCut } from "./median-cut";
 import { addOutlier } from "./outlier";
 import { type ExtractedColor, postprocess } from "./postprocess";
+import { swatchRoles } from "./swatches";
 import { wu } from "./wu";
 
 export type { ExtractedColor } from "./postprocess";
 
-/** The algorithms built so far, in spec 2.4 order. The rest arrive later in M2. */
+/** The algorithms built so far, in spec 2.4 order. Octree comes later (spec 2.2). */
 export const AVAILABLE_ALGORITHMS = [
   "median-cut",
   "wu",
@@ -27,6 +28,7 @@ export const AVAILABLE_ALGORITHMS = [
   "balanced",
   "exact",
   "even-spread",
+  "swatch-roles",
 ] as const satisfies readonly Algorithm[];
 
 /** The analysis copy: RGBA pixels, row by row. */
@@ -54,7 +56,7 @@ export function extractPalette(
   // Keep one outlier: extract N − 1 colors, then add the most distinct small cluster (decision 8).
   const outlier = settings.keepOutlier && algorithm !== "swatch-roles";
   const n = outlier ? count - 1 : count;
-  let clusters: Cluster[];
+  let clusters: Array<Cluster & { role?: string }>;
   switch (algorithm) {
     case "kmeans":
       clusters = kmeans(h, {
@@ -83,6 +85,9 @@ export function extractPalette(
     case "even-spread":
       clusters = evenSpread(h, n);
       break;
+    case "swatch-roles":
+      clusters = swatchRoles(h, settings.workingSpace);
+      break;
     default:
       throw new Error(`The ${algorithm} algorithm is not available until a later version`);
   }
@@ -93,12 +98,19 @@ export function extractPalette(
       metric: settings.distanceMetric,
     });
   }
-  const colors = clusters.map((c) => ({
-    lab: workingToOklab(settings.workingSpace, c.color[0], c.color[1], c.color[2]),
-    population: c.population,
-  }));
+  const colors = clusters.map(
+    (c): ExtractedColor => ({
+      lab: workingToOklab(settings.workingSpace, c.color[0], c.color[1], c.color[2]),
+      population: c.population,
+      ...(c.role ? { name: c.role } : {}),
+    }),
+  );
   return postprocess(colors, {
-    mergeThreshold: thresholdFor(settings.distanceMetric, settings.mergeThreshold),
+    // Swatch roles don't merge (decision 10c): a role is never folded into another.
+    mergeThreshold:
+      algorithm === "swatch-roles"
+        ? 0
+        : thresholdFor(settings.distanceMetric, settings.mergeThreshold),
     metric: settings.distanceMetric,
     vividness,
   });

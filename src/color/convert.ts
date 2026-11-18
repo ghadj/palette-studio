@@ -167,3 +167,35 @@ export function oklabToXyz(c: Oklab): Xyz {
   const xyz = toXyz65({ mode: "oklab", ...c });
   return { x: xyz.x, y: xyz.y, z: xyz.z };
 }
+
+// HSL, for the swatch-role windows (M2 decision 10a)
+
+export interface Hsl {
+  /** Degrees, 0 to 360; 0 for grays. */
+  h: number;
+  /** 0 to 1. */
+  s: number;
+  /** 0 to 1. */
+  l: number;
+}
+
+/** Gamma sRGB to HSL. Channels are clamped to 0..1 first. */
+export function rgbToHsl(c: Rgb): Hsl {
+  const clamp = (v: number) => Math.min(1, Math.max(0, v));
+  const r = clamp(c.r);
+  const g = clamp(c.g);
+  const b = clamp(c.b);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0) return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  let h: number;
+  if (max === r) h = ((g - b) / d) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  h *= 60;
+  if (h < 0) h += 360;
+  return { h, s, l };
+}

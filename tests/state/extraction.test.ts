@@ -4,7 +4,7 @@ const extract = vi.fn();
 vi.mock("../../src/extract/client", () => ({ imageClient: () => ({ extract }) }));
 
 const { extractNewImage, extractNow } = await import("../../src/state/extraction");
-const { extracting, imageMessage, palette, selectedSwatchId } = await import(
+const { emptyRoles, extracting, imageMessage, palette, selectedSwatchId, settings } = await import(
   "../../src/state/signals"
 );
 
@@ -16,6 +16,8 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
     extract.mockReset();
     imageMessage.value = null;
     palette.value = [];
+    emptyRoles.value = [];
+    settings.value = { ...settings.peek(), algorithm: "balanced" };
   });
 
   it("an extraction error is shown, and cleared when a later extraction succeeds", async () => {
@@ -86,5 +88,46 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
       await flush();
       expect(imageMessage.value).toEqual(message);
     }
+  });
+
+  it("swatch roles name their swatches and list the empty roles; another algorithm clears them (M2 decision 10b)", async () => {
+    settings.value = { ...settings.peek(), algorithm: "swatch-roles" };
+    extract.mockResolvedValueOnce([
+      { ...color(0.6, 0.7), name: "Muted" },
+      { ...color(0.3, 0.3), name: "Dark muted" },
+    ]);
+    extractNow();
+    // Changing the algorithm while the job runs doesn't change what the result describes.
+    settings.value = { ...settings.peek(), algorithm: "kmeans" };
+    await flush();
+    expect(palette.value.map((s) => s.name)).toEqual(["Muted", "Dark muted"]);
+    expect(emptyRoles.value).toEqual(["Vibrant", "Dark vibrant", "Light vibrant", "Light muted"]);
+
+    extract.mockResolvedValueOnce([color(0.5, 1)]);
+    extractNow();
+    await flush();
+    expect(palette.value.map((s) => s.name)).toEqual([""]);
+    expect(emptyRoles.value).toEqual([]);
+  });
+
+  it("swatch roles with every role empty lists all six", async () => {
+    settings.value = { ...settings.peek(), algorithm: "swatch-roles" };
+    extract.mockResolvedValueOnce([]);
+    extractNow();
+    await flush();
+    expect(emptyRoles.value).toHaveLength(6);
+  });
+
+  it("a cleared palette clears the empty-roles note", async () => {
+    settings.value = { ...settings.peek(), algorithm: "swatch-roles" };
+    extract.mockResolvedValueOnce([{ ...color(0.5, 1), name: "Muted" }]);
+    extractNewImage();
+    await flush();
+    expect(emptyRoles.value).toHaveLength(5);
+    extract.mockRejectedValueOnce(new Error("boom"));
+    extractNewImage();
+    await flush();
+    expect(palette.value).toEqual([]);
+    expect(emptyRoles.value).toEqual([]);
   });
 });

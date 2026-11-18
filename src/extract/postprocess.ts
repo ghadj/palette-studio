@@ -13,6 +13,8 @@ export interface ExtractedColor {
   lab: Oklab;
   /** Share of the counted pixels, 0 to 1. */
   population: number;
+  /** A role name from swatch roles, such as "Vibrant" (spec 3.1, 7.6 "Labels"). */
+  name?: string;
 }
 
 export interface PostprocessOptions {
@@ -28,7 +30,7 @@ export function postprocess(
   colors: readonly ExtractedColor[],
   { mergeThreshold, metric = "ok", vividness = 0 }: PostprocessOptions,
 ): ExtractedColor[] {
-  const list = colors.map((c) => ({ lab: { ...c.lab }, population: c.population }));
+  const list = colors.map((c) => ({ ...c, lab: { ...c.lab } }));
   // CIEDE2000 works on CIELAB: convert each color once, and again only when it changes.
   const cielab: Lab[] = metric === "ciede2000" ? list.map((c) => oklabToLab(c.lab)) : [];
   const distance = (i: number, j: number): number =>

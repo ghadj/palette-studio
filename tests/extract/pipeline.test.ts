@@ -93,10 +93,32 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
     }
   });
 
-  it("refuses algorithms that aren't built yet", () => {
+  it("refuses an unknown algorithm", () => {
+    // Every spec 2.4 algorithm is built by M2-T6; octree comes later (spec 2.2).
     expect(() =>
-      extractPalette(row(pixels([["#000000", 1]])), settings({ algorithm: "swatch-roles" })),
+      extractPalette(
+        row(pixels([["#000000", 1]])),
+        settings({ algorithm: "octree" as unknown as Algorithm }),
+      ),
     ).toThrow(/not available/);
+  });
+
+  it("swatch roles carry their role names; other algorithms leave names unset", () => {
+    const img = row(
+      pixels([
+        ["#FF0000", 15],
+        ["#D1A9A9", 5],
+      ]),
+    );
+    // Ranked like every other algorithm: by population while Sort is Population.
+    const roles = extractPalette(img, settings({ algorithm: "swatch-roles" }));
+    expect(roles.map((c) => [c.name, oklabToHex(c.lab)])).toEqual([
+      ["Vibrant", "#FF0000"],
+      ["Light muted", "#D1A9A9"],
+    ]);
+    for (const algorithm of ALGORITHMS) {
+      for (const c of extractPalette(img, settings({ algorithm }))) expect(c.name).toBeUndefined();
+    }
   });
 
   it("M1 settings give the same hexes as before for two-color, single-color and twelve-colors pixels", () => {

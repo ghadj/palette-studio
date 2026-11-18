@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
+import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
 import { M1_SCREENS, THEMES } from "./helpers/screens";
 
 /** Axe judges contrast on what is painted, so let fades (such as the toast's) finish first. */
@@ -65,6 +66,31 @@ test.describe("accessibility @a11y", () => {
       await settled(page);
       const results = await new AxeBuilder({ page }).analyze();
       expect(results.violations.map((v) => `${theme} ${v.id}: ${v.help}`)).toEqual([]);
+    }
+  });
+
+  test("no axe violations with Swatch roles: Colors disabled and the empty-roles note", async ({
+    page,
+  }) => {
+    for (const theme of THEMES) {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.emulateMedia({ colorScheme: theme });
+        await page.setViewportSize(viewport);
+        await page.goto("./");
+        await page.getByTestId("file-input").setInputFiles(grayscalePlusRed());
+        await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
+        await expect(page.locator("#setting-colors:visible")).toBeDisabled();
+        await expect(page.locator("[data-testid=empty-roles]:visible")).toBeVisible();
+        await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
+        await settled(page);
+        const results = await new AxeBuilder({ page }).analyze();
+        expect(
+          results.violations.map((v) => `${theme} ${viewport.width} ${v.id}: ${v.help}`),
+        ).toEqual([]);
+      }
     }
   });
 

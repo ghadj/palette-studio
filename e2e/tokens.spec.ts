@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
 import { M1_SCREENS, THEMES } from "./helpers/screens";
 import { checkTokens, describeFailures } from "./helpers/tokens";
 
@@ -142,6 +143,29 @@ test.describe("token conformance @tokens", () => {
         await page.locator("#setting-algorithm:visible").selectOption({ label: "Median cut" });
         await page.locator("details.chevron-row:visible summary").click();
         await expect(page.locator("#setting-seed:visible")).toBeDisabled();
+        const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
+        expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
+      }
+    }
+  });
+
+  test("Swatch roles with Colors disabled and the empty-roles note use tokens, with 44 px targets on phones", async ({
+    page,
+  }) => {
+    // M2 decisions 10b and 10c.
+    for (const theme of THEMES) {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.emulateMedia({ colorScheme: theme });
+        await page.setViewportSize(viewport);
+        await page.goto("./");
+        await page.getByTestId("file-input").setInputFiles(grayscalePlusRed());
+        await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
+        await expect(page.locator("#setting-colors:visible")).toBeDisabled();
+        await expect(page.locator("[data-testid=empty-roles]:visible")).toBeVisible();
+        await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
         const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
         expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
       }

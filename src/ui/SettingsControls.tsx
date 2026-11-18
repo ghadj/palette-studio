@@ -140,6 +140,10 @@ export function SettingsControls() {
   // Decision 14: settings that don't apply to the algorithm are disabled, not hidden, and keep their values.
   const seedApplies = settingApplies("seed", s.algorithm);
   const seedNote = settingNote("seed");
+  // Swatch roles ignore Colors (M2 decision 10c). The note shows only while it doesn't apply, so
+  // the always-visible rows keep the mockup layout.
+  const colorsApplies = settingApplies("colors", s.algorithm);
+  const colorsNote = colorsApplies ? null : settingNote("colors");
   const algorithms: Array<Option<Algorithm>> = AVAILABLE_ALGORITHMS.map((a) => ({
     value: a,
     label: ALGORITHM_LABELS[a],
@@ -162,7 +166,12 @@ export function SettingsControls() {
           onChange={(v) => update("algorithm", v)}
         />
       </SettingRow>
-      <SettingRow label="Colors" htmlFor="setting-colors">
+      <SettingRow
+        label="Colors"
+        htmlFor="setting-colors"
+        note={colorsNote}
+        noteId="setting-colors-note"
+      >
         <span class="slider-group">
           <input
             class="slider"
@@ -172,6 +181,8 @@ export function SettingsControls() {
             step={1}
             value={s.colors}
             aria-label="Colors slider"
+            disabled={!colorsApplies}
+            aria-describedby={colorsNote ? "setting-colors-note" : undefined}
             onInput={(event) => update("colors", clampColors(Number(event.currentTarget.value)))}
           />
           <NumberField
@@ -179,6 +190,8 @@ export function SettingsControls() {
             value={s.colors}
             min={MIN_COLORS}
             max={MAX_COLORS}
+            disabled={!colorsApplies}
+            describedBy={colorsNote ? "setting-colors-note" : undefined}
             onCommit={(v) => update("colors", clampColors(v))}
           />
         </span>

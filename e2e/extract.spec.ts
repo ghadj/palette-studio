@@ -1,7 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
 import { TWELVE_COLORS } from "../tools/fixture-colors";
 import { encodePng } from "../tools/png";
+import { isPhoneProject, tokenColor } from "./helpers/app";
 import { fixture } from "./helpers/files";
+import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
 
 const strip = (page: Page) =>
   page.locator("[data-testid=swatch-strip]:visible").first().locator("[data-swatch]");
@@ -26,6 +28,96 @@ async function loadSample(page: Page, name: string) {
     `Source image, ${name}.png`,
   );
 }
+
+test.describe("swatch roles (spec 2.2, 3.1; M2 decision 10)", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("./");
+  });
+
+  const labels = (page: Page) =>
+    strip(page).evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""));
+
+  async function swatchRolesOn(page: Page, file: Parameters<Page["setInputFiles"]>[1]) {
+    await page.getByTestId("file-input").setInputFiles(file);
+    await waitForPalette(page);
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
+    await expect(page.locator("#setting-algorithm:visible")).toHaveValue("swatch-roles");
+    await expect
+      .poll(async () => (await labels(page)).every((l) => !l.startsWith("Swatch ")))
+      .toBe(true);
+    await waitForPalette(page);
+  }
+
+  test("Swatch roles: Colors is disabled with 'Not used by swatch roles' (aria-describedby)", async ({
+    page,
+  }) => {
+    await swatchRolesOn(page, fixture("two-color.png"));
+    const field = page.locator("#setting-colors:visible");
+    const slider = page.locator(".slider:visible").first();
+    await expect(field).toBeDisabled();
+    await expect(slider).toBeDisabled();
+    const note = page.locator("#setting-colors-note");
+    await expect(note).toHaveText("Not used by swatch roles");
+    await expect(note).toBeVisible();
+    await expect(field).toHaveAttribute("aria-describedby", "setting-colors-note");
+    await expect(slider).toHaveAttribute("aria-describedby", "setting-colors-note");
+    await expect(page.getByRole("spinbutton", { name: "Colors" })).toHaveAccessibleDescription(
+      "Not used by swatch roles",
+    );
+    // The value is kept (M1 decision 14), and Colors comes back with another algorithm.
+    await expect(field).toHaveValue("6");
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "Balanced" });
+    await expect(field).toBeEnabled();
+    await expect(slider).toBeEnabled();
+    await expect(page.locator("#setting-colors-note")).toHaveCount(0);
+    await expect(field).not.toHaveAttribute("aria-describedby", /./);
+  });
+
+  test("swatch aria-labels carry the role names", async ({ page }) => {
+    await swatchRolesOn(page, grayscalePlusRed());
+    const found = await labels(page);
+    expect(found.map((l) => l.split(", ")[0]).sort()).toEqual([
+      "Dark muted",
+      "Light muted",
+      "Muted",
+      "Vibrant",
+    ]);
+    expect(found).toContain("Vibrant, #FF0000");
+  });
+
+  test("the selection label shows the role name, such as 'Vibrant'", async ({ page }, info) => {
+    await swatchRolesOn(page, grayscalePlusRed());
+    const vibrant = strip(page).and(page.locator('[aria-label^="Vibrant, "]'));
+    await vibrant.click();
+    await expect(vibrant).toHaveAttribute("aria-pressed", "true");
+    // On phones the label sits on the Palette tab (ui-contract "Phone").
+    if (isPhoneProject(info))
+      await page.getByTestId("tabbar").getByRole("tab", { name: "Palette" }).click();
+    await expect(page.locator("[data-testid=selection-label]:visible")).toHaveText("Vibrant");
+  });
+
+  test("grayscale-plus-red.png names its empty roles in a muted note", async ({ page }, info) => {
+    await swatchRolesOn(page, grayscalePlusRed());
+    await expect(strip(page)).toHaveCount(4);
+    const note = page.locator("[data-testid=empty-roles]:visible");
+    await expect(note).toHaveText("No color fits the Dark vibrant or Light vibrant roles.");
+    expect(await note.evaluate((el) => getComputedStyle(el).color)).toBe(
+      await tokenColor(page, "--color-text-muted"),
+    );
+    if (isPhoneProject(info)) {
+      // The note sits under the strip on the Palette tab too.
+      await page.getByTestId("tabbar").getByRole("tab", { name: "Palette" }).click();
+      await expect(page.locator("[data-testid=empty-roles]:visible")).toHaveText(
+        "No color fits the Dark vibrant or Light vibrant roles.",
+      );
+      await page.getByTestId("tabbar").getByRole("tab", { name: "Source" }).click();
+    }
+    // Another algorithm fills the strip again and drops the note.
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "Balanced" });
+    await waitForPalette(page, 6);
+    await expect(page.locator("[data-testid=empty-roles]")).toHaveCount(0);
+  });
+});
 
 test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
   test.beforeEach(async ({ page }) => {

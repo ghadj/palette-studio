@@ -748,6 +748,19 @@ fieldset {
   background: var(--color-accent);
 }
 
+/* A setting that doesn't apply to the algorithm (M1 decision 14): muted thumb, no pointer. */
+.slider:disabled {
+  cursor: default;
+}
+
+.slider:disabled::-webkit-slider-thumb {
+  background: var(--color-text-muted);
+}
+
+.slider:disabled::-moz-range-thumb {
+  background: var(--color-text-muted);
+}
+
 @media (max-width: 1023.98px), (pointer: coarse) {
   .slider {
     width: calc(var(--space-8) * 3);

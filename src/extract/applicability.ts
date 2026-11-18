@@ -16,11 +16,15 @@ const ONLY_FOR: Partial<Record<SettingKey, readonly Algorithm[]>> = {
   restarts: ["kmeans"],
 };
 
-/** M2 decision 10c: swatch roles pick six named swatches, so these settings don't shape them. */
+/**
+ * M2 decision 10c: swatch roles pick six named swatches, so these settings don't shape them. Exact
+ * colors count real colors and don't use vividness either (decision 6).
+ */
 const NOT_USED_BY: Partial<Record<SettingKey, readonly Algorithm[]>> = {
   colors: ["swatch-roles"],
   mergeThreshold: ["swatch-roles"],
   keepOutlier: ["swatch-roles"],
+  vividness: ["exact", "swatch-roles"],
 };
 
 /** Algorithm names as they read inside a sentence. */

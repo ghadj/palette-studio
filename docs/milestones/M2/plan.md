@@ -179,7 +179,11 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "swatch aria-labels carry the role names"
     - "grayscale-plus-red.png names its empty roles in a muted note"
 - Done when: tests pass; token and axe cases cover the disabled Colors row and the empty-roles note in both themes.
-- [ ] Done
+- [x] Done
+  - Note: roles claim candidates in Vibrant.js order (Vibrant, Light vibrant, Dark vibrant, Muted, Light muted, Dark muted), so no candidate is used twice; `swatchRoles` returns them in the listed role order. Candidate HSL comes from each box mean converted to sRGB (`rgbToHsl` in `src/color/convert.ts`). Swatch populations are the boxes' shares; the pipeline then ranks them like every other algorithm (normalized, by population while Sort is Population), because 10c doesn't exclude Sort. Merging is skipped for swatch roles.
+  - Note: vividness reads "Not used by exact colors and swatch roles", because decision 6 says exact colors don't use it either; the T6 text names only swatch roles.
+  - Note: the Colors note shows only while Colors is disabled, so the always-visible rows keep the mockup layout (Seed's note in Advanced is unchanged and always shown). The empty-roles note is a muted hint under the strip (desktop Palette column, phone Source and Palette tabs): "No color fits the Dark vibrant or Light vibrant roles." Its wording goes to design review.
+  - Note: `grayscale-plus-red.png` belongs to T8's `make-fixtures.ts`, which runs in parallel, so T6's e2e, token and axe tests build it in memory (`e2e/helpers/grayscale-plus-red.ts`, 240 × 60, under the 256 px sample size). The T2 and T5 unit tests that assumed swatch roles wasn't available now exclude it, and "refuses algorithms that aren't built yet" became "refuses an unknown algorithm".
 
 ### M2-T7: Advanced settings, sort, and decimal fields
 - Files:

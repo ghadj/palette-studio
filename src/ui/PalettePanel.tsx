@@ -4,7 +4,7 @@
  */
 import { palette } from "../state/signals";
 import { CopyButtons } from "./CopyButtons";
-import { SelectionLabel, SwatchStrip } from "./SwatchStrip";
+import { EmptyRolesNote, SelectionLabel, SwatchStrip } from "./SwatchStrip";
 
 export function PalettePanel({ variant }: { variant: "desktop" | "phone" }) {
   const empty = palette.value.length === 0;
@@ -13,6 +13,7 @@ export function PalettePanel({ variant }: { variant: "desktop" | "phone" }) {
       {variant === "desktop" && <h2 class="section-label">Palette</h2>}
       <SwatchStrip />
       <SelectionLabel />
+      <EmptyRolesNote />
       {variant === "phone" && !empty && <CopyButtons />}
       {empty && <p class="hint">Load an image to extract a palette.</p>}
     </div>
