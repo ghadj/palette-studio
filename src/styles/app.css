@@ -898,22 +898,27 @@ fieldset {
   color: var(--color-text-muted);
 }
 
-/* Footer (M1 decision 8). */
+/*
+ * Footer (M1 decision 8). Its top border runs edge to edge, past the app's safe-area padding,
+ * while its content keeps the page's side gutters (fix L5).
+ */
 .footer {
+  --footer-gutter: var(--space-6);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0 var(--space-4);
-  margin: 0 var(--space-6);
-  padding: var(--space-2) 0;
+  margin: 0 calc(env(safe-area-inset-right) * -1) 0 calc(env(safe-area-inset-left) * -1);
+  padding: var(--space-2) calc(var(--footer-gutter) + env(safe-area-inset-right)) var(--space-2)
+    calc(var(--footer-gutter) + env(safe-area-inset-left));
   border-top: var(--stroke) solid var(--color-divider);
   color: var(--color-text-muted);
   font-size: var(--text-xs);
 }
 
 .app--phone .footer {
-  margin: 0 var(--space-4);
+  --footer-gutter: var(--space-4);
 }
 
 .footer__links {

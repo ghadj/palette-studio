@@ -8,7 +8,7 @@ export const REPO_URL = "https://github.com/ghadj/palette-studio";
 export function Footer() {
   return (
     <footer class="footer">
-      <p class="footer__statement">Your images never leave this browser. Nothing is uploaded.</p>
+      <p class="footer__statement">Your images never leave this browser.</p>
       <p class="footer__links">
         <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer">
           MIT License

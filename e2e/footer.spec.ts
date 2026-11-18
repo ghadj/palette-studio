@@ -21,11 +21,34 @@ test.describe("footer (spec 7.8, 7.10; M1 decision 8)", () => {
         const footer = page.getByRole("contentinfo");
         await footer.scrollIntoViewIfNeeded();
         await expect(footer).toBeVisible();
-        await expect(footer).toContainText(/never leave/i);
-        await expect(footer).toContainText(/uploaded/i);
+        await expect(footer.locator(".footer__statement")).toHaveText(
+          "Your images never leave this browser.",
+        );
+        await expect(footer).not.toContainText("uploaded");
         await expect(footer.getByRole("link", { name: /MIT/ })).toHaveAttribute("href", LICENSE);
         await expect(footer.getByRole("link", { name: /GitHub/ })).toHaveAttribute("href", REPO);
       }
+    }
+  });
+
+  test("the footer's top border runs edge to edge while its content keeps the page gutters, on every layout", async ({
+    page,
+  }) => {
+    for (const viewport of [...VIEWPORTS, { name: "narrow", width: 320, height: 640 }]) {
+      await page.setViewportSize(viewport);
+      await page.goto(demo());
+      const footer = page.getByRole("contentinfo");
+      const b = await footer.boundingBox();
+      expect(b?.x, viewport.name).toBeCloseTo(0, 0);
+      expect(b?.width, viewport.name).toBeCloseTo(viewport.width, 0);
+      expect(await footer.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe("1px");
+      const gutter = viewport.width >= 1024 ? 24 : 16;
+      const text = await footer.locator(".footer__statement").boundingBox();
+      expect(text?.x, viewport.name).toBeCloseTo(gutter, 0);
+      const links = await footer.locator(".footer__links").boundingBox();
+      expect((links?.x ?? 0) + (links?.width ?? 0), viewport.name).toBeLessThanOrEqual(
+        viewport.width - gutter + 0.5,
+      );
     }
   });
 
