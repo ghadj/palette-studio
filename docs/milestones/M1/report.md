@@ -104,7 +104,7 @@ strip-layout.spec covers the same widths.
 
 Review page: `artifacts/visual-review/index.html`. It has 14 shots, each in light and dark: studio-desktop, studio-tablet, source-phone, palette-phone, gradient-phone, empty-desktop and empty-phone.
 Token conformance: pass in both themes, all 5 projects
-Baseline comparison: not yet (no baselines exist)
+Baseline comparison: baselines created on 2026-11-18 by `visual-baselines.yml` run 44345966156 on milestone/M1 (commit 711c0af, 14 images: the 7 M1 shots in light and dark), after the user's sign-off; spot-checked against the approved build (drawer border inset, footer border edge to edge, centered view tabs, tabbed tablet layout)
 
 What matches the contract:
 - The header order, with the Studio and Materials tabs centered.
@@ -217,4 +217,4 @@ None.
 - [ ] Non-text contrast (3:1) of control borders, the slider track and the disabled Seed field, in both themes.
 - [x] Open `artifacts/visual-review/index.html`, compare with the mockups, and sign off or list changes (approved 2026-11-18; L10 followed).
 - [ ] Design review of the not-drawn items above, including the two-row strip and Replace image's placement.
-- [ ] After sign-off, run `visual-baselines.yml` on milestone/M1 and check the committed baselines.
+- [x] After sign-off, run `visual-baselines.yml` on milestone/M1 and check the committed baselines (run 44345966156, commit 711c0af).
