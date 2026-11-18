@@ -1,6 +1,6 @@
 /**
  * The header (ui-contract "Header"). Desktop: app name, project name, view tabs, Undo, Redo, Share
- * and the theme button. Phones and tablets: the project name, then icon buttons and the theme button.
+ * and the theme button. Below 1024 px: the project name, then icon buttons and the theme button.
  * The library, views, history and sharing arrive later, so those controls show a toast (decision 6).
  */
 import { ChevronDown, Redo2, Share, Undo2 } from "lucide-preact";

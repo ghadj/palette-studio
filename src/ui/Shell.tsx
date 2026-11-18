@@ -1,7 +1,8 @@
 /**
- * The responsive shell (spec 6.1):
- * - phones in portrait, up to 600 px: one panel at a time with a bottom tab bar
- * - 601 to 1023 px, and phones in landscape: two columns, Source beside the active panel (decision 4)
+ * The responsive shell (spec 6.1, with M1 decision 4 as revised in fix L1):
+ * - below 1024 px (phones, tablets and phones in landscape): one panel at a time with a bottom tab
+ *   bar, the phone header and safe-area padding; on wide screens the panel is centered at a
+ *   readable width. This departs on purpose, by the user's choice, from spec 6.1's two-column row.
  * - 1024 px and up: three equal columns plus the export drawer
  */
 import { useEffect, useState } from "preact/hooks";
@@ -13,22 +14,19 @@ import { PalettePanel } from "./PalettePanel";
 import { SourcePanel } from "./SourcePanel";
 import { panelId, TabBar, tabId } from "./TabBar";
 
-export type Layout = "phone" | "tablet" | "desktop";
+export type Layout = "phone" | "desktop";
 
-const PHONE = "(max-width: 600px) and (orientation: portrait)";
 const DESKTOP = "(min-width: 1024px)";
 
 function currentLayout(): Layout {
   if (typeof window === "undefined" || !window.matchMedia) return "desktop";
-  if (window.matchMedia(DESKTOP).matches) return "desktop";
-  if (window.matchMedia(PHONE).matches) return "phone";
-  return "tablet";
+  return window.matchMedia(DESKTOP).matches ? "desktop" : "phone";
 }
 
 export function useLayout(): Layout {
   const [layout, setLayout] = useState<Layout>(currentLayout);
   useEffect(() => {
-    const queries = [window.matchMedia(PHONE), window.matchMedia(DESKTOP)];
+    const queries = [window.matchMedia(DESKTOP)];
     const update = () => setLayout(currentLayout());
     for (const q of queries) q.addEventListener("change", update);
     update();
@@ -40,16 +38,15 @@ export function useLayout(): Layout {
 }
 
 const PHONE_TABS: readonly Tab[] = ["source", "palette", "gradient", "materials"];
-const TABLET_TABS: readonly Tab[] = ["palette", "gradient", "materials"];
 
-function ActivePanel({ tab, variant }: { tab: Tab; variant: "tablet" | "phone" }) {
+function ActivePanel({ tab }: { tab: Tab }) {
   switch (tab) {
     case "source":
-      return <SourcePanel variant={variant} />;
+      return <SourcePanel variant="phone" />;
     case "palette":
-      return <PalettePanel variant={variant} />;
+      return <PalettePanel variant="phone" />;
     case "gradient":
-      return <GradientPanel variant={variant} />;
+      return <GradientPanel variant="phone" />;
     case "materials":
       return <MaterialsPanel />;
   }
@@ -77,36 +74,15 @@ export function Shell({ layout }: { layout: Layout }) {
     );
   }
 
-  if (layout === "tablet") {
-    // Source has its own column here, so the right column shows Palette when Source is chosen.
-    const right = tab === "source" ? "palette" : tab;
-    return (
-      <main class="shell shell--tablet">
-        <div class="columns columns--two">
-          <section class="column" data-column="source" aria-label="Source">
-            <SourcePanel variant="tablet" />
-          </section>
-          <section class="column" data-column="panel" aria-label="Panels">
-            <TabBar tabs={TABLET_TABS} selected={right} variant="row" />
-            <div role="tabpanel" id={panelId(right)} aria-labelledby={tabId(right)}>
-              <ActivePanel tab={right} variant="tablet" />
-            </div>
-          </section>
-        </div>
-        <ExportDrawer />
-      </main>
-    );
-  }
-
   return (
     <main class="shell shell--phone">
       <div role="tabpanel" id={panelId(tab)} aria-labelledby={tabId(tab)}>
-        <ActivePanel tab={tab} variant="phone" />
+        <ActivePanel tab={tab} />
       </div>
     </main>
   );
 }
 
 export function PhoneTabBar() {
-  return <TabBar tabs={PHONE_TABS} selected={activeTab.value} variant="bar" />;
+  return <TabBar tabs={PHONE_TABS} selected={activeTab.value} />;
 }

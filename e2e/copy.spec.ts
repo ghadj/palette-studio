@@ -21,7 +21,7 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
       browserName !== "chromium",
       "Playwright grants clipboard permissions in Chromium only",
     );
-    // The export drawer is a desktop and tablet region; the phone test sets its own size.
+    // The export drawer is a desktop region (1024 px and up); the phone test sets its own size.
     const phoneTest = info.title.startsWith("on phones");
     test.skip(isPhoneProject(info) && !phoneTest, "desktop viewport");
     if (!phoneTest) await page.setViewportSize({ width: 1280, height: 800 });
@@ -43,7 +43,6 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
 
   test("Copy CSS puts the :root block on the clipboard", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    await page.setViewportSize({ width: 820, height: 1180 });
     await page.goto(demo());
     await page.getByTestId("export-drawer").getByRole("button", { name: "Copy CSS" }).click();
     await expect(region(page)).toHaveText("Copied CSS");
@@ -55,8 +54,14 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
     context,
   }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    await page.setViewportSize({ width: 390, height: 844 });
-    for (const tab of ["source", "palette"]) {
+    // Phones and medium screens share the tabbed layout (decision 4 as revised).
+    for (const [width, height, tab] of [
+      [390, 844, "source"],
+      [390, 844, "palette"],
+      [820, 1180, "source"],
+      [820, 1180, "palette"],
+    ] as const) {
+      await page.setViewportSize({ width, height });
       await page.goto(demo(`tab=${tab}`));
       await expect(page.getByTestId("export-drawer")).toHaveCount(0);
       const strip = await page.locator("[data-testid=swatch-strip]:visible").boundingBox();

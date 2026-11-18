@@ -52,7 +52,7 @@ export const M1_SHOTS: readonly Shot[] = [
     path: "./?demo=mockup&view=studio",
     viewport: TABLET,
     mockup: null,
-    frame: "ui-contract Tablet and M1 decision 4: Source column, then the active panel.",
+    frame: "Decision 4 as revised (fix L1): the phone layout, wider, with the panel centered.",
   },
   {
     name: "empty-desktop",

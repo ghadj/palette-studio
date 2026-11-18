@@ -6,7 +6,7 @@ import { palette } from "../state/signals";
 import { CopyButtons } from "./CopyButtons";
 import { SelectionLabel, SwatchStrip } from "./SwatchStrip";
 
-export function PalettePanel({ variant }: { variant: "desktop" | "tablet" | "phone" }) {
+export function PalettePanel({ variant }: { variant: "desktop" | "phone" }) {
   const empty = palette.value.length === 0;
   return (
     <div class="panel" data-panel="palette">

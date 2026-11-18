@@ -3,11 +3,14 @@
  * font sizes or radii. User content is marked with data-user-content and never themed.
  */
 
-/* Hit size: 32 px controls on desktop, 44 px touch targets on phones (spec 6.1, 6.4). */
+/*
+ * Hit size: 32 px controls on desktop, 44 px touch targets in the tabbed layout below 1024 px
+ * (spec 6.1, 6.4; decision 4 as revised).
+ */
 :root {
   --hit: var(--control-height);
 }
-@media (max-width: 600px) {
+@media (max-width: 1023.98px) {
   :root {
     --hit: var(--touch-target);
   }
@@ -316,11 +319,6 @@ fieldset {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.columns--two {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding: var(--space-4);
-}
-
 .column {
   min-width: 0;
 }
@@ -332,7 +330,11 @@ fieldset {
   min-width: 0;
 }
 
+/* The tabbed layout: one panel, centered at a readable width on wide screens. */
 .shell--phone {
+  width: 100%;
+  max-width: calc(var(--space-8) * 20);
+  margin: 0 auto;
   padding: var(--space-4);
 }
 
@@ -529,8 +531,7 @@ fieldset {
   border-radius: var(--radius-swatch);
 }
 
-.app--phone .swatch,
-.app--tablet [data-column="source"] .swatch {
+.app--phone .swatch {
   height: calc(var(--space-4) * 4);
 }
 
@@ -633,7 +634,7 @@ fieldset {
   width: calc(var(--space-8) * 3);
 }
 
-@media (max-width: 600px), (pointer: coarse) {
+@media (max-width: 1023.98px), (pointer: coarse) {
   .number-field,
   .select__control {
     font-size: var(--text-input-touch);
@@ -682,7 +683,7 @@ fieldset {
   background: var(--color-accent);
 }
 
-@media (max-width: 600px), (pointer: coarse) {
+@media (max-width: 1023.98px), (pointer: coarse) {
   .slider {
     width: calc(var(--space-8) * 3);
   }
@@ -790,17 +791,6 @@ fieldset {
   background: var(--color-accent);
 }
 
-.tabs--row {
-  margin-bottom: var(--space-3);
-  border-bottom: var(--stroke) solid var(--color-divider);
-}
-
-.tabs--row .tab[aria-selected="true"]::before {
-  top: auto;
-  bottom: calc(var(--stroke) * -1);
-  width: 100%;
-}
-
 /* Phone tab bar: clears the home indicator (spec 6.1). */
 .tabbar {
   position: fixed;
@@ -813,6 +803,11 @@ fieldset {
   padding-right: env(safe-area-inset-right);
   border-top: var(--stroke) solid var(--color-divider);
   background: var(--color-surface);
+}
+
+.tabbar .tabs {
+  max-width: calc(var(--space-8) * 20);
+  margin: 0 auto;
 }
 
 .tabbar .tab {
@@ -829,10 +824,6 @@ fieldset {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0 var(--space-6);
   border-top: var(--stroke) solid var(--color-divider);
-}
-
-.shell--tablet .export-drawer {
-  margin: 0 var(--space-4);
 }
 
 .export-half {
@@ -871,8 +862,7 @@ fieldset {
   font-size: var(--text-xs);
 }
 
-.app--phone .footer,
-.app--tablet .footer {
+.app--phone .footer {
   margin: 0 var(--space-4);
 }
 

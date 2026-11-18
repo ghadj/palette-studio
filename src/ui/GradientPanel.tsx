@@ -1,5 +1,5 @@
 /** The Gradient column and tab. Gradients arrive in M4; until then a one-line hint (spec 6.3). */
-export function GradientPanel({ variant }: { variant: "desktop" | "tablet" | "phone" }) {
+export function GradientPanel({ variant }: { variant: "desktop" | "phone" }) {
   return (
     <div class="panel" data-panel="gradient">
       {variant === "desktop" && <h2 class="section-label">Gradient</h2>}

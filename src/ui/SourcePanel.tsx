@@ -1,6 +1,6 @@
 /**
  * The Source column (ui-contract "Column 1: SOURCE" and phone "Source tab"): image well, view bar,
- * and the setting rows. On tablets and phones the swatch strip sits under the view bar (decision 4).
+ * and the setting rows. Below 1024 px the swatch strip sits under the view bar, as in mockup 09.
  */
 import { palette, progressVisible } from "../state/signals";
 import { CopyButtons } from "./CopyButtons";
@@ -32,7 +32,7 @@ function ViewBar() {
   );
 }
 
-export function SourcePanel({ variant }: { variant: "desktop" | "tablet" | "phone" }) {
+export function SourcePanel({ variant }: { variant: "desktop" | "phone" }) {
   return (
     <div class="panel" data-panel="source">
       {variant !== "phone" && <h2 class="section-label">Source</h2>}

@@ -1,6 +1,6 @@
 /**
  * Panel tabs (spec 6.1, ui-contract "Phone" and Components "Tab"). On phones a bottom tab bar
- * with Source, Palette, Gradient and Materials; on tablets a tab row at the top of the right column.
+ * with Source, Palette, Gradient and Materials, below 1024 px (spec 6.1; decision 4 as revised).
  */
 import { useRef } from "preact/hooks";
 import { activeTab } from "../state/signals";
@@ -16,13 +16,12 @@ export const TAB_LABELS: Record<Tab, string> = {
 interface Props {
   tabs: readonly Tab[];
   selected: Tab;
-  variant: "bar" | "row";
 }
 
 export const tabId = (tab: Tab) => `tab-${tab}`;
 export const panelId = (tab: Tab) => `panel-${tab}`;
 
-export function TabBar({ tabs, selected, variant }: Props) {
+export function TabBar({ tabs, selected }: Props) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const onKeyDown = (event: KeyboardEvent, index: number) => {
@@ -39,7 +38,7 @@ export function TabBar({ tabs, selected, variant }: Props) {
   };
 
   const list = (
-    <div class={`tabs tabs--${variant}`} role="tablist" aria-label="Panels">
+    <div class="tabs" role="tablist" aria-label="Panels">
       {tabs.map((tab, i) => (
         <button
           key={tab}
@@ -64,7 +63,6 @@ export function TabBar({ tabs, selected, variant }: Props) {
     </div>
   );
 
-  if (variant === "row") return list;
   return (
     <nav class="tabbar" data-testid="tabbar" aria-label="Panels">
       {list}

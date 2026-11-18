@@ -38,50 +38,56 @@ test.describe("responsive shell (spec 6.1)", () => {
     expect(await hasHorizontalScroll(page)).toBe(false);
   });
 
-  test("820×1180: the tablet two-column layout", async ({ page }, info) => {
-    test.skip(isPhoneProject(info), "tablet viewport");
-    await page.setViewportSize({ width: 820, height: 1180 });
-    await page.goto(demo());
-    const columns = page.locator("[data-column]");
-    await expect(columns).toHaveCount(2);
-    const left = await box(page, "[data-column=source]");
-    const right = await box(page, "[data-column=panel]");
-    expect(left.x).toBeLessThan(right.x);
-    expect(left.y).toBeCloseTo(right.y, 0);
-    expect(Math.abs(left.width - right.width)).toBeLessThanOrEqual(1);
-    await expect(page.locator("[data-testid=export-drawer]")).toBeVisible();
-    expect(await hasHorizontalScroll(page)).toBe(false);
-  });
-
-  test("601 to 1023 px: Source column on the left (image, swatch strip beneath it, setting rows); the right column shows the active panel, chosen by Palette, Gradient and Materials tabs", async ({
+  test("820×1180: the tabbed layout, with the panel centered at a readable width", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "tablet viewport");
-    for (const width of [601, 1023]) {
-      await page.setViewportSize({ width, height: 900 });
-      await page.goto(demo());
-      await expect(page.locator("[data-column]")).toHaveCount(2);
-      const source = page.locator("[data-column=source]");
-      const image = await box(page, "[data-column=source] [data-testid=image-well]");
-      const strip = await box(page, "[data-column=source] [data-testid=swatch-strip]");
-      const rows = await box(page, "[data-column=source] [data-testid=setting-rows]");
-      expect(strip.y).toBeGreaterThanOrEqual(image.y + image.height);
-      expect(rows.y).toBeGreaterThanOrEqual(strip.y + strip.height);
-      await expect(source.getByText("Algorithm")).toBeVisible();
+    await page.setViewportSize({ width: 820, height: 1180 });
+    await page.goto(demo());
+    await expect(page.locator("[data-column]")).toHaveCount(0);
+    await expect(page.getByTestId("export-drawer")).toHaveCount(0);
+    await expect(page.getByTestId("tabbar").getByRole("tab")).toHaveText([
+      "Source",
+      "Palette",
+      "Gradient",
+      "Materials",
+    ]);
+    // The phone header: no app name, icon buttons.
+    await expect(page.locator("header.header--compact")).toBeVisible();
+    // One swatch strip only (the tablet's duplicate is gone).
+    await expect(page.locator("[data-testid=swatch-strip]:visible")).toHaveCount(1);
+    // The panel is centered at 640 px (--space-8 × 20).
+    const main = await box(page, "main");
+    expect(main.width).toBeCloseTo(640, 0);
+    expect(main.x).toBeCloseTo((820 - 640) / 2, 0);
+    expect(await hasHorizontalScroll(page)).toBe(false);
+  });
 
-      const panel = page.locator("[data-column=panel]");
-      const tabs = panel.getByRole("tab");
-      await expect(tabs).toHaveText(["Palette", "Gradient", "Materials"]);
-      await expect(panel.getByRole("tab", { name: "Palette" })).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
-      await expect(panel.locator("[data-panel=palette]")).toBeVisible();
-      for (const name of ["Gradient", "Materials", "Palette"] as const) {
-        await panel.getByRole("tab", { name }).click();
-        await expect(panel.getByRole("tab", { name })).toHaveAttribute("aria-selected", "true");
-        await expect(panel.locator(`[data-panel=${name.toLowerCase()}]`)).toBeVisible();
-        await expect(panel.getByRole("tabpanel")).toHaveCount(1);
+  test("601 to 1023 px, portrait and landscape: one panel at a time with all four tabs in the bottom tab bar", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "tablet viewport");
+    for (const viewport of [
+      { width: 601, height: 900 },
+      { width: 1023, height: 768 },
+      { width: 768, height: 1024 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto(demo());
+      const tabbar = page.getByTestId("tabbar");
+      await expect(tabbar.getByRole("tab")).toHaveText([
+        "Source",
+        "Palette",
+        "Gradient",
+        "Materials",
+      ]);
+      const bar = await box(page, "[data-testid=tabbar]");
+      expect(bar.y + bar.height).toBeCloseTo(viewport.height, 0);
+      for (const name of ["Palette", "Gradient", "Materials", "Source"] as const) {
+        await tabbar.getByRole("tab", { name }).click();
+        await expect(tabbar.getByRole("tab", { name })).toHaveAttribute("aria-selected", "true");
+        await expect(page.locator(`[data-panel=${name.toLowerCase()}]`)).toBeVisible();
+        await expect(page.getByRole("tabpanel")).toHaveCount(1);
       }
       expect(await hasHorizontalScroll(page)).toBe(false);
     }
@@ -158,15 +164,17 @@ test.describe("responsive shell (spec 6.1)", () => {
     );
   });
 
-  test("landscape phone uses the two-column layout", async ({ page }) => {
+  test("landscape phones use the tabbed layout too (decision 4 as revised)", async ({ page }) => {
     for (const viewport of [
-      { width: 844, height: 390 },
+      { width: 568, height: 320 },
       { width: 667, height: 375 },
+      { width: 844, height: 390 },
+      { width: 932, height: 430 },
     ]) {
       await page.setViewportSize(viewport);
       await page.goto(demo());
-      await expect(page.locator("[data-column]")).toHaveCount(2);
-      await expect(page.getByTestId("tabbar")).toHaveCount(0);
+      await expect(page.locator("[data-column]")).toHaveCount(0);
+      await expect(page.getByTestId("tabbar")).toBeVisible();
     }
   });
 });

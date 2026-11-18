@@ -39,7 +39,7 @@ test.describe("token conformance @tokens", () => {
           expect(failures, describeFailures(failures)).toEqual([]);
         });
 
-        if (screen.device === "phone") {
+        if (screen.device !== "desktop") {
           test("every button, link, input, chip, tab is at least 44 × 44", async ({ page }) => {
             const failures = (await checkTokens(page, { touchTargets: true })).filter(
               (f) => f.kind === "touch-target",

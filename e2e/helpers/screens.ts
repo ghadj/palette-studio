@@ -2,6 +2,7 @@
  * The M1 screens, shared by the token conformance test, the accessibility test and the visual
  * review (visual-testing.md). A screen joins this list in the milestone that builds it.
  */
+/** "tablet" screens use the tabbed phone layout, wider (decision 4 as revised). */
 export type Device = "desktop" | "tablet" | "phone";
 
 export interface Screen {
