@@ -148,6 +148,12 @@ export function labToRgb(c: Lab): Rgb {
   return rgb(toRgb({ mode: "lab65", ...c }));
 }
 
+/** OKLab to CIELAB (D65), through linear sRGB and XYZ. Unclamped, so out-of-gamut colors survive. */
+export function oklabToLab(c: Oklab): Lab {
+  const lab = toLab65({ mode: "oklab", ...c });
+  return { l: lab.l, a: lab.a, b: lab.b };
+}
+
 export function rgbToXyz(c: Rgb): Xyz {
   const xyz = toXyz65({ mode: "rgb", ...c });
   return { x: xyz.x, y: xyz.y, z: xyz.z };

@@ -54,7 +54,8 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "metric 'ok' behaves exactly as M1"
     - "metric 'ciede2000' with threshold 3.0 merges a pair at ΔE00 2.5 and keeps a pair at 3.5"
 - Done when: tests pass; the CIEDE2000 math lives only in `src/color/`; the bundle stays within 150 kB gzip.
-- [ ] Done
+- [x] Done
+  - Note: CIEDE2000 is hand-rolled (checked against all 34 Sharma pairs, and culori agrees within 5e-5). `thresholdFor(metric, stored)` in `src/color/delta-e.ts` reads the stored merge threshold ×100 under CIEDE2000; the pipeline uses it from T2. Bundle total 39.97 kB gzip.
 
 ### M2-T2: Settings model and the pipeline frame (no visible change)
 - Files:
