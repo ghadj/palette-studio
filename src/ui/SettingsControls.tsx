@@ -1,15 +1,26 @@
 /**
  * The extraction settings under the image (spec 2.4; M1 decision 5): Algorithm, Colors (slider and
- * number field) and Working space, then a collapsed Advanced row with Sample size, Resampling, and
- * Seed with Randomize (spec 6.6 rule 2). Every change re-extracts live (spec 1, 7.4).
+ * number field) and Working space, then the collapsed Filters row (M2-T8) and the collapsed
+ * Advanced row (spec 6.6 rule 2) with Sample size, Resampling, Seed with Randomize, Iterations,
+ * Restarts, Histogram bits, Merge threshold, Distance metric, Population vs. vividness, Keep one
+ * outlier and Sort (M2-T7). Every change re-extracts live (spec 1, 7.4).
  */
 import { ChevronDown, ChevronRight } from "lucide-preact";
 import { useState } from "preact/hooks";
-import { settingApplies, settingNote } from "../extract/applicability";
+import { type SettingKey, settingApplies, settingNote } from "../extract/applicability";
 import { AVAILABLE_ALGORITHMS } from "../extract/pipeline";
 import { clampColors, MAX_COLORS, MIN_COLORS } from "../state/defaults";
 import { initialOpenRows, settings } from "../state/signals";
-import type { Algorithm, ExtractionSettings, Resampling, SampleSize, WorkingSpace } from "../types";
+import type {
+  Algorithm,
+  DistanceMetric,
+  ExtractionSettings,
+  HistogramBits,
+  Resampling,
+  SampleSize,
+  SortOrder,
+  WorkingSpace,
+} from "../types";
 import { DecimalField } from "./DecimalField";
 import { SettingRow } from "./SettingRow";
 import { Toggle } from "./Toggle";
@@ -33,6 +44,22 @@ export const WORKING_SPACE_LABELS: Record<WorkingSpace, string> = {
 
 const SAMPLE_SIZES: SampleSize[] = [64, 128, 256, 512, "full"];
 const RESAMPLING_LABELS: Record<Resampling, string> = { smooth: "Smooth", nearest: "Nearest" };
+const HISTOGRAM_BITS: HistogramBits[] = [4, 5, 6];
+const METRIC_LABELS: Record<DistanceMetric, string> = { ok: "ΔE OK", ciede2000: "CIEDE2000" };
+const SORT_LABELS: Record<SortOrder, string> = {
+  population: "Population",
+  lightness: "Lightness",
+  chroma: "Chroma",
+  hue: "Hue",
+  extracted: "As extracted",
+};
+
+/**
+ * Merge threshold (spec 2.4): stored in ΔE OK units, 0 to 0.15. Under CIEDE2000 it reads ×100 in
+ * ΔE00 units, 0 to 15, so the default 0.03 shows as 3.0 (M2 decision 7).
+ */
+const MERGE_MAX = 0.15;
+const mergeScale = (metric: DistanceMetric): number => (metric === "ciede2000" ? 100 : 1);
 
 function update<K extends keyof ExtractionSettings>(key: K, value: ExtractionSettings[K]): void {
   if (settings.peek()[key] === value) return;
@@ -137,11 +164,22 @@ function NumberField({
   );
 }
 
+/**
+ * Whether a setting applies to the algorithm, for a row's controls (M1 decision 14). Its "Used by …"
+ * or "Not used by …" note shows only while the controls are disabled (M2 decision 14b).
+ */
+function applicability(key: SettingKey, algorithm: Algorithm, noteId: string) {
+  const enabled = settingApplies(key, algorithm);
+  const note = enabled ? null : settingNote(key);
+  return { enabled, note, noteId, describedBy: note ? noteId : undefined };
+}
+
 export function SettingsControls() {
   const s = settings.value;
   // Decision 14: settings that don't apply to the algorithm are disabled, not hidden, and keep their values.
   const seedApplies = settingApplies("seed", s.algorithm);
-  const seedNote = settingNote("seed");
+  // The note shows only while Seed is disabled (M2 decision 14b).
+  const seedNote = seedApplies ? null : settingNote("seed");
   // Swatch roles ignore Colors (M2 decision 10c). The note shows only while it doesn't apply, so
   // the always-visible rows keep the mockup layout.
   const colorsApplies = settingApplies("colors", s.algorithm);
@@ -210,7 +248,7 @@ export function SettingsControls() {
         />
       </SettingRow>
       <FiltersRow s={s} />
-      <details class="chevron-row">
+      <details class="chevron-row" open={initialOpenRows.peek().includes("advanced")}>
         <summary class="chevron-row__summary">
           <span>Advanced</span>
           <ChevronRight
@@ -264,6 +302,7 @@ export function SettingsControls() {
             </button>
           </span>
         </SettingRow>
+        <AdvancedRows s={s} />
       </details>
     </div>
   );
@@ -287,7 +326,9 @@ function DecimalSlider({
   min,
   max,
   step,
+  decimals = 2,
   disabled = false,
+  describedBy,
   onCommit,
 }: {
   id: string;
@@ -296,7 +337,10 @@ function DecimalSlider({
   min: number;
   max: number;
   step: number;
+  /** Digits the field shows after the period. */
+  decimals?: number;
   disabled?: boolean;
+  describedBy?: string | undefined;
   onCommit: (value: number) => void;
 }) {
   return (
@@ -310,6 +354,8 @@ function DecimalSlider({
         value={value}
         disabled={disabled}
         aria-label={`${label} slider`}
+        aria-valuetext={value.toFixed(decimals)}
+        aria-describedby={describedBy}
         onInput={(event) => onCommit(Number(event.currentTarget.value))}
       />
       <DecimalField
@@ -317,8 +363,10 @@ function DecimalSlider({
         value={value}
         min={min}
         max={max}
-        decimals={2}
+        step={step}
+        decimals={decimals}
         disabled={disabled}
+        describedBy={describedBy}
         onCommit={onCommit}
       />
     </span>
@@ -413,5 +461,140 @@ function FiltersRow({ s }: { s: ExtractionSettings }) {
         </span>
       </SettingRow>
     </details>
+  );
+}
+
+/**
+ * The Advanced rows after Seed (M2-T7). Spatial weighting joins them in M2-T9. Histogram bits,
+ * Distance metric and Sort apply to every algorithm built so far, so only the other rows read the
+ * applicability tables.
+ */
+function AdvancedRows({ s }: { s: ExtractionSettings }) {
+  const iterations = applicability("iterations", s.algorithm, "setting-iterations-note");
+  const restarts = applicability("restarts", s.algorithm, "setting-restarts-note");
+  const merge = applicability("mergeThreshold", s.algorithm, "setting-merge-note");
+  const vividness = applicability("vividness", s.algorithm, "setting-vividness-note");
+  const outlier = applicability("keepOutlier", s.algorithm, "setting-outlier-note");
+  const scale = mergeScale(s.distanceMetric);
+  const ciede = s.distanceMetric === "ciede2000";
+  const mergeStep = 0.005 * scale;
+  const commitMerge = (shown: number) =>
+    update("mergeThreshold", Math.min(MERGE_MAX, Math.max(0, Number((shown / scale).toFixed(6)))));
+  return (
+    <>
+      <SettingRow
+        label="Iterations"
+        htmlFor="setting-iterations"
+        note={iterations.note}
+        noteId={iterations.noteId}
+      >
+        <NumberField
+          id="setting-iterations"
+          value={s.iterations}
+          min={5}
+          max={100}
+          disabled={!iterations.enabled}
+          describedBy={iterations.describedBy}
+          onCommit={(v) => update("iterations", v)}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Restarts"
+        htmlFor="setting-restarts"
+        note={restarts.note}
+        noteId={restarts.noteId}
+      >
+        <NumberField
+          id="setting-restarts"
+          value={s.restarts}
+          min={1}
+          max={10}
+          disabled={!restarts.enabled}
+          describedBy={restarts.describedBy}
+          onCommit={(v) => update("restarts", v)}
+        />
+      </SettingRow>
+      <SettingRow label="Histogram bits" htmlFor="setting-histogram-bits">
+        <Select
+          id="setting-histogram-bits"
+          value={s.histogramBits}
+          options={HISTOGRAM_BITS.map((b) => ({ value: b, label: String(b) }))}
+          onChange={(v) => update("histogramBits", v)}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Merge threshold"
+        htmlFor="setting-merge"
+        note={merge.note}
+        noteId={merge.noteId}
+      >
+        <DecimalSlider
+          id="setting-merge"
+          label="Merge threshold"
+          value={s.mergeThreshold * scale}
+          min={0}
+          max={MERGE_MAX * scale}
+          step={mergeStep}
+          decimals={ciede ? 1 : 3}
+          disabled={!merge.enabled}
+          describedBy={merge.describedBy}
+          onCommit={commitMerge}
+        />
+      </SettingRow>
+      <SettingRow label="Distance metric" htmlFor="setting-metric">
+        <Select
+          id="setting-metric"
+          value={s.distanceMetric}
+          options={(Object.keys(METRIC_LABELS) as DistanceMetric[]).map((m) => ({
+            value: m,
+            label: METRIC_LABELS[m],
+          }))}
+          onChange={(v) => update("distanceMetric", v)}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Population vs. vividness"
+        htmlFor="setting-vividness"
+        note={vividness.note}
+        noteId={vividness.noteId}
+      >
+        <DecimalSlider
+          id="setting-vividness"
+          label="Population vs. vividness"
+          value={s.vividness}
+          min={0}
+          max={1}
+          step={0.05}
+          disabled={!vividness.enabled}
+          describedBy={vividness.describedBy}
+          onCommit={(value) => update("vividness", value)}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Keep one outlier"
+        htmlFor="setting-outlier"
+        note={outlier.note}
+        noteId={outlier.noteId}
+      >
+        <Toggle
+          id="setting-outlier"
+          checked={s.keepOutlier}
+          disabled={!outlier.enabled}
+          describedBy={outlier.describedBy}
+          onChange={(v) => update("keepOutlier", v)}
+        />
+      </SettingRow>
+      <SettingRow label="Sort" htmlFor="setting-sort">
+        <Select
+          id="setting-sort"
+          value={s.sort}
+          options={(Object.keys(SORT_LABELS) as SortOrder[]).map((o) => ({
+            value: o,
+            label: SORT_LABELS[o],
+          }))}
+          onChange={(v) => update("sort", v)}
+        />
+      </SettingRow>
+    </>
   );
 }

@@ -201,4 +201,28 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
       }
     }
   });
+
+  it("vividness 1 on an all-gray image gives a non-empty palette (decision 6b)", () => {
+    // The vividness weight has a floor of 0.05, so grays still count when nothing is vivid.
+    const grays = image(30, 10, (x) => (x < 10 ? "#202020" : x < 20 ? "#808080" : "#E0E0E0"));
+    for (const algorithm of ["kmeans", "median-cut", "wu", "balanced", "even-spread"] as const) {
+      const out = extractPalette(grays, settings({ algorithm, vividness: 1 }));
+      expect(out.length, algorithm).toBeGreaterThan(0);
+      expect(new Set(out.map((c) => oklabToHex(c.lab))), algorithm).toEqual(
+        new Set(["#202020", "#808080", "#E0E0E0"]),
+      );
+      const total = out.reduce((n, c) => n + c.population, 0);
+      expect(Math.abs(total - 1), algorithm).toBeLessThan(1e-9);
+    }
+  });
+
+  it("passes the Sort setting to post-processing (spec 2.4, decision 16)", () => {
+    const three = image(30, 10, (x) => (x < 5 ? "#14386B" : x < 20 ? "#E8693A" : "#1DB07A"));
+    const hexes = (sort: ExtractionSettings["sort"]) =>
+      extractPalette(three, settings({ algorithm: "median-cut", sort })).map((c) =>
+        oklabToHex(c.lab),
+      );
+    expect(hexes("population")).toEqual(["#E8693A", "#1DB07A", "#14386B"]);
+    expect(hexes("lightness")).toEqual(["#14386B", "#E8693A", "#1DB07A"]);
+  });
 });

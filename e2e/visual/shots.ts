@@ -27,6 +27,16 @@ export const M1_SHOTS: readonly Shot[] = [
     frame: "Whole frame. M1 has no markers, hint, editor, chevron rows or gradient controls.",
   },
   {
+    // M2-T7. Taller than the other desktop shots, so the open Advanced rows fit in column 1
+    // without scrolling it.
+    name: "advanced-desktop",
+    path: "./?demo=mockup&rows=advanced",
+    viewport: { width: 1280, height: 1280 },
+    mockup: null,
+    frame:
+      "Not drawn. Column 1 item 4 with the Advanced chevron row open: Sample size, Resampling, Seed, Iterations, Restarts, Histogram bits, Merge threshold, Distance metric, Population vs. vividness, Keep one outlier (Toggle) and Sort.",
+  },
+  {
     name: "source-phone",
     path: "./?demo=mockup&tab=source",
     viewport: PHONE,

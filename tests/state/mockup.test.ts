@@ -104,6 +104,19 @@ describe("mockup state (mockup-state.md)", () => {
     expect(buildMockupState().openRows).toEqual([]);
   });
 
+  it("rows=advanced opens the Advanced row; rows can be combined (M2-T7)", () => {
+    expect(parseMockupParams("?demo=mockup&rows=advanced")?.rows).toEqual(["advanced"]);
+    expect(buildMockupState(parseMockupParams("?demo=mockup&rows=advanced")).openRows).toEqual([
+      "advanced",
+    ]);
+    expect(parseMockupParams("?demo=mockup&rows=filters,advanced")?.rows).toEqual([
+      "filters",
+      "advanced",
+    ]);
+    expect(buildMockupState(parseMockupParams("?demo=mockup")).openRows).toEqual([]);
+    expect(buildMockupState().openRows).toEqual([]);
+  });
+
   it("nothing in src/state/mockup.ts imports storage code", () => {
     for (const file of ["mockup.ts", "mockup-fixture.ts"]) {
       const source = readFileSync(resolve(__dirname, "../../src/state", file), "utf8")

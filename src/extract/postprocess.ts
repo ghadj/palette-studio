@@ -2,11 +2,18 @@
  * Post-processing (spec 2.1 step 7, 2.4, 7.6): merge near-duplicate colors, closest pair first,
  * while they are closer than the merge threshold under the distance metric (ΔE OK, or CIEDE2000
  * with the threshold in ΔE00 units, decision 7), into a population-weighted average in OKLab; then
- * normalize populations to sum to 1 and rank by the score (1 − v) × population + v × min(1, C / 0.2)
- * (decision 5c), highest first. At vividness 0 the score is the population. Pure.
+ * normalize populations to sum to 1 and sort (spec 2.4 Sort, decision 16):
+ * - population: by the score (1 − v) × population + v × min(1, C / 0.2) (decision 5c), highest
+ *   first. At vividness 0 the score is the population.
+ * - lightness: OKLab L, dark to light.
+ * - chroma: OKLab C, high to low.
+ * - hue: OKLCH hue ascending from 0°. Grays have no hue and count as 0°, as in src/color/convert.ts.
+ * - extracted: the algorithm's order. A merged pair keeps the earlier color's place.
+ * Ties fall back to the population order. Pure.
  */
 import { type Lab, type Oklab, oklabToLab } from "../color/convert";
 import { type DistanceMetric, deltaE2000, deltaEOK } from "../color/delta-e";
+import type { SortOrder } from "../types";
 import { vividnessOf } from "./histogram";
 
 export interface ExtractedColor {
@@ -24,11 +31,32 @@ export interface PostprocessOptions {
   metric?: DistanceMetric;
   /** Population vs. vividness, 0 to 1; defaults to 0 (rank by population). */
   vividness?: number;
+  /** Defaults to population. */
+  sort?: SortOrder;
 }
+
+/** OKLCH hue in degrees, 0 to 360; 0 for grays. */
+function hueOf(c: ExtractedColor): number {
+  if (vividnessOf(c.lab.a, c.lab.b) === 0) return 0;
+  const h = (Math.atan2(c.lab.b, c.lab.a) * 180) / Math.PI;
+  return h < 0 ? h + 360 : h;
+}
+
+const chromaOf = (c: ExtractedColor): number => Math.hypot(c.lab.a, c.lab.b);
+
+/** Sort keys: ascending order of the key gives the spec's direction (decision 16). */
+const SORT_KEYS: Record<
+  Exclude<SortOrder, "population" | "extracted">,
+  (c: ExtractedColor) => number
+> = {
+  lightness: (c) => c.lab.l,
+  chroma: (c) => -chromaOf(c),
+  hue: hueOf,
+};
 
 export function postprocess(
   colors: readonly ExtractedColor[],
-  { mergeThreshold, metric = "ok", vividness = 0 }: PostprocessOptions,
+  { mergeThreshold, metric = "ok", vividness = 0, sort = "population" }: PostprocessOptions,
 ): ExtractedColor[] {
   const list = colors.map((c) => ({ ...c, lab: { ...c.lab } }));
   // CIEDE2000 works on CIELAB: convert each color once, and again only when it changes.
@@ -68,10 +96,11 @@ export function postprocess(
   }
   const total = list.reduce((n, c) => n + c.population, 0);
   if (total > 0) for (const c of list) c.population /= total;
+  if (sort === "extracted") return list;
   const v = Math.min(1, Math.max(0, vividness));
   const score = (c: ExtractedColor) =>
     v === 0 ? c.population : (1 - v) * c.population + v * vividnessOf(c.lab.a, c.lab.b);
-  return list.sort(
+  list.sort(
     (x, y) =>
       score(y) - score(x) ||
       y.population - x.population ||
@@ -79,4 +108,8 @@ export function postprocess(
       y.lab.a - x.lab.a ||
       y.lab.b - x.lab.b,
   );
+  if (sort === "population") return list;
+  // Array.prototype.sort is stable, so ties keep the population order.
+  const key = SORT_KEYS[sort];
+  return list.sort((x, y) => key(x) - key(y));
 }

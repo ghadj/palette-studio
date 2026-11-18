@@ -71,6 +71,22 @@ test.describe("mockup state (mockup-state.md)", () => {
     await expect(column.getByTestId("selection-label")).toHaveText("Swatch 5");
   });
 
+  test("rows=advanced opens the Advanced row with its rows, and nothing else changes", async ({
+    page,
+  }) => {
+    await page.goto(demo("rows=advanced"));
+    const advanced = page.locator("details.chevron-row:visible").filter({ hasText: "Advanced" });
+    await expect(advanced).toHaveAttribute("open", "");
+    for (const id of ["#setting-seed", "#setting-iterations", "#setting-merge", "#setting-sort"]) {
+      await expect(page.locator(`${id}:visible`)).toBeVisible();
+    }
+    await expect(page.locator("[data-swatch]:visible")).toHaveCount(6);
+    await page.goto(demo());
+    await expect(
+      page.locator("details.chevron-row:visible").filter({ hasText: "Advanced" }),
+    ).not.toHaveAttribute("open", "");
+  });
+
   test("title ends with (demo)", async ({ page }) => {
     await page.goto(demo());
     await expect(page).toHaveTitle(/\(demo\)$/);
@@ -115,6 +131,7 @@ test.describe("mockup state (mockup-state.md)", () => {
       "tab=palette&theme=dark",
       "tab=gradient&theme=light",
       "view=materials",
+      "rows=advanced",
     ]) {
       await page.goto(demo(query));
       await expect(page.locator("#app-root")).toBeVisible();

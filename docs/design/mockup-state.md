@@ -16,6 +16,7 @@ A fixed demo state that reproduces the mockups' content, so screenshots of the r
 | `brands` | comma-separated brand names, such as `Brand A,Brand C` | Sets the brand filter on the Materials view | `13` |
 | `filters` | `all`, `medium` | Phone only: opens the Filters sheet in the All brands or By medium scope | `13` |
 | `zoom` | `2`, `4`, `8` | Opens the image at that zoom, centered on the image (M2 decision 15g). Zoom is view state, so nothing stores it | not drawn |
+| `rows` | `filters`, `advanced`, or both comma-separated | Opens the Filters or Advanced chevron row under the image (M2) | not drawn |
 | `theme` | `light`, `dark` | Overrides the theme for this page load only | all |
 
 Rules:

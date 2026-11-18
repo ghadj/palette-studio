@@ -1,8 +1,11 @@
 /**
- * A number field for decimal settings such as the filter thresholds (spec 2.4). It always shows a
- * period as the decimal separator, whatever the locale, and accepts "," or "." when typed
- * (spec 5). It uses inputmode decimal and the 16 px touch size of `.number-field` (spec 6.1).
- * Valid values in range commit while typing; on blur or Enter, out-of-range values are clamped.
+ * A number field for decimal settings such as the filter thresholds and the merge threshold
+ * (spec 2.4). It always shows a period as the decimal separator, whatever the locale, and accepts
+ * "," or "." when typed (spec 5). It uses inputmode decimal and the 16 px touch size of
+ * `.number-field` (spec 6.1). Number inputs can't do either in every browser, so it is a text
+ * input with spinbutton semantics: the arrow keys step it and Page Up and Page Down step ten
+ * times. Valid values in range commit while typing; on blur or Enter, out-of-range values are
+ * clamped.
  */
 import { useState } from "preact/hooks";
 
@@ -19,12 +22,15 @@ export function formatDecimal(value: number, decimals: number): string {
   return value.toFixed(decimals);
 }
 
+const STEP_KEYS: Record<string, number> = { ArrowUp: 1, ArrowDown: -1, PageUp: 10, PageDown: -10 };
+
 export function DecimalField({
   id,
   value,
   min,
   max,
   decimals,
+  step = 10 ** -decimals,
   label,
   disabled = false,
   describedBy,
@@ -35,6 +41,8 @@ export function DecimalField({
   min: number;
   max: number;
   decimals: number;
+  /** What the arrow keys add or take away; one unit of the last decimal by default. */
+  step?: number;
   label?: string;
   disabled?: boolean;
   describedBy?: string | undefined;
@@ -42,27 +50,46 @@ export function DecimalField({
 }) {
   const [text, setText] = useState<string | null>(null);
   const round = (n: number) => Number(n.toFixed(decimals));
+  const clamp = (n: number) => Math.min(max, Math.max(min, n));
+  const inRange = (n: number | null): n is number => n !== null && n >= min && n <= max;
+  const shown = formatDecimal(value, decimals);
   return (
     <input
       id={id}
       class="number-field"
       type="text"
+      role="spinbutton"
       inputMode="decimal"
       autoComplete="off"
       spellcheck={false}
       aria-label={label}
       aria-describedby={describedBy}
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-valuenow={value}
+      aria-valuetext={shown}
       disabled={disabled}
-      value={text ?? formatDecimal(value, decimals)}
+      value={text ?? shown}
       onInput={(event) => {
         const raw = event.currentTarget.value;
         setText(raw);
         const n = parseDecimal(raw);
-        if (n !== null && n >= min && n <= max) onCommit(round(n));
+        if (inRange(n)) onCommit(round(n));
+      }}
+      onKeyDown={(event) => {
+        const steps = STEP_KEYS[event.key];
+        if (steps === undefined) return;
+        event.preventDefault();
+        const typed = text === null ? null : parseDecimal(text);
+        onCommit(clamp(round((typed ?? value) + steps * step)));
+        setText(null);
       }}
       onChange={(event) => {
+        // A value in range was already committed while typing. Committing it again here could
+        // read it in units that have changed since, such as the merge threshold's after a metric
+        // switch, so only out-of-range values are clamped and committed.
         const n = parseDecimal(event.currentTarget.value);
-        if (n !== null) onCommit(round(Math.min(max, Math.max(min, n))));
+        if (n !== null && !inRange(n)) onCommit(round(clamp(n)));
         setText(null);
       }}
       onBlur={() => setText(null)}

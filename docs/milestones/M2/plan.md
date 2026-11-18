@@ -126,7 +126,7 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
 - [x] Done
   - Note: no e2e test pinned k-means++ hexes. Two e2e tests used Seed under the old default ("working space, sample size, resampling and seed all re-extract", and "Median cut disables Seed…"). Both now select K-means++ first, and their assertions are unchanged. In unit tests, the k-means seed check in `pipeline.test.ts` now sets `algorithm: "kmeans"`.
   - Note: the Restarts row doesn't exist until T7, so for now the Balanced e2e test checks Seed and its note; T7 extends it to Restarts.
-  - Note: vividness multiplies the bin weights, as decision 6 says, so with vividness above 0 the populations are shares of the weighted histogram. Grays (OKLab C below 1e-6, which is conversion noise) get weight exactly 0 at vividness 1. A purely gray image at vividness 1 therefore gives an empty palette.
+  - Note: vividness multiplies the bin weights, as decision 6 says, so with vividness above 0 the populations are shares of the weighted histogram. Grays (OKLab C below 1e-6, which is conversion noise) get weight exactly 0 at vividness 1. A purely gray image at vividness 1 therefore gives an empty palette. (Superseded by decision 6b in M2-T7: the weight now has a floor of 0.05, so a gray image still gives a palette.)
   - Note: re-extraction with Balanced at 256 px takes 187 to 197 ms of wall time across the five projects, including the 120 ms debounce.
 
 ### M2-T5: Exact colors, even spread, keep one outlier
@@ -214,7 +214,17 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "iterations and restarts are disabled for algorithms that don't use them, with the note"
   - `e2e/tokens.spec.ts` and `e2e/a11y.spec.ts` › the "Advanced open" case gains the new rows and the toggle in both states.
 - Done when: tests pass; all Advanced rows are at least 44 px and reachable at 320 px with no horizontal scroll.
-- [ ] Done
+- [x] Done
+  - Note: Spatial weighting is left out; M2-T9 adds its row in Advanced, after Population vs. vividness.
+  - Note: decimal fields use T8's `DecimalField` (one decimal field, decision from the coordinator after T8 landed first). T7 extends it with a `step`, `role=spinbutton` with `aria-valuemin`, `aria-valuemax`, `aria-valuenow` and `aria-valuetext`, arrow and Page Up/Down steps, and a commit on blur that clamps only out-of-range values, so a value typed before a metric switch isn't read again in the new units. T8's `DecimalSlider` gains `decimals` and `describedBy`; Merge threshold and Population vs. vividness use it. Whole-number fields (Colors, Seed, Iterations, Restarts, Alpha cutoff) stay `NumberField` number inputs. The planned `tests/ui/number-field.test.ts` cases ("'0,05' commits 0.05", "shows '0.05' with the locale forced to de-DE") are in `tests/ui/decimal-field.test.ts`.
+  - Note: Merge threshold steps by 0.005 and shows 3 decimals ("0.030"); under CIEDE2000 it steps by 0.5 and shows 1 decimal ("3.0"). Population vs. vividness steps by 0.05 and shows 2 decimals. These steps and decimals aren't in the spec.
+  - Note: Keep one outlier uses T8's `src/ui/Toggle.tsx` and its CSS (one Toggle). The Advanced row opens with `rows=advanced` through T8's `initialOpenRows` and comma-separated `rows`, so `rows=filters,advanced` opens both.
+  - Note: every Advanced row follows decision 14b, Seed included: its note and `aria-describedby` show only while the row is disabled. Iterations, Restarts, Merge threshold, Population vs. vividness and Keep one outlier read the applicability tables. Histogram bits, Distance metric and Sort apply to every algorithm, so they have no note. The "Median cut disables Seed" e2e test now also checks that Seed's note is gone under k-means++.
+  - Note: built on T6, T8, T10 and T11 (rebased onto milestone/M2 at 4837800). T6's `.slider:disabled` style covers the new disabled sliders. The Advanced e2e locators name the Advanced row, as T8's do.
+  - Note: `.select__control` gained `min-width: var(--hit)`, because the Histogram bits select ("5") was 38 px wide at phone width.
+  - Note: hue sort puts grays at 0°, the same rule as `oklabToOklch`. Ties in lightness, chroma and hue sorts keep the population order.
+  - Note: decision 6b is in `weightByVividness`. Two T4 histogram tests changed with it: the gray bin now weighs 0.05 of its count at vividness 1 instead of 0.
+  - Note: the `advanced-desktop` shot is 1280 × 1280, so the open rows fit without scrolling column 1. It has no baseline yet, so the `visual` CI job fails on it until sign-off. The token and axe lists use 1280 × 800. `mockup-state.md` lists `rows=advanced`.
 
 ### M2-T8: Pixel filters: dark, light, minimum chroma, alpha cutoff
 - Files:
@@ -507,6 +517,7 @@ Decisions 1 to 14 and 16 to 18 accept the proposed option A. Decision 15 changes
    - b. Iterations apply; Seed and Restarts don't. This settles M1 report note 4.
    - c. Score: `(1 − v) × population + v × min(1, C / 0.2)`, normalized.
 6. **Vividness.** Bins are weighted by `(1 − v) + v × min(1, C / 0.2)` before quantizing, and results are ranked by the same score. Exact colors and Swatch roles don't use it.
+6b. **Vividness floor** (user decision, 2026-11-18). The bin weight has a floor of 0.05: weight = max(0.05, (1 − v) + v × min(1, C / 0.2)). So a fully gray image at vividness 1 still gives a palette. With vividness above 0, populations are shares of the weighted histogram. The ranking score of decision 5c is unchanged.
 7. **Distance metric.** It governs the merge threshold and the outlier distance; clustering stays Euclidean in the working space (7.6). Under CIEDE2000 the threshold is in ΔE00 units: range 0 to 15, default 3.0.
 8. **Keep one outlier.** Extract N − 1 colors, then add the box from a 4N median-cut split that is farthest from its nearest kept swatch and holds at least 0.1% of the pixels.
 9. **Spatial weighting.**
@@ -529,6 +540,7 @@ Decisions 1 to 14 and 16 to 18 accept the proposed option A. Decision 15 changes
 14. **Mockup fixture.**
     - a. Populations become 0.832, 0.147 and 0.005 × 4, normalized.
     - b. The `rows` and `cluster` parameters and the new shots are approved. The `zoom` parameter is approved (15g).
+14b. **Applicability notes** (user decision, 2026-11-18; it extends M1 decision 14 and is separate from item 14 b above). A "Used by …" or "Not used by …" note shows under a setting only while its control is disabled. This covers every row, Seed included, whose note was always visible in M1. Colors follows it from T6, the Advanced rows from T7.
 15. **Region of interest and zoom.**
     - a. **No region of interest. The user's final decision: extraction always uses the whole image.** This departs on purpose from spec 2.1 step 3 ("outside the region of interest"), spec 2.4 (the "Region of interest" row) and spec 6 "Image view" ("region-of-interest tool"). `docs/SPEC.md` is not edited. The earlier questions on the region's default, keyboard model and re-extraction no longer apply.
     - b. **Zoom and pan are in M2**, per spec 6 "Image view" and 6.1 "Gestures": pinch-zoom and one-finger pan on touch; wheel or trackpad and drag on desktop. There are also visible zoom controls, so zoom works without gestures and from the keyboard. Zoom is view state, outside undo (3.6) and outside the project. The cluster overlay follows zoom and pan.

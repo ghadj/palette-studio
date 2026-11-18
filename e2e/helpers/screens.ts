@@ -24,6 +24,13 @@ export const M1_SCREENS: readonly Screen[] = [
     viewport: DESKTOP,
     device: "desktop",
   },
+  // M2-T7: the Advanced row open, with every Advanced setting.
+  {
+    name: "advanced-desktop",
+    path: "./?demo=mockup&rows=advanced",
+    viewport: DESKTOP,
+    device: "desktop",
+  },
   { name: "studio-tablet", path: "./?demo=mockup&view=studio", viewport: TABLET, device: "tablet" },
   { name: "source-phone", path: "./?demo=mockup&tab=source", viewport: PHONE, device: "phone" },
   { name: "palette-phone", path: "./?demo=mockup&tab=palette", viewport: PHONE, device: "phone" },

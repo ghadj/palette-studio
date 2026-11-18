@@ -16,14 +16,14 @@ import {
 } from "./mockup-fixture";
 
 /** Chevron rows the `rows` parameter can open (M2 decision 14b). */
-export type MockupRow = "filters";
-const ROWS: readonly MockupRow[] = ["filters"];
+export type MockupRow = "filters" | "advanced";
+const ROWS: readonly MockupRow[] = ["filters", "advanced"];
 
 export interface MockupParams {
   view: View;
   tab: Tab;
   theme: "light" | "dark" | null;
-  /** Chevron rows open at load, from `rows=filters` (comma-separated). */
+  /** Chevron rows open at load, from `rows=filters`, `rows=advanced` or both (comma-separated). */
   rows: MockupRow[];
 }
 

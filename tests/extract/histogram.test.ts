@@ -145,16 +145,26 @@ describe("vividness bin weights (M2 decision 6)", () => {
     ["#B07060", 5],
   ]);
 
-  it("vividness 1 gives a #808080 bin weight 0 and a #FF0000 bin its full count", () => {
+  it("vividness 1 gives a #808080 bin weight 0.05 (the floor, decision 6b) and a #FF0000 bin its full count", () => {
     const h = weightByVividness(buildHistogram(data), 1, "oklab");
-    expect(weightOf(h, "#808080")).toBe(0);
+    expect(weightOf(h, "#808080")).toBeCloseTo(5 * 0.05, 12);
     expect(weightOf(h, "#FF0000")).toBe(5);
     // A mid-chroma color is weighted by C / 0.2.
     const mid = hexToOklab("#B07060");
     const c = Math.hypot(mid.a, mid.b);
     expect(c).toBeLessThan(0.2);
+    expect(c / 0.2).toBeGreaterThan(0.05);
     expect(weightOf(h, "#B07060")).toBeCloseTo((5 * c) / 0.2, 12);
-    expect(h.total).toBeCloseTo(5 + (5 * c) / 0.2, 12);
+    expect(h.total).toBeCloseTo(5 * 0.05 + 5 + (5 * c) / 0.2, 12);
+  });
+
+  it("the weight never falls below 0.05 of the count, whatever the vividness (decision 6b)", () => {
+    const h = buildHistogram(data);
+    for (const v of [0.25, 0.5, 0.95, 0.99, 1]) {
+      const w = weightByVividness(h, v, "oklab");
+      expect(w.size, String(v)).toBe(3);
+      expect(weightOf(w, "#808080"), String(v)).toBeCloseTo(5 * Math.max(0.05, 1 - v), 12);
+    }
   });
 
   it("vividness 0 leaves the histogram as it is; 0.5 halves a gray", () => {
@@ -166,11 +176,13 @@ describe("vividness bin weights (M2 decision 6)", () => {
   it("uses OKLab chroma whatever the working space", () => {
     for (const space of ["cielab", "linear-srgb", "srgb"] as const) {
       const h = weightByVividness(buildHistogram(data, { space }), 1, space);
-      expect(h.size, space).toBe(2);
+      expect(h.size, space).toBe(3);
       const counts = Array.from(h.counts).sort((a, b) => a - b);
       const mid = hexToOklab("#B07060");
-      expect(counts[0], space).toBeCloseTo((5 * Math.hypot(mid.a, mid.b)) / 0.2, 6);
-      expect(counts[1], space).toBe(5);
+      // The gray gets the 0.05 floor (decision 6b).
+      expect(counts[0], space).toBeCloseTo(5 * 0.05, 12);
+      expect(counts[1], space).toBeCloseTo((5 * Math.hypot(mid.a, mid.b)) / 0.2, 6);
+      expect(counts[2], space).toBe(5);
     }
   });
 });

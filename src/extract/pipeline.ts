@@ -144,5 +144,6 @@ function paletteFrom(
         : thresholdFor(settings.distanceMetric, settings.mergeThreshold),
     metric: settings.distanceMetric,
     vividness,
+    sort: settings.sort,
   });
 }

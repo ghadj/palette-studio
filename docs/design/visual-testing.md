@@ -27,6 +27,7 @@ A failure names the element (a selector path) and the value that isn't a token. 
 | Shot | URL | Viewport | Compare with |
 | --- | --- | --- | --- |
 | studio-desktop | `?demo=mockup&view=studio` | 1280 × 800 | `01-studio-light.png`, `02-studio-dark.png` |
+| advanced-desktop | `?demo=mockup&rows=advanced` | 1280 × 1280 | contract text (not drawn): the Advanced rows (M2-T7) |
 | palette-view-desktop | `?demo=mockup&image=palette` | 1280 × 800 | `03`, `04` (left column) |
 | values-view-desktop | `?demo=mockup&image=values` | 1280 × 800 | `03`, `04` (middle column) |
 | grid-desktop | `?demo=mockup&grid=on` | 1280 × 800 | `03`, `04` (right column) |

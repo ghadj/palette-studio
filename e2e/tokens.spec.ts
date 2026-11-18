@@ -79,12 +79,51 @@ test.describe("token conformance @tokens", () => {
       for (const viewport of [
         { width: 1280, height: 800 },
         { width: 390, height: 844 },
+        { width: 320, height: 568 },
       ]) {
         await page.emulateMedia({ colorScheme: theme });
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
         await expect(page.locator("#setting-seed:visible")).toBeVisible();
+        // The M2-T7 rows, with the Keep one outlier toggle off, then on (ui-contract "Toggle").
+        await expect(page.locator("#setting-sort:visible")).toBeVisible();
+        const toggle = page.locator("#setting-outlier:visible");
+        for (const state of ["false", "true"]) {
+          if ((await toggle.getAttribute("aria-checked")) !== state) await toggle.click();
+          await expect(toggle).toHaveAttribute("aria-checked", state);
+          await page.waitForFunction(() =>
+            document.getAnimations().every((a) => a.playState !== "running"),
+          );
+          const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
+          expect(
+            failures,
+            `${theme} ${viewport.width} toggle ${state}\n${describeFailures(failures)}`,
+          ).toEqual([]);
+        }
+      }
+    }
+  });
+
+  test("Advanced rows disabled under Swatch roles use tokens, with 44 px targets on phones", async ({
+    page,
+  }) => {
+    // M2-T7: disabled number fields, sliders and the disabled toggle, each with its note.
+    for (const theme of THEMES) {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 320, height: 568 },
+      ]) {
+        await page.emulateMedia({ colorScheme: theme });
+        await page.setViewportSize(viewport);
+        await page.goto("./");
+        await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
+        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+        await expect(page.locator("#setting-outlier:visible")).toBeDisabled();
+        await expect(page.locator("#setting-merge:visible")).toBeDisabled();
+        await expect(page.locator("#setting-outlier-note:visible")).toHaveText(
+          "Not used by swatch roles",
+        );
         const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
         expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
       }

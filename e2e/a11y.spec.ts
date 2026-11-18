@@ -99,6 +99,29 @@ test.describe("accessibility @a11y", () => {
       await page.emulateMedia({ colorScheme: theme });
       await page.goto("./");
       await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+      // The M2-T7 rows, with the Keep one outlier toggle off, then on.
+      const toggle = page.locator("#setting-outlier:visible");
+      for (const state of ["false", "true"]) {
+        if ((await toggle.getAttribute("aria-checked")) !== state) await toggle.click();
+        await expect(toggle).toHaveAttribute("aria-checked", state);
+        await settled(page);
+        const results = await new AxeBuilder({ page }).analyze();
+        expect(results.violations.map((v) => `${theme} ${state} ${v.id}: ${v.help}`)).toEqual([]);
+      }
+    }
+  });
+
+  test("no axe violations with the Advanced rows disabled under Swatch roles, at phone width", async ({
+    page,
+  }) => {
+    for (const theme of THEMES) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.setViewportSize({ width: 320, height: 568 });
+      await page.goto("./");
+      await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
+      await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+      await expect(page.locator("#setting-restarts:visible")).toBeDisabled();
+      await expect(page.locator("#setting-outlier:visible")).toBeDisabled();
       await settled(page);
       const results = await new AxeBuilder({ page }).analyze();
       expect(results.violations.map((v) => `${theme} ${v.id}: ${v.help}`)).toEqual([]);
