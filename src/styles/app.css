@@ -884,10 +884,16 @@ fieldset {
 }
 
 /* Export drawer (ui-contract "Export drawer"). */
+/*
+ * Like the footer, the drawer's top border runs edge to edge, past the safe-area padding, while
+ * its content keeps the page gutters (fix L10).
+ */
 .export-drawer {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0 var(--space-6);
+  margin: 0 calc(env(safe-area-inset-right) * -1) 0 calc(env(safe-area-inset-left) * -1);
+  padding: 0 calc(var(--space-6) + env(safe-area-inset-right)) 0
+    calc(var(--space-6) + env(safe-area-inset-left));
   border-top: var(--stroke) solid var(--color-divider);
 }
 
