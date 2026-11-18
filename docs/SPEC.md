@@ -76,7 +76,7 @@ Color distance (ΔE) is needed for merging and ordering. Offer ΔE in OKLab (Euc
 | Setting | Options / range | Default | Notes |
 | --- | --- | --- | --- |
 | Algorithm | Median cut, Wu, K-means++, Balanced, Exact colors, Even spread, Swatch roles | Balanced | Octree added later |
-| Number of colors | 2 to 32 | 6 | Slider plus number field |
+| Number of colors | 2 to 12 | 6 | Slider plus number field |
 | Working space | OKLab, CIELAB, linear sRGB, sRGB | OKLab |  |
 | Sample size (longest edge) | 64, 128, 256, 512, full | 256 | Smaller is faster, noisier |
 | Resampling | Smooth (area average) or Nearest | Smooth | Nearest keeps exact colors for pixel art and flat art; smoothing invents in-between colors at hard edges |
@@ -446,7 +446,7 @@ Phones are a supported target from v1. The layout is designed mobile-first, and 
 | Width | Layout |
 | --- | --- |
 | Up to 600 px (phones, from 320 px) | One panel at a time as four tabs (Source, Palette, Gradient, Materials); the swatch editor, adjustments, ramps and export open as bottom sheets |
-| 601 to 1023 px (tablets, landscape phones) | Two columns: Source and Palette beside the active panel |
+| 601 to 1023 px (tablets, landscape phones) | The phone layout, wider: one panel at a time as the same four bottom tabs, with the panel centered at a readable maximum width |
 | 1024 px and up | Three columns plus the export drawer, as in the desktop mockup |
 
 **Requirements**
@@ -464,7 +464,7 @@ Phones are a supported target from v1. The layout is designed mobile-first, and 
 - **Memory and canvas limits:** iOS Safari has long capped a canvas at 16,777,216 pixels (4096 × 4096), reportedly raised to 8192 × 8192 in iOS 18, and it also limits total canvas memory. So: draw large photos down into a small working canvas, never hold a full-size one; sample marker colors from a small crop of the decoded bitmap; cap raster export at 4096 px on phones unless a test canvas succeeds at more, and show a clear message if it fails; reuse one canvas rather than creating many; call `close()` on bitmaps you no longer need.
 - **Storage:** Safari can clear a site’s local storage after about a week without a visit, and web apps installed to the Home Screen are exempt. Local catalogues and My paints (Part 2) therefore carry an Export reminder, and installing to the Home Screen is the recommended way to use the tool on iPhone (see PWA in 7.8).
 - **Phone defaults:** the sample size defaults to 128 px, and live updates during drags run once per animation frame (3.7).
-- **Orientation and theme:** portrait first, landscape uses the two-column layout; light and dark mode and reduced motion are respected.
+- **Orientation and theme:** portrait first, landscape uses the same tabbed layout; light and dark mode and reduced motion are respected.
 
 Sources: [Canvas area limit on iOS Safari](https://pqina.nl/blog/canvas-area-exceeds-the-maximum-limit/); [Report of the limit rising in iOS 18](https://lionpuro-com.pages.dev/posts/canvas-is-finally-usable-on-safari).
 
@@ -544,7 +544,7 @@ The tool keeps gaining features, so these rules decide where each one goes. The 
 
 1. **Attach features to the thing they act on, not to a new panel.** Image views and the grid live on the image (3.8). The library lives behind the project name. Area shares appear in the palette view.
 2. **Show options only when they apply.** The rows under the image change with the view. Chevron rows expand in place. Advanced extraction settings start collapsed. On phones, secondary tools open as bottom sheets.
-3. **The header holds only global actions:** project, views, Undo, Redo, Share and theme. Autosave replaces Save (5.5).
+3. **The header holds only global actions:** project, views, Replace image, Undo, Redo, Share and theme. Autosave replaces Save (5.5).
 4. **One emphasis per region.** At most one accent element per panel; everything secondary is muted text.
 5. **Feature budget.** A new feature that needs an always-visible control must replace or merge with an existing one, or justify itself at design sign-off. Otherwise it goes behind a menu, a sheet or a contextual row.
 6. **Same structure everywhere.** Desktop columns and phone tabs hold the same controls in the same order, so nothing has to be learned twice.

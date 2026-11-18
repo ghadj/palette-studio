@@ -30,10 +30,10 @@ The italic notes under the columns of `03` and `04` explain the fixture. They ar
 1. An accent dot and the app name (`--text-md`, strong).
 2. A muted "/" and the current project's name in text color, with a small chevron. It is a button that opens the project library (spec 5.5). While the library is open it shows `--color-surface-sunken` behind it and the chevron points up (`07`).
 3. View tabs: Studio and Materials. The active tab is strong, with a 2 px accent underline the width of its label; the inactive tab is muted.
-4. Text buttons in muted `--text-sm`: Undo, Redo, Share. There is no Save button, because every project autosaves (spec 5.3, 5.5).
+4. A Replace image icon button (shown once an image is loaded; it opens a menu with Choose image, Paste and the sample images), then text buttons in muted `--text-sm`: Undo, Redo, Share. There is no Save button, because every project autosaves (spec 5.3, 5.5).
 5. The theme button, far right: a pill with a half-filled circle icon.
 
-**Phone** (`09`). The project name (strong) with its chevron on the left; it opens the Projects sheet. On the right, icon buttons for Undo, Redo and Share, then the theme button (icon only). The app name isn't shown on phones.
+**Phone** (`09`). The project name (strong) with its chevron on the left; it opens the Projects sheet. On the right, icon buttons for Replace image (once an image is loaded), Undo, Redo and Share, then the theme button (icon only). The app name isn't shown on phones.
 
 **Theme button behavior (interpretation of spec 6.2).** It opens a small menu with System, Light and Dark. The icon shows the current choice: half-filled for System, sun for Light, moon for Dark.
 
@@ -180,7 +180,7 @@ A header at the top, one panel at a time, and a bottom tab bar: Source, Palette,
 
 ## Tablet (601 to 1023 px)
 
-Not drawn. Follow spec 6.1: Source and Palette beside the active panel. It's reviewed against this contract's text only.
+Not drawn. Follow spec 6.1: the phone layout, wider. The phone header, one panel at a time and the bottom tab bar with Source, Palette, Gradient and Materials. The panel content is centered at a readable maximum width; the header, footer rule and tab bar span the full width. Phones in landscape use this layout too. It's reviewed against this contract's text only.
 
 ## Components
 
