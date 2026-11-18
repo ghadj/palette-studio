@@ -3,6 +3,14 @@ import { settingApplies, settingNote } from "../../src/extract/applicability";
 import { AVAILABLE_ALGORITHMS } from "../../src/extract/pipeline";
 
 describe("which settings apply to which algorithm (decision 14)", () => {
+  it("Iterations apply to Balanced; Seed and Restarts don't (M2 decision 5b)", () => {
+    expect(settingApplies("iterations", "balanced")).toBe(true);
+    expect(settingApplies("seed", "balanced")).toBe(false);
+    expect(settingApplies("restarts", "balanced")).toBe(false);
+    expect(settingNote("iterations")).toBe("Used by k-means++ and Balanced only");
+    expect(settingNote("restarts")).toBe("Used by k-means++ only");
+  });
+
   it("Seed, iterations and restarts are used by k-means++, and not by median cut or Wu", () => {
     for (const setting of ["seed", "iterations", "restarts"] as const) {
       expect(settingApplies(setting, "kmeans"), setting).toBe(true);

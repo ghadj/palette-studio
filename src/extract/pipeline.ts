@@ -7,7 +7,8 @@ import { thresholdFor } from "../color/delta-e";
 import { workingToOklab } from "../color/working-space";
 import { clampColors } from "../state/defaults";
 import type { Algorithm, ExtractionSettings } from "../types";
-import { buildHistogram } from "./histogram";
+import { balanced } from "./balanced";
+import { buildHistogram, weightByVividness } from "./histogram";
 import { kmeans } from "./kmeans";
 import { type Cluster, medianCut } from "./median-cut";
 import { type ExtractedColor, postprocess } from "./postprocess";
@@ -20,6 +21,7 @@ export const AVAILABLE_ALGORITHMS = [
   "median-cut",
   "wu",
   "kmeans",
+  "balanced",
 ] as const satisfies readonly Algorithm[];
 
 /** The analysis copy: RGBA pixels, row by row. */
@@ -34,11 +36,14 @@ export function extractPalette(
   settings: ExtractionSettings,
 ): ExtractedColor[] {
   const count = clampColors(settings.colors);
-  const h = buildHistogram(image.data, {
+  // Population vs. vividness weights the bins and ranks the result (decisions 5c and 6).
+  const vividness = settings.vividness;
+  const histogram = buildHistogram(image.data, {
     space: settings.workingSpace,
     alphaCutoff: settings.alphaCutoff,
     bits: settings.histogramBits,
   });
+  const h = weightByVividness(histogram, vividness, settings.workingSpace);
   let clusters: Cluster[];
   switch (settings.algorithm) {
     case "kmeans":
@@ -55,6 +60,9 @@ export function extractPalette(
     case "wu":
       clusters = wu(h, count);
       break;
+    case "balanced":
+      clusters = balanced(h, { k: count, iterations: settings.iterations });
+      break;
     default:
       throw new Error(`The ${settings.algorithm} algorithm is not available until a later version`);
   }
@@ -65,5 +73,6 @@ export function extractPalette(
   return postprocess(colors, {
     mergeThreshold: thresholdFor(settings.distanceMetric, settings.mergeThreshold),
     metric: settings.distanceMetric,
+    vividness,
   });
 }

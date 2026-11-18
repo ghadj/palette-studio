@@ -2,7 +2,9 @@
  * Weighted k-means with k-means++ seeding (spec 2.2, 2.4, 7.6) over the histogram bins: Euclidean
  * distance in the working space, a seeded mulberry32 PRNG so the same seed gives the same palette,
  * restarts that keep the lowest error, empty clusters reseeded to the farthest point, and a stop
- * when the largest centroid shift falls below 1e-4 or the iteration cap is reached. Pure.
+ * when the largest centroid shift falls below 1e-4 or the iteration cap is reached. With
+ * `initialCentroids` (Balanced, M2 decision 5a) there is no k-means++ seeding and no restarts: one
+ * deterministic run from those centroids. Pure.
  */
 import type { Histogram } from "./histogram";
 import type { Cluster } from "./median-cut";
@@ -15,6 +17,8 @@ export interface KMeansOptions {
   restarts?: number;
   seed?: number;
   tolerance?: number;
+  /** Working-space starting centroids; when given, one deterministic run, without the PRNG. */
+  initialCentroids?: ReadonlyArray<readonly [number, number, number]>;
 }
 
 export interface KMeansResult {
@@ -174,22 +178,22 @@ function finalize(
   return { clusters, error };
 }
 
-function run(
-  h: Histogram,
-  k: number,
-  iterations: number,
-  tolerance: number,
-  rng: () => number,
-): Run {
+/** The k-means++ starting centroids, as working-space colors. */
+function seedCentroids(h: Histogram, k: number, rng: () => number): Float64Array {
   const seeds = initCentroids(h, k, rng);
-  const kk = seeds.length;
-  const centroids = new Float64Array(kk * 3);
+  const centroids = new Float64Array(seeds.length * 3);
   seeds.forEach((bin, j) => {
     centroids.set(
       [h.means[bin * 3] ?? 0, h.means[bin * 3 + 1] ?? 0, h.means[bin * 3 + 2] ?? 0],
       j * 3,
     );
   });
+  return centroids;
+}
+
+/** Lloyd iterations from the given centroids (which are updated in place). */
+function run(h: Histogram, centroids: Float64Array, iterations: number, tolerance: number): Run {
+  const kk = centroids.length / 3;
   const assignment = new Int32Array(h.size);
   const d = new Float64Array(h.size);
   const sums = new Float64Array(kk * 3);
@@ -243,11 +247,19 @@ export function kmeans(h: Histogram, options: KMeansOptions): KMeansResult {
   if (k <= 0 || h.total === 0) {
     return { clusters: [], error: 0, iterations: 0, converged: true, restartErrors: [] };
   }
+  if (options.initialCentroids) {
+    const start = Float64Array.from(options.initialCentroids.flat());
+    if (start.length === 0) {
+      return { clusters: [], error: 0, iterations: 0, converged: true, restartErrors: [] };
+    }
+    const result = run(h, start, iterations, tolerance);
+    return { ...result, restartErrors: [result.error] };
+  }
   const rng = mulberry32(seed);
   let best: Run | null = null;
   const restartErrors: number[] = [];
   for (let r = 0; r < Math.max(1, restarts); r += 1) {
-    const result = run(h, k, iterations, tolerance, rng);
+    const result = run(h, seedCentroids(h, k, rng), iterations, tolerance);
     restartErrors.push(result.error);
     if (!best || result.error < best.error) best = result;
   }

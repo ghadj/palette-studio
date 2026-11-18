@@ -144,7 +144,7 @@ export function SettingsControls() {
     value: a,
     label: ALGORITHM_LABELS[a],
   }));
-  // The mockup state shows Balanced, which arrives in M2: keep it visible but not selectable.
+  // An algorithm that isn't built yet stays visible, but not selectable, if the settings name it.
   if (!algorithms.some((a) => a.value === s.algorithm)) {
     algorithms.unshift({
       value: s.algorithm,

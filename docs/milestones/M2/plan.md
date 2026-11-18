@@ -123,7 +123,11 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "re-extraction with Balanced at 256 px is logged" (spec 7.7 target about 150 ms, informational)
   - `e2e/mockup-state.spec.ts` › "Algorithm shows Balanced, enabled".
 - Done when: tests pass; every e2e test that pinned hexes under the old k-means++ default is updated, or sets k-means++ explicitly; the reviewer checks that each change is a default change and not a regression.
-- [ ] Done
+- [x] Done
+  - Note: no e2e test pinned k-means++ hexes. Two e2e tests used Seed under the old default ("working space, sample size, resampling and seed all re-extract", and "Median cut disables Seed…"). Both now select K-means++ first, and their assertions are unchanged. In unit tests, the k-means seed check in `pipeline.test.ts` now sets `algorithm: "kmeans"`.
+  - Note: the Restarts row doesn't exist until T7, so for now the Balanced e2e test checks Seed and its note; T7 extends it to Restarts.
+  - Note: vividness multiplies the bin weights, as decision 6 says, so with vividness above 0 the populations are shares of the weighted histogram. Grays (OKLab C below 1e-6, which is conversion noise) get weight exactly 0 at vividness 1. A purely gray image at vividness 1 therefore gives an empty palette.
+  - Note: re-extraction with Balanced at 256 px takes 187 to 197 ms of wall time across the five projects, including the 120 ms debounce.
 
 ### M2-T5: Exact colors, even spread, keep one outlier
 - Files:

@@ -54,6 +54,11 @@ describe("extraction defaults (spec 2.4; M2 decision 3)", () => {
     expect(Object.keys(SPEC_DEFAULT_SETTINGS).some((k) => /region|roi/i.test(k))).toBe(false);
   });
 
+  it("DEFAULT_SETTINGS.algorithm is 'balanced'", () => {
+    expect(DEFAULT_SETTINGS.algorithm).toBe("balanced");
+    expect(DEFAULT_SETTINGS).toEqual(SPEC_DEFAULT_SETTINGS);
+  });
+
   it("the schema version stays 1, because no project file exists before M5", () => {
     expect(SCHEMA_VERSION).toBe(1);
   });

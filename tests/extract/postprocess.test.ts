@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { labToRgb, rgbToOklab } from "../../src/color/convert";
+import { hexToOklab, labToRgb, oklabToHex, rgbToOklab } from "../../src/color/convert";
 import { deltaE } from "../../src/color/delta-e";
 import { postprocess } from "../../src/extract/postprocess";
 
@@ -90,5 +90,31 @@ describe("distance metric in post-processing (spec 2.3, 2.4; decision 7)", () =>
     expect(postprocess(far, { mergeThreshold: 3, metric: "ciede2000" })).toHaveLength(2);
     // Read as ΔE OK, a threshold of 3.0 would merge everything; the metric decides the units.
     expect(postprocess(far, { mergeThreshold: 3, metric: "ok" })).toHaveLength(1);
+  });
+});
+
+describe("population vs. vividness ranking (spec 2.4; M2 decision 5c)", () => {
+  const gray = { lab: hexToOklab("#808080"), population: 0.6 };
+  const red = { lab: hexToOklab("#FF0000"), population: 0.1 };
+
+  it("vividness 0 ranks a 60% #808080 ahead of a 10% #FF0000", () => {
+    const out = postprocess([red, gray], { mergeThreshold: 0.03, vividness: 0 });
+    expect(out.map((x) => oklabToHex(x.lab))).toEqual(["#808080", "#FF0000"]);
+    // Populations are normalized before scoring.
+    expect(out.map((x) => x.population)).toEqual([0.6 / 0.7, 0.1 / 0.7]);
+  });
+
+  it("vividness 1 ranks #FF0000 (C 0.258) first", () => {
+    expect(Math.hypot(red.lab.a, red.lab.b)).toBeCloseTo(0.258, 3);
+    const out = postprocess([gray, red], { mergeThreshold: 0.03, vividness: 1 });
+    expect(out.map((x) => oklabToHex(x.lab))).toEqual(["#FF0000", "#808080"]);
+    // Ranking doesn't change the populations.
+    expect(out.map((x) => x.population)).toEqual([0.1 / 0.7, 0.6 / 0.7]);
+  });
+
+  it("at vividness 0.5 the score is the mean of the population share and min(1, C / 0.2)", () => {
+    // Gray: 0.5 × 0.857 = 0.43; red: 0.5 × 0.143 + 0.5 × 1 = 0.57, so red leads.
+    const out = postprocess([gray, red], { mergeThreshold: 0.03, vividness: 0.5 });
+    expect(oklabToHex(out[0]?.lab ?? gray.lab)).toBe("#FF0000");
   });
 });

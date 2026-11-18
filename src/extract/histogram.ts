@@ -5,7 +5,7 @@
  * per-pixel keep mask (filters, spec 2.1 step 3) and per-pixel weights (spatial weighting) shape
  * the counts. Pure; runs in the worker.
  */
-import { rgb8ToWorking } from "../color/working-space";
+import { rgb8ToWorking, workingToOklab } from "../color/working-space";
 import type { HistogramBits, WorkingSpace } from "../types";
 
 export interface Histogram {
@@ -81,4 +81,60 @@ export function buildHistogram(
     k += 1;
   }
   return { size, counts: outCounts, means, total, bits, bins };
+}
+
+/** OKLab chroma at which a color counts as fully vivid (M2 decisions 5c and 6). */
+export const VIVID_CHROMA = 0.2;
+
+/**
+ * Chroma below this is the rounding noise of converting a gray (about 1e-8), not color: grays get a
+ * vividness of exactly 0.
+ */
+const ACHROMATIC = 1e-6;
+
+/** min(1, C / 0.2) for an OKLab color: 0 for grays, 1 at chroma 0.2 and above. */
+export function vividnessOf(a: number, b: number): number {
+  const c = Math.hypot(a, b);
+  return c < ACHROMATIC ? 0 : Math.min(1, c / VIVID_CHROMA);
+}
+
+/**
+ * Population vs. vividness before quantizing (M2 decision 6): each bin's weight is multiplied by
+ * (1 − v) + v × min(1, C / 0.2), with C the OKLab chroma of the bin's mean whatever the working
+ * space. Bins whose weight becomes 0 are dropped. Returns the histogram itself when v is 0.
+ */
+export function weightByVividness(h: Histogram, vividness: number, space: WorkingSpace): Histogram {
+  const v = Math.min(1, Math.max(0, vividness));
+  if (v === 0 || h.size === 0) return h;
+  const factors = new Float64Array(h.size);
+  let size = 0;
+  for (let k = 0; k < h.size; k += 1) {
+    const lab = workingToOklab(
+      space,
+      h.means[k * 3] ?? 0,
+      h.means[k * 3 + 1] ?? 0,
+      h.means[k * 3 + 2] ?? 0,
+    );
+    const f = 1 - v + v * vividnessOf(lab.a, lab.b);
+    factors[k] = f;
+    if (f > 0) size += 1;
+  }
+  const counts = new Float64Array(size);
+  const means = new Float64Array(size * 3);
+  const bins = new Uint32Array(size);
+  let total = 0;
+  let j = 0;
+  for (let k = 0; k < h.size; k += 1) {
+    const f = factors[k] ?? 0;
+    if (f <= 0) continue;
+    const w = (h.counts[k] ?? 0) * f;
+    counts[j] = w;
+    bins[j] = h.bins[k] ?? 0;
+    means[j * 3] = h.means[k * 3] ?? 0;
+    means[j * 3 + 1] = h.means[k * 3 + 1] ?? 0;
+    means[j * 3 + 2] = h.means[k * 3 + 2] ?? 0;
+    total += w;
+    j += 1;
+  }
+  return { size, counts, means, total, bits: h.bits, bins };
 }

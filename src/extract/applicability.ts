@@ -10,7 +10,9 @@ export type SettingKey = keyof ExtractionSettings;
 
 const ONLY_FOR: Partial<Record<SettingKey, readonly Algorithm[]>> = {
   seed: ["kmeans"],
-  iterations: ["kmeans"],
+  // Balanced refines with k-means in one deterministic run: iterations apply, seed and restarts
+  // don't (M2 decision 5b).
+  iterations: ["kmeans", "balanced"],
   restarts: ["kmeans"],
 };
 

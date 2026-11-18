@@ -26,6 +26,15 @@ test.describe("mockup state (mockup-state.md)", () => {
     }
   });
 
+  test("Algorithm shows Balanced, enabled", async ({ page }) => {
+    await page.goto(demo());
+    const select = page.locator("#setting-algorithm:visible");
+    await expect(select).toHaveValue("balanced");
+    await expect(select).toBeEnabled();
+    await expect(select.locator("option:checked")).toHaveText("Balanced");
+    await expect(select.locator("option:checked")).toBeEnabled();
+  });
+
   test("swatch 3 has the selected outline", async ({ page }) => {
     await page.goto(demo());
     for (const theme of ["light", "dark"] as const) {

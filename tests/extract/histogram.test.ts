@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hexToOklab } from "../../src/color/convert";
-import { buildHistogram } from "../../src/extract/histogram";
+import { buildHistogram, weightByVividness } from "../../src/extract/histogram";
 import { pixels } from "./helpers";
 
 describe("weighted histogram (spec 2.2, 7.6)", () => {
@@ -128,5 +128,49 @@ describe("histogram mask, weights and bin indices (M2-T2)", () => {
       ]),
     );
     expect(Array.from(many.bins)).toEqual([0, (29 << 10) | (13 << 5) | 7, 32767]);
+  });
+});
+
+describe("vividness bin weights (M2 decision 6)", () => {
+  const weightOf = (h: ReturnType<typeof buildHistogram>, hex: string) => {
+    const ref = hexToOklab(hex);
+    for (let i = 0; i < h.size; i += 1) {
+      if (Math.abs((h.means[i * 3] ?? 0) - ref.l) < 1e-9) return h.counts[i] ?? 0;
+    }
+    return 0;
+  };
+  const data = pixels([
+    ["#808080", 5],
+    ["#FF0000", 5],
+    ["#B07060", 5],
+  ]);
+
+  it("vividness 1 gives a #808080 bin weight 0 and a #FF0000 bin its full count", () => {
+    const h = weightByVividness(buildHistogram(data), 1, "oklab");
+    expect(weightOf(h, "#808080")).toBe(0);
+    expect(weightOf(h, "#FF0000")).toBe(5);
+    // A mid-chroma color is weighted by C / 0.2.
+    const mid = hexToOklab("#B07060");
+    const c = Math.hypot(mid.a, mid.b);
+    expect(c).toBeLessThan(0.2);
+    expect(weightOf(h, "#B07060")).toBeCloseTo((5 * c) / 0.2, 12);
+    expect(h.total).toBeCloseTo(5 + (5 * c) / 0.2, 12);
+  });
+
+  it("vividness 0 leaves the histogram as it is; 0.5 halves a gray", () => {
+    const h = buildHistogram(data);
+    expect(weightByVividness(h, 0, "oklab")).toBe(h);
+    expect(weightOf(weightByVividness(h, 0.5, "oklab"), "#808080")).toBe(2.5);
+  });
+
+  it("uses OKLab chroma whatever the working space", () => {
+    for (const space of ["cielab", "linear-srgb", "srgb"] as const) {
+      const h = weightByVividness(buildHistogram(data, { space }), 1, space);
+      expect(h.size, space).toBe(2);
+      const counts = Array.from(h.counts).sort((a, b) => a - b);
+      const mid = hexToOklab("#B07060");
+      expect(counts[0], space).toBeCloseTo((5 * Math.hypot(mid.a, mid.b)) / 0.2, 6);
+      expect(counts[1], space).toBe(5);
+    }
   });
 });

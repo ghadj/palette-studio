@@ -57,6 +57,65 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     expect((await hexes(page)).length).toBeGreaterThan(1);
   });
 
+  test("a new image extracts with Balanced and the Algorithm select shows Balanced", async ({
+    page,
+  }) => {
+    const select = page.locator("#setting-algorithm:visible");
+    await expect(select).toHaveValue("balanced");
+    await expect(select.locator("option:checked")).toHaveText("Balanced");
+    await expect(select.locator('option[value="balanced"]')).toBeEnabled();
+    await page.getByTestId("file-input").setInputFiles(fixture("two-color.png"));
+    await waitForPalette(page, 2);
+    expect(await hexes(page)).toEqual(["#1DB07A", "#5039B0"]);
+    await expect(select).toHaveValue("balanced");
+  });
+
+  test("with Balanced, Seed and Restarts are disabled with their notes", async ({ page }) => {
+    // M2 decision 5b. The Restarts row arrives with the other Advanced rows in M2-T7, which
+    // extends this check to it; until then Seed carries the note.
+    await loadSample(page, "Orbits");
+    await waitForPalette(page, 6);
+    await expect(page.locator("#setting-algorithm:visible")).toHaveValue("balanced");
+    await page.locator("details.chevron-row:visible summary").click();
+    const seed = page.locator("#setting-seed:visible");
+    await expect(seed).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Randomize" })).toBeDisabled();
+    await expect(page.locator("#setting-seed-note")).toHaveText("Used by k-means++ only");
+    await expect(seed).toHaveAttribute("aria-describedby", "setting-seed-note");
+    // Seed and Restarts don't change a Balanced palette.
+    const before = await hexes(page);
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "K-means++" });
+    await seed.fill("777");
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "Balanced" });
+    await expect.poll(() => hexes(page)).toEqual(before);
+    await waitForPalette(page, 6);
+    expect(await hexes(page)).toEqual(before);
+  });
+
+  test("re-extraction with Balanced at 256 px is logged (spec 7.7, informational)", async ({
+    page,
+  }, info) => {
+    await loadSample(page, "Orbits");
+    await waitForPalette(page, 6);
+    const field = page.locator("#setting-colors:visible");
+    const runs: number[] = [];
+    for (const colors of ["5", "6", "5", "6"]) {
+      const start = Date.now();
+      await field.fill(colors);
+      await waitForPalette(page, Number(colors));
+      runs.push(Date.now() - start);
+    }
+    const ms = Math.min(...runs);
+    // Wall time from the change to the updated strip, including the ~120 ms debounce (spec 7.4).
+    info.annotations.push({
+      type: "re-extraction with Balanced at 256 px",
+      description: `${ms} ms including the 120 ms debounce`,
+    });
+    console.log(
+      `[${info.project.name}] re-extraction with Balanced at 256 px: ${ms} ms (best of ${runs.length}, including the 120 ms debounce)`,
+    );
+  });
+
   test("switching to Wu re-extracts; two-color.png gives its two hexes", async ({ page }) => {
     await loadSample(page, "Orbits");
     await waitForPalette(page, 6);
@@ -79,6 +138,9 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
       await waitForPalette(page);
       previous = await hexes(page);
     };
+    // Seed applies to k-means++ only, so this test runs under k-means++ (the default is Balanced).
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "K-means++" });
+    await changed();
     await page.locator("#setting-space:visible").selectOption({ label: "sRGB" });
     await changed();
     const advanced = page.locator("details.chevron-row:visible");
@@ -97,9 +159,12 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
   }) => {
     await loadSample(page, "Orbits");
     await waitForPalette(page, 6);
+    // The default is Balanced, which doesn't use Seed: start from k-means++.
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "K-means++" });
     await page.locator("details.chevron-row:visible summary").click();
     const seed = page.locator("#setting-seed:visible");
     const randomize = page.getByRole("button", { name: "Randomize" });
+    await expect(seed).toBeEnabled();
     await seed.fill("4242");
     // Let the debounced re-extraction for the new seed (120 ms) start and finish.
     await page.waitForTimeout(300);
