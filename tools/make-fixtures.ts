@@ -7,6 +7,7 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { chromium } from "@playwright/test";
+import { SINGLE_COLOR, TWELVE_COLORS, TWO_COLOR } from "./fixture-colors";
 import { encodePng, hexBytes } from "./png";
 
 const dir = resolve(process.cwd(), "tests/fixtures");
@@ -19,22 +20,7 @@ function solid(width: number, height: number, fill: (x: number, y: number) => nu
   return out;
 }
 
-export const TWO_COLOR = { major: "#1DB07A", minor: "#5039B0" };
-export const SINGLE_COLOR = "#14386B";
-export const TWELVE_COLORS = [
-  "#E6194B",
-  "#3CB44B",
-  "#FFE119",
-  "#4363D8",
-  "#F58231",
-  "#911EB4",
-  "#46F0F0",
-  "#F032E6",
-  "#BCF60C",
-  "#008080",
-  "#9A6324",
-  "#000075",
-];
+export { SINGLE_COLOR, TWELVE_COLORS, TWO_COLOR };
 
 /** EXIF APP1 segment holding only Orientation (0x0112) = value. Little-endian TIFF. */
 function exifOrientation(value: number): Buffer {

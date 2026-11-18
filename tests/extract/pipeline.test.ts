@@ -3,7 +3,8 @@ import { oklabToHex } from "../../src/color/convert";
 import { extractPalette } from "../../src/extract/pipeline";
 import { DEFAULT_SETTINGS } from "../../src/state/defaults";
 import type { Algorithm, ExtractionSettings, WorkingSpace } from "../../src/types";
-import { pixels } from "./helpers";
+import { TWELVE_COLORS } from "../../tools/fixture-colors";
+import { image, pixels, row } from "./helpers";
 
 const ALGORITHMS: Algorithm[] = ["kmeans", "median-cut"];
 const SPACES: WorkingSpace[] = ["oklab", "cielab", "linear-srgb", "srgb"];
@@ -14,12 +15,14 @@ const settings = (patch: Partial<ExtractionSettings>): ExtractionSettings => ({
 
 describe("extraction pipeline (spec 2.1, 8)", () => {
   it("both algorithms × 4 working spaces are stable on single-color, two-color and transparent inputs", () => {
-    const single = pixels([["#14386B", 100]]);
-    const two = pixels([
-      ["#1DB07A", 75],
-      ["#5039B0", 25],
-    ]);
-    const clear = pixels([["#FFFFFF", 50, 0]]);
+    const single = row(pixels([["#14386B", 100]]));
+    const two = row(
+      pixels([
+        ["#1DB07A", 75],
+        ["#5039B0", 25],
+      ]),
+    );
+    const clear = row(pixels([["#FFFFFF", 50, 0]]));
     for (const algorithm of ALGORITHMS) {
       for (const workingSpace of SPACES) {
         const s = settings({ algorithm, workingSpace });
@@ -50,7 +53,7 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
       const n = (i * 2654435761) >>> 0;
       runs.push([`#${(n >>> 8).toString(16).padStart(6, "0").slice(-6)}`, 1 + (n % 5)]);
     }
-    const image = pixels(runs);
+    const image = row(pixels(runs));
     for (const algorithm of ALGORITHMS) {
       const s = settings({ algorithm, colors: 8, seed: 5 });
       const a = extractPalette(image, s);
@@ -64,11 +67,13 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
   });
 
   it("asks for no more colors than set and merges near-duplicates", () => {
-    const image = pixels([
-      ["#808080", 10],
-      ["#888888", 10],
-      ["#FF0000", 10],
-    ]);
+    const image = row(
+      pixels([
+        ["#808080", 10],
+        ["#888888", 10],
+        ["#FF0000", 10],
+      ]),
+    );
     const out = extractPalette(image, settings({ colors: 3, algorithm: "median-cut" }));
     expect(out).toHaveLength(2);
   });
@@ -81,7 +86,7 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
     }
     for (const algorithm of ALGORITHMS) {
       const out = extractPalette(
-        pixels(runs),
+        row(pixels(runs)),
         settings({ algorithm, colors: 32, mergeThreshold: 0 }),
       );
       expect(out.length, algorithm).toBe(12);
@@ -89,8 +94,59 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
   });
 
   it("refuses algorithms that M1 doesn't build", () => {
-    expect(() => extractPalette(pixels([["#000000", 1]]), settings({ algorithm: "wu" }))).toThrow(
-      /not available/,
-    );
+    expect(() =>
+      extractPalette(row(pixels([["#000000", 1]])), settings({ algorithm: "wu" })),
+    ).toThrow(/not available/);
+  });
+
+  it("M1 settings give the same hexes as before for two-color, single-color and twelve-colors pixels", () => {
+    // Pinned from the M1 pipeline (commit d98ec55) before M2 changed it. Same images as the
+    // fixtures: two-color.png 40 × 40 (75/25), single-color.png 16 × 16, twelve-colors.png 120 × 20.
+    const inputs = {
+      two: image(40, 40, (x) => (x < 30 ? "#1DB07A" : "#5039B0")),
+      single: image(16, 16, () => "#14386B"),
+      twelve: image(120, 20, (x) => TWELVE_COLORS[Math.floor(x / 10)] ?? "#000000"),
+    };
+    const expected: Record<string, Record<keyof typeof inputs, Array<[string, number]>>> = {
+      kmeans: {
+        two: [
+          ["#1DB07A", 0.75],
+          ["#5039B0", 0.25],
+        ],
+        single: [["#14386B", 1]],
+        twelve: [
+          ["#B9F086", 0.25],
+          ["#EE5582", 0.25],
+          ["#6B7559", 0.166667],
+          ["#7349C6", 0.166667],
+          ["#3CB44B", 0.083333],
+          ["#000075", 0.083333],
+        ],
+      },
+      "median-cut": {
+        two: [
+          ["#1DB07A", 0.75],
+          ["#5039B0", 0.25],
+        ],
+        single: [["#14386B", 1]],
+        twelve: [
+          ["#72DF87", 0.25],
+          ["#4C36AA", 0.25],
+          ["#F1699D", 0.166667],
+          ["#6B7559", 0.166667],
+          ["#FFE119", 0.083333],
+          ["#E6194B", 0.083333],
+        ],
+      },
+    };
+    for (const algorithm of ["kmeans", "median-cut"] as const) {
+      for (const name of ["two", "single", "twelve"] as const) {
+        const out = extractPalette(inputs[name], settings({ algorithm }));
+        expect(
+          out.map((c) => [oklabToHex(c.lab), Number(c.population.toFixed(6))]),
+          `${algorithm} ${name}`,
+        ).toEqual(expected[algorithm]?.[name]);
+      }
+    }
   });
 });

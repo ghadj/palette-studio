@@ -77,3 +77,56 @@ describe("weighted histogram (spec 2.2, 7.6)", () => {
     expect(h.means[0]).toBeCloseTo((0x80 + 3 * 0x83) / 4 / 255, 12);
   });
 });
+
+describe("histogram mask, weights and bin indices (M2-T2)", () => {
+  it("an all-zero mask gives no bins", () => {
+    const data = pixels([
+      ["#E8693A", 5],
+      ["#14386B", 5],
+    ]);
+    const h = buildHistogram(data, { mask: new Uint8Array(10) });
+    expect(h.size).toBe(0);
+    expect(h.total).toBe(0);
+    expect(h.bins).toHaveLength(0);
+    // A mask with some pixels kept counts only those.
+    const half = new Uint8Array(10);
+    half.fill(1, 0, 5);
+    const kept = buildHistogram(data, { mask: half });
+    expect(kept.size).toBe(1);
+    expect(kept.total).toBe(5);
+  });
+
+  it("weights 2:1 make a 50/50 image count 2:1", () => {
+    const data = pixels([
+      ["#E8693A", 10],
+      ["#14386B", 10],
+    ]);
+    const weights = new Float32Array(20);
+    weights.fill(2, 0, 10);
+    weights.fill(1, 10, 20);
+    const h = buildHistogram(data, { weights });
+    expect(h.size).toBe(2);
+    expect(h.total).toBe(30);
+    const orange = hexToOklab("#E8693A");
+    const i = Math.abs((h.means[0] ?? 0) - orange.l) < 1e-9 ? 0 : 1;
+    expect(h.counts[i]).toBe(20);
+    expect(h.counts[1 - i]).toBe(10);
+    // Means are weighted too, but each bin here holds one color, so they stay exact.
+    expect(h.means[i * 3]).toBeCloseTo(orange.l, 12);
+  });
+
+  it("bin index of #E8693A at 5 bits is (29 << 10) | (13 << 5) | 7", () => {
+    const h = buildHistogram(pixels([["#E8693A", 3]]), { bits: 5 });
+    expect(h.bits).toBe(5);
+    expect(Array.from(h.bins)).toEqual([(29 << 10) | (13 << 5) | 7]);
+    // Entries are in ascending bin order.
+    const many = buildHistogram(
+      pixels([
+        ["#FFFFFF", 1],
+        ["#000000", 1],
+        ["#E8693A", 1],
+      ]),
+    );
+    expect(Array.from(many.bins)).toEqual([0, (29 << 10) | (13 << 5) | 7, 32767]);
+  });
+});

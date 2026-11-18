@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { onlyForNote, settingApplies } from "../../src/extract/applicability";
+import { settingApplies, settingNote } from "../../src/extract/applicability";
 import { M1_ALGORITHMS } from "../../src/extract/pipeline";
 
 describe("which settings apply to which algorithm (decision 14)", () => {
@@ -17,7 +17,16 @@ describe("which settings apply to which algorithm (decision 14)", () => {
   });
 
   it("gives the note shown beside a setting that only some algorithms use", () => {
-    expect(onlyForNote("seed")).toBe("Used by k-means++ only");
-    expect(onlyForNote("colors")).toBeNull();
+    expect(settingNote("seed")).toBe("Used by k-means++ only");
+    expect(settingNote("workingSpace")).toBeNull();
+  });
+
+  it("a 'not used by' entry disables a setting for that algorithm and gives the note 'Not used by swatch roles'", () => {
+    // M2 decision 10c: Colors, merge threshold and keep one outlier are not used by swatch roles.
+    for (const setting of ["colors", "mergeThreshold", "keepOutlier"] as const) {
+      expect(settingApplies(setting, "swatch-roles"), setting).toBe(false);
+      for (const algorithm of M1_ALGORITHMS) expect(settingApplies(setting, algorithm)).toBe(true);
+      expect(settingNote(setting)).toBe("Not used by swatch roles");
+    }
   });
 });

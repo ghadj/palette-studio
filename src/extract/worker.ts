@@ -13,7 +13,7 @@ import {
 } from "../image/tiers";
 import type { ExtractionSettings } from "../types";
 import type { FromWorker, PixelBuffer, ToWorker } from "./messages";
-import { extractPalette } from "./pipeline";
+import { type AnalysisImage, extractPalette } from "./pipeline";
 
 interface WorkerScope {
   postMessage(message: FromWorker, transfer?: Transferable[]): void;
@@ -24,7 +24,7 @@ const scope = self as unknown as WorkerScope;
 const create = (width: number, height: number): AnyCanvas => new OffscreenCanvas(width, height);
 
 let master: AnyCanvas | null = null;
-let analysis: { key: string; pixels: Uint8ClampedArray } | null = null;
+let analysis: { key: string; image: AnalysisImage } | null = null;
 
 function canDraw(): boolean {
   try {
@@ -62,23 +62,26 @@ async function prepare(jobId: number, bitmap: ImageBitmap): Promise<void> {
 }
 
 /** The analysis copy at the sample size (spec 2.4), cached until the size or resampling changes. */
-function analysisPixels(settings: ExtractionSettings): Uint8ClampedArray {
+function analysisImage(settings: ExtractionSettings): AnalysisImage {
   if (!master) throw new Error("No image");
   const key = `${master.width}x${master.height}|${settings.sampleSize}|${settings.resampling}`;
   if (analysis?.key !== key) {
     const size = analysisSize(master.width, master.height, settings.sampleSize);
     const canvas = resample(master, size, settings.resampling, create);
-    analysis = { key, pixels: readPixels(canvas).data };
+    const read = readPixels(canvas);
+    analysis = { key, image: { width: read.width, height: read.height, data: read.data } };
     canvas.width = 0;
     canvas.height = 0;
   }
-  return analysis.pixels;
+  return analysis.image;
 }
 
 function extract(jobId: number, settings: ExtractionSettings, pixels: PixelBuffer | null): void {
   const start = performance.now();
-  const rgba = pixels ? new Uint8ClampedArray(pixels.data) : analysisPixels(settings);
-  const colors = extractPalette(rgba, settings);
+  const image: AnalysisImage = pixels
+    ? { width: pixels.width, height: pixels.height, data: new Uint8ClampedArray(pixels.data) }
+    : analysisImage(settings);
+  const colors = extractPalette(image, settings);
   scope.postMessage({ type: "extracted", jobId, colors, ms: performance.now() - start });
 }
 

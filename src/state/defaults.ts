@@ -2,7 +2,7 @@ import type { ExtractionSettings } from "../types";
 
 export const SCHEMA_VERSION = 1;
 
-/** The defaults in the spec 2.4 table. */
+/** The defaults in the spec 2.4 table, with the M2 decision 3 thresholds (L 0.2 and 0.95). */
 export const SPEC_DEFAULT_SETTINGS: Readonly<ExtractionSettings> = Object.freeze({
   algorithm: "balanced",
   colors: 6,
@@ -10,7 +10,15 @@ export const SPEC_DEFAULT_SETTINGS: Readonly<ExtractionSettings> = Object.freeze
   sampleSize: 256,
   resampling: "smooth",
   alphaCutoff: 128,
+  ignoreDark: Object.freeze({ on: false, threshold: 0.2 }),
+  ignoreLight: Object.freeze({ on: false, threshold: 0.95 }),
+  ignoreBackground: "off",
+  minChroma: 0,
+  vividness: 0,
   mergeThreshold: 0.03,
+  distanceMetric: "ok",
+  spatialWeighting: "uniform",
+  keepOutlier: false,
   histogramBits: 5,
   iterations: 25,
   restarts: 3,

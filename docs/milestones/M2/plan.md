@@ -75,7 +75,8 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
   - `tests/extract/pipeline.test.ts` › "M1 settings give the same hexes as before for two-color, single-color and twelve-colors pixels" (pin the current outputs first).
   - `tests/extract/applicability.test.ts` › "a 'not used by' entry disables a setting for that algorithm and gives the note 'Not used by swatch roles'".
 - Done when: tests pass; the e2e suite still passes unchanged; the mockup fixture picks up the new defaults through `SPEC_DEFAULT_SETTINGS`.
-- [ ] Done
+- [x] Done
+  - Note: `ignoreDark` and `ignoreLight` are `{ on, threshold }`. The client already sent the fallback's width and height, so only the worker changed. The "not used by" table already holds decision 10c's swatch-roles entries for Colors, merge threshold and keep one outlier, because the T2 test needs a real entry. Swatch roles can't be selected until T6, so nothing visible changes; T6 adds vividness and wires the UI. `onlyForNote` is renamed `settingNote`. The fixture colors moved to `tools/fixture-colors.ts`, so tests can import them without running `make-fixtures.ts`.
 
 ### M2-T3: Wu quantizer
 - Files:

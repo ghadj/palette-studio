@@ -3,10 +3,12 @@
  * gradients, export preferences and view settings.
  */
 import type { Oklch } from "./color/convert";
+import type { DistanceMetric } from "./color/delta-e";
 
 export type { Oklab, Oklch } from "./color/convert";
+export type { DistanceMetric } from "./color/delta-e";
 
-/** Extraction algorithms (spec 2.2, 2.4). M1 implements median cut and k-means++. */
+/** Extraction algorithms (spec 2.2, 2.4). Octree comes later. */
 export type Algorithm =
   | "median-cut"
   | "wu"
@@ -21,8 +23,20 @@ export type SampleSize = 64 | 128 | 256 | 512 | "full";
 export type Resampling = "smooth" | "nearest";
 export type SortOrder = "population" | "lightness" | "chroma" | "hue" | "extracted";
 export type HistogramBits = 4 | 5 | 6;
+export type SpatialWeighting = "uniform" | "center" | "contrast";
+export type IgnoreBackground = "off" | "auto";
 
-/** Extraction settings used in M1 (spec 2.4). Filters, ROI and scoring settings arrive in M2. */
+/** Ignore dark or light pixels: a toggle and an OKLab L threshold (spec 2.4; M2 decision 3). */
+export interface LightnessFilter {
+  on: boolean;
+  /** OKLab L, 0 to 1. Dark: below this is ignored. Light: above this is ignored. */
+  threshold: number;
+}
+
+/**
+ * Extraction settings (spec 2.4). There is no region of interest: extraction always uses the
+ * whole image (M2 decision 15a).
+ */
 export interface ExtractionSettings {
   algorithm: Algorithm;
   /** Number of colors, 2 to 12 (decision 13; spec 2.4 says 32). */
@@ -33,8 +47,26 @@ export interface ExtractionSettings {
   resampling: Resampling;
   /** 0 to 255; pixels more transparent than this are ignored. */
   alphaCutoff: number;
-  /** ΔE 0 to 0.15. */
+  /** Off by default, threshold L 0.2. */
+  ignoreDark: LightnessFilter;
+  /** Off by default, threshold L 0.95. */
+  ignoreLight: LightnessFilter;
+  /** Off, or auto-detect from border pixels (M2 decision 4). */
+  ignoreBackground: IgnoreBackground;
+  /** OKLab C, 0 to 0.2; pixels below it are dropped. */
+  minChroma: number;
+  /** Population vs. vividness, 0 to 1 (M2 decisions 5c and 6). */
+  vividness: number;
+  /**
+   * Stored in ΔE OK units, 0 to 0.15. Under CIEDE2000 the same value reads ×100, in ΔE00 units
+   * (M2 decision 7).
+   */
   mergeThreshold: number;
+  /** Governs merging and the outlier distance; clustering stays Euclidean (M2 decision 7). */
+  distanceMetric: DistanceMetric;
+  spatialWeighting: SpatialWeighting;
+  /** Reserve a slot for the most distinct small cluster (M2 decision 8). */
+  keepOutlier: boolean;
   histogramBits: HistogramBits;
   /** K-means iterations, 5 to 100. */
   iterations: number;

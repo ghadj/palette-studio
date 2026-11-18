@@ -1,8 +1,9 @@
 /**
- * The extraction pipeline (spec 2.1 steps 4 to 7) on an analysis copy's RGBA pixels: histogram in
- * the working space, quantize with the chosen algorithm, convert to OKLab, then post-process. Pure;
- * the worker runs it. Filters (step 3) arrive in M2.
+ * The extraction pipeline (spec 2.1 steps 3 to 7) on an analysis copy: histogram in the working
+ * space, quantize with the chosen algorithm, convert to OKLab, then post-process. Pure; the worker
+ * runs it. The whole image is always used: there is no region of interest (M2 decision 15a).
  */
+import { thresholdFor } from "../color/delta-e";
 import { workingToOklab } from "../color/working-space";
 import { clampColors } from "../state/defaults";
 import type { ExtractionSettings } from "../types";
@@ -16,12 +17,19 @@ export type { ExtractedColor } from "./postprocess";
 /** Algorithms M1 builds (spec 9). The others arrive in M2. */
 export const M1_ALGORITHMS = ["kmeans", "median-cut"] as const;
 
+/** The analysis copy: RGBA pixels, row by row. */
+export interface AnalysisImage {
+  width: number;
+  height: number;
+  data: Uint8ClampedArray | Uint8Array;
+}
+
 export function extractPalette(
-  rgba: Uint8ClampedArray | Uint8Array,
+  image: AnalysisImage,
   settings: ExtractionSettings,
 ): ExtractedColor[] {
   const count = clampColors(settings.colors);
-  const h = buildHistogram(rgba, {
+  const h = buildHistogram(image.data, {
     space: settings.workingSpace,
     alphaCutoff: settings.alphaCutoff,
     bits: settings.histogramBits,
@@ -46,5 +54,8 @@ export function extractPalette(
     lab: workingToOklab(settings.workingSpace, c.color[0], c.color[1], c.color[2]),
     population: c.population,
   }));
-  return postprocess(colors, { mergeThreshold: settings.mergeThreshold });
+  return postprocess(colors, {
+    mergeThreshold: thresholdFor(settings.distanceMetric, settings.mergeThreshold),
+    metric: settings.distanceMetric,
+  });
 }

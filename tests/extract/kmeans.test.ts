@@ -9,6 +9,9 @@ const hist = (points: Array<[number, number, number, number]>): Histogram => ({
   counts: Float64Array.from(points.map((p) => p[3])),
   means: Float64Array.from(points.flatMap((p) => [p[0], p[1], p[2]])),
   total: points.reduce((n, p) => n + p[3], 0),
+  // Synthetic points have no sRGB bin; median cut and k-means don't read bin indices.
+  bits: 5,
+  bins: Uint32Array.from(points, (_, i) => i),
 });
 
 /** A deterministic cloud of points around three centers, with varied weights. */

@@ -5,7 +5,7 @@
  */
 import { ChevronDown, ChevronRight } from "lucide-preact";
 import { useState } from "preact/hooks";
-import { onlyForNote, settingApplies } from "../extract/applicability";
+import { settingApplies, settingNote } from "../extract/applicability";
 import { M1_ALGORITHMS } from "../extract/pipeline";
 import { clampColors, MAX_COLORS, MIN_COLORS } from "../state/defaults";
 import { settings } from "../state/signals";
@@ -139,7 +139,7 @@ export function SettingsControls() {
   const s = settings.value;
   // Decision 14: settings that don't apply to the algorithm are disabled, not hidden, and keep their values.
   const seedApplies = settingApplies("seed", s.algorithm);
-  const seedNote = onlyForNote("seed");
+  const seedNote = settingNote("seed");
   const algorithms: Array<Option<Algorithm>> = M1_ALGORITHMS.map((a) => ({
     value: a,
     label: ALGORITHM_LABELS[a],
