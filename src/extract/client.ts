@@ -4,6 +4,8 @@
  * analysis pixels go to the worker for extraction (spec 7.4). Neither path loops over pixels in
  * JavaScript on the main thread.
  */
+
+import type { Oklab } from "../color/convert";
 import {
   type AnyCanvas,
   analysisSize,
@@ -13,8 +15,14 @@ import {
   resample,
 } from "../image/tiers";
 import type { ExtractionSettings } from "../types";
+import type { ClusterMap } from "./cluster-map";
 import type { FromWorker, PixelBuffer, ToWorker } from "./messages";
 import type { ExtractionResult } from "./pipeline";
+
+/** An extraction's result with the cluster map for its colors (spec 2.6). */
+export interface Extraction extends ExtractionResult {
+  map: ClusterMap;
+}
 
 export interface PreparedImage {
   display: ImageBitmap;
@@ -202,8 +210,11 @@ export class ImageClient {
     return { display, masterWidth: master.width, masterHeight: master.height, thread: "main" };
   }
 
-  /** Runs extraction on the current image's analysis copy (spec 2.1, 2.4). */
-  async extract(settings: ExtractionSettings): Promise<ExtractionResult> {
+  /**
+   * The analysis pixels to send with a job: none when the worker holds the master (rebuilt first
+   * if a new worker lost it), or the analysis copy made here in the main-thread fallback.
+   */
+  private async analysisPixels(settings: ExtractionSettings): Promise<PixelBuffer | null> {
     const inWorker = await this.connect();
     if (inWorker && this.masterLost) {
       // A new worker has no master yet: rebuild it from the original image.
@@ -211,24 +222,46 @@ export class ImageClient {
       const prepared = await this.prepareInWorker(await this.restore());
       prepared.display.close();
     }
-    let pixels: PixelBuffer | null = null;
-    const transfer: Transferable[] = [];
-    if (!inWorker) {
-      if (!this.mainMaster) throw new Error("No image");
-      const size = analysisSize(this.mainMaster.width, this.mainMaster.height, settings.sampleSize);
-      const canvas = resample(this.mainMaster, size, settings.resampling, createMainCanvas);
-      const data = readPixels(canvas).data;
-      canvas.width = 0;
-      canvas.height = 0;
-      pixels = { width: size.width, height: size.height, data: data.buffer as ArrayBuffer };
-      transfer.push(pixels.data);
-    }
+    if (inWorker) return null;
+    if (!this.mainMaster) throw new Error("No image");
+    const size = analysisSize(this.mainMaster.width, this.mainMaster.height, settings.sampleSize);
+    const canvas = resample(this.mainMaster, size, settings.resampling, createMainCanvas);
+    const data = readPixels(canvas).data;
+    canvas.width = 0;
+    canvas.height = 0;
+    return { width: size.width, height: size.height, data: data.buffer as ArrayBuffer };
+  }
+
+  /**
+   * Runs extraction on the current image's analysis copy (spec 2.1, 2.4), with the cluster map
+   * for the colors it finds (spec 2.6).
+   */
+  async extract(settings: ExtractionSettings): Promise<Extraction> {
+    const pixels = await this.analysisPixels(settings);
     const jobId = this.nextJob++;
-    const reply = await this.request({ type: "extract", jobId, settings, pixels }, transfer);
+    const reply = await this.request(
+      { type: "extract", jobId, settings, pixels },
+      pixels ? [pixels.data] : [],
+    );
     if (reply.type === "extracted") {
-      const { colors, reason, background } = reply;
-      return background ? { colors, reason, background } : { colors, reason };
+      const { colors, reason, map, background } = reply;
+      return background ? { colors, reason, map, background } : { colors, reason, map };
     }
+    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
+  }
+
+  /**
+   * Rebuilds the cluster map of the current image for a palette (OKLab, in palette order),
+   * without extracting (spec 2.6). The settings give the filters and the working space.
+   */
+  async assign(colors: readonly Oklab[], settings: ExtractionSettings): Promise<ClusterMap> {
+    const pixels = await this.analysisPixels(settings);
+    const jobId = this.nextJob++;
+    const reply = await this.request(
+      { type: "assign", jobId, colors: [...colors], settings, pixels },
+      pixels ? [pixels.data] : [],
+    );
+    if (reply.type === "assigned") return reply.map;
     throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
   }
 }

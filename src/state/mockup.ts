@@ -10,6 +10,7 @@ import type { Project, Tab, View } from "../types";
 import { SCHEMA_VERSION, SPEC_DEFAULT_SETTINGS } from "./defaults";
 import {
   MOCKUP_IMAGE,
+  MOCKUP_POPULATIONS,
   MOCKUP_PROJECT_NAME,
   MOCKUP_SELECTED_INDEX,
   MOCKUP_SWATCHES,
@@ -66,8 +67,7 @@ export function buildMockupState(
       locked: false,
       sampleRadius: "auto",
       point: { ...point },
-      // mockup-state.md gives no extraction shares for the fixture; equal shares keep the sum at 1.
-      population: 1 / MOCKUP_SWATCHES.length,
+      population: MOCKUP_POPULATIONS[i] ?? 0,
     }),
   );
   return {

@@ -412,13 +412,20 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
   });
 
   test("the mockup state shows its fixture without running extraction", async ({ page }) => {
+    // The demo's worker only prepares the fixture image and assigns its cluster map (M2-T13);
+    // no extract job may ever be sent.
+    await recordJobs(page);
     await page.goto("./?demo=mockup");
     await expect(strip(page)).toHaveCount(6);
     await expect(page.locator("#setting-algorithm:visible")).toHaveValue("balanced");
+    // Wait for the demo's cluster map, so the worker has done all it was asked to.
+    await expect(strip(page).first()).toHaveAttribute("data-share", /\d/, { timeout: 15_000 });
     await page.locator("#setting-colors:visible").fill("3");
     await page.waitForTimeout(400);
     await expect(strip(page)).toHaveCount(6);
-    expect(page.workers()).toHaveLength(0);
+    expect(await page.evaluate(() => (window as unknown as { __jobs: unknown[] }).__jobs)).toEqual(
+      [],
+    );
   });
 
   test("time to first palette for a generated 12 MP image is logged", async ({ page }, info) => {

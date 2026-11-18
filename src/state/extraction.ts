@@ -5,8 +5,8 @@
  * image, so it never runs extraction (mockup-state.md).
  */
 import { batch, effect } from "@preact/signals";
-import { imageClient } from "../extract/client";
-import type { ExtractionResult } from "../extract/pipeline";
+import { type Extraction, imageClient } from "../extract/client";
+import type { ClusterMap } from "../extract/cluster-map";
 import type { ExtractedColor } from "../extract/postprocess";
 import { missingRoles } from "../extract/swatches";
 import { createSwatch } from "../palette/model";
@@ -15,6 +15,7 @@ import { createJobScheduler, PROGRESS_DELAY_MS } from "./jobs";
 import { onImageLoaded } from "./load-image";
 import {
   backgroundNotFound,
+  clusterMap,
   displayImage,
   emptyRoles,
   extracting,
@@ -33,7 +34,11 @@ const updateProgress = () => {
   progressVisible.value = extractionProgress || loadingProgress;
 };
 
-function applyColors(colors: ExtractedColor[], algorithm: Algorithm | undefined): void {
+function applyColors(
+  colors: ExtractedColor[],
+  algorithm: Algorithm | undefined,
+  map: ClusterMap | null,
+): void {
   const previous = palette.peek();
   const selectedIndex = previous.findIndex((s) => s.id === selectedSwatchId.peek());
   // Swatch roles name each swatch by its role (spec 3.1); the swatch label then shows it.
@@ -42,6 +47,8 @@ function applyColors(colors: ExtractedColor[], algorithm: Algorithm | undefined)
   );
   batch(() => {
     palette.value = next;
+    // The cluster map is stored with the palette it was made for (spec 2.6).
+    clusterMap.value = map;
     // Empty roles are left out of the strip and named in a note (M2 decision 10b).
     emptyRoles.value =
       algorithm === "swatch-roles" ? missingRoles(colors.map((c) => c.name ?? "")) : [];
@@ -65,19 +72,19 @@ const jobAlgorithms = new Map<number, Algorithm>();
 /** M2 decision 18: the filters dropped every pixel. */
 export const ALL_FILTERED_MESSAGE = "Every pixel is filtered out. Loosen a filter.";
 
-const scheduler = createJobScheduler<ExtractionResult>({
+const scheduler = createJobScheduler<Extraction>({
   run: (jobId) => {
     jobVersions.set(jobId, imageVersion);
     const current = settings.peek();
     jobAlgorithms.set(jobId, current.algorithm);
     return imageClient().extract(current);
   },
-  apply: ({ colors, reason, background }, jobId) => {
+  apply: ({ colors, reason, map, background }, jobId) => {
     paletteVersion = jobVersions.get(jobId) ?? imageVersion;
     const algorithm = jobAlgorithms.get(jobId);
     jobVersions.clear();
     jobAlgorithms.clear();
-    applyColors(colors, algorithm);
+    applyColors(colors, algorithm, map);
     backgroundNotFound.value = background === "none";
     if (reason === "all-filtered") {
       // No pixel was left to fill any role, so only the filter message shows.
@@ -101,6 +108,7 @@ const scheduler = createJobScheduler<ExtractionResult>({
     batch(() => {
       if (forImage !== paletteVersion) {
         palette.value = [];
+        clusterMap.value = null;
         emptyRoles.value = [];
         selectedSwatchId.value = null;
       }

@@ -413,7 +413,12 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "demo map shares: swatch 2 83.2%, swatch 1 14.7%, swatches 3 to 6 0.5% each (±0.3 pp, mockup-state.md)"
     - "still no localStorage or IndexedDB access"
 - Done when: tests pass; no UI-thread code loops over the map's pixels; the overlay is drawn from an `ImageData` built in the worker, or through a canvas `putImageData` of a worker-made buffer.
-- [ ] Done
+- [x] Done
+  - Note: the map is a `ClusterMap` (`width`, `height`, `labels: Uint8Array`, `shares`); the worker transfers `labels.buffer`. Shares are plain pixel counts over the kept pixels, without spatial weighting. The overlay itself is T14.
+  - Note: `pipeline.ts` gains `keepPixels(image, settings)`. `runExtraction` takes its result as an optional third argument, so the extraction and its map use one keep mask. T9's background removal belongs in `keepPixels`.
+  - Note: the demo loader is a new `src/state/mockup-map.ts`, started from `main.tsx`. This keeps fetch and worker code out of `mockup.ts`. It decodes the fixture with `decodeImageFile`, calls `prepare` and then `assign`, and stores the map only while the fixture palette is still shown and no image has been loaded.
+  - Note: each strip swatch carries `data-share` while the map matches the palette. The e2e share test reads it, and it needs no UI change. The shares come out within ±0.3 pp at the 256 px analysis size in every browser project.
+  - Note: the M1 e2e test "the mockup state shows its fixture without running extraction" (`e2e/extract.spec.ts`) used to assert that the page had no worker. T13's demo needs a worker to prepare the fixture and run `assign`, so that check is out of date. The test now records the messages sent to the worker, waits for the demo map, and asserts that no `extract` job was sent and the strip still has 6 swatches. This is the test's real intent: no extraction. Approved by the coordinator.
 
 ### M2-T14: Cluster map overlay, zoom-aware, with its no-hover path
 - Files:

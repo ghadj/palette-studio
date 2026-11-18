@@ -6,6 +6,7 @@ vi.mock("../../src/extract/client", () => ({ imageClient: () => ({ extract }) })
 const { extractNewImage, extractNow } = await import("../../src/state/extraction");
 const {
   backgroundNotFound,
+  clusterMap,
   emptyRoles,
   extracting,
   imageMessage,
@@ -193,5 +194,21 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
     extractNow();
     await flush();
     expect(backgroundNotFound.value).toBe(false);
+  });
+
+  it("the cluster map is stored with the palette it came with, and cleared with it (spec 2.6)", async () => {
+    const map = { width: 2, height: 1, labels: Uint8Array.from([0, 1]), shares: [0.5, 0.5] };
+    extract.mockResolvedValueOnce({ ...result(color(0.4, 0.5), color(0.8, 0.5)), map });
+    extractNewImage();
+    await flush();
+    expect(palette.value).toHaveLength(2);
+    expect(clusterMap.value).toBe(map);
+
+    // A new image's failed extraction clears the palette and its map together.
+    extract.mockRejectedValueOnce(new Error("boom"));
+    extractNewImage();
+    await flush();
+    expect(palette.value).toEqual([]);
+    expect(clusterMap.value).toBeNull();
   });
 });

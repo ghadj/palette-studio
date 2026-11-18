@@ -39,6 +39,19 @@ describe("mockup state (mockup-state.md)", () => {
     expect(new Set(state.project.palette.map((s) => s.id)).size).toBe(6);
   });
 
+  it("fixture populations are 0.832, 0.147, 0.005 × 4, normalized to sum 1, in swatch order 2, 1, 3 to 6", () => {
+    const raw = [0.147, 0.832, 0.005, 0.005, 0.005, 0.005];
+    const total = raw.reduce((a, b) => a + b, 0);
+    const populations = state.project.palette.map((s) => s.population);
+    for (const [i, p] of populations.entries()) {
+      expect(p, `swatch ${i + 1}`).toBeCloseTo((raw[i] ?? 0) / total, 12);
+    }
+    expect(Math.abs(populations.reduce((a, b) => a + b, 0) - 1)).toBeLessThan(1e-12);
+    // Swatch 2 holds the most, then swatch 1, then the four patches equally.
+    expect(populations[1]).toBeGreaterThan(populations[0] ?? 1);
+    expect(new Set(populations.slice(2)).size).toBe(1);
+  });
+
   it("swatch 3 is selected", () => {
     expect(state.selectedSwatchId).toBe(state.project.palette[2]?.id);
   });

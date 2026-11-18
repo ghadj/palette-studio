@@ -5,7 +5,8 @@ import "./styles/app.css";
 import { centered } from "./image/viewport";
 import { startLiveExtraction } from "./state/extraction";
 import { buildMockupState, parseMockupParams, parseMockupZoom } from "./state/mockup";
-import { MOCKUP_IMAGE_PATH } from "./state/mockup-fixture";
+import { MOCKUP_IMAGE, MOCKUP_IMAGE_PATH } from "./state/mockup-fixture";
+import { loadMockupClusterMap } from "./state/mockup-map";
 import {
   activeTab,
   activeView,
@@ -36,6 +37,8 @@ if (mockup) {
     initialOpenRows.value = state.openRows;
   });
   document.title = `${state.name} · Palette Studio (demo)`;
+  // The fixture's cluster map comes from the worker; no extraction runs (spec 2.6).
+  void loadMockupClusterMap(`${import.meta.env.BASE_URL}${MOCKUP_IMAGE_PATH}`, MOCKUP_IMAGE.name);
 }
 startLiveExtraction();
 

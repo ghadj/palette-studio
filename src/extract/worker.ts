@@ -1,8 +1,10 @@
 /**
  * The image worker (spec 7.4): makes the working master on an OffscreenCanvas and keeps it, sends
  * back a display copy, and runs extraction on the analysis copy (histogram, quantizer,
- * post-processing). Bitmaps and buffers are transferred, not copied.
+ * post-processing) and the cluster map (spec 2.6). Bitmaps and buffers are transferred, not copied.
  */
+
+import type { Oklab } from "../color/convert";
 import {
   type AnyCanvas,
   analysisSize,
@@ -12,8 +14,9 @@ import {
   resample,
 } from "../image/tiers";
 import type { ExtractionSettings } from "../types";
+import { assignPixels } from "./cluster-map";
 import type { FromWorker, PixelBuffer, ToWorker } from "./messages";
-import { type AnalysisImage, runExtraction } from "./pipeline";
+import { type AnalysisImage, keepPixels, runExtraction } from "./pipeline";
 
 interface WorkerScope {
   postMessage(message: FromWorker, transfer?: Transferable[]): void;
@@ -76,13 +79,40 @@ function analysisImage(settings: ExtractionSettings): AnalysisImage {
   return analysis.image;
 }
 
-function extract(jobId: number, settings: ExtractionSettings, pixels: PixelBuffer | null): void {
-  const start = performance.now();
-  const image: AnalysisImage = pixels
+/** The pixels the main thread sent (fallback), or the master's analysis copy. */
+function pixelsOrAnalysis(settings: ExtractionSettings, pixels: PixelBuffer | null): AnalysisImage {
+  return pixels
     ? { width: pixels.width, height: pixels.height, data: new Uint8ClampedArray(pixels.data) }
     : analysisImage(settings);
-  const result = runExtraction(image, settings);
-  scope.postMessage({ type: "extracted", jobId, ...result, ms: performance.now() - start });
+}
+
+function extract(jobId: number, settings: ExtractionSettings, pixels: PixelBuffer | null): void {
+  const start = performance.now();
+  const image = pixelsOrAnalysis(settings, pixels);
+  const keep = keepPixels(image, settings);
+  const result = runExtraction(image, settings, keep);
+  const { colors } = result;
+  const map = assignPixels(
+    image,
+    keep.mask,
+    colors.map((c) => c.lab),
+    settings.workingSpace,
+  );
+  scope.postMessage({ type: "extracted", jobId, ...result, map, ms: performance.now() - start }, [
+    map.labels.buffer,
+  ]);
+}
+
+/** Rebuilds the cluster map for a palette, without extracting (spec 2.6). */
+function assign(
+  jobId: number,
+  colors: Oklab[],
+  settings: ExtractionSettings,
+  pixels: PixelBuffer | null,
+): void {
+  const image = pixelsOrAnalysis(settings, pixels);
+  const map = assignPixels(image, keepPixels(image, settings).mask, colors, settings.workingSpace);
+  scope.postMessage({ type: "assigned", jobId, map }, [map.labels.buffer]);
 }
 
 scope.addEventListener("message", (event) => {
@@ -99,6 +129,9 @@ scope.addEventListener("message", (event) => {
         return;
       case "extract":
         extract(message.jobId, message.settings, message.pixels);
+        return;
+      case "assign":
+        assign(message.jobId, message.colors, message.settings, message.pixels);
         return;
     }
   } catch (error) {

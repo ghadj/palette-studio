@@ -6,6 +6,7 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { swatchHex, swatchLabel } from "../palette/model";
 import {
+  clusterMap,
   emptyRoles,
   extracting,
   imageLoading,
@@ -35,6 +36,9 @@ export function SwatchStrip() {
   }, [shown]);
   if (!shown) return null;
   const columns = stripColumns(swatches.length, size.width, size.gap);
+  // Each swatch's share of the image from the cluster map (spec 2.6), when it matches the palette.
+  const map = clusterMap.value;
+  const shares = map && map.shares.length === swatches.length ? map.shares : null;
   return (
     <fieldset
       ref={strip}
@@ -44,7 +48,7 @@ export function SwatchStrip() {
       data-busy={extracting.value || imageLoading.value || undefined}
     >
       <legend class="visually-hidden">Palette swatches</legend>
-      {swatches.map((swatch) => {
+      {swatches.map((swatch, i) => {
         const hex = swatchHex(swatch);
         return (
           <button
@@ -53,6 +57,7 @@ export function SwatchStrip() {
             class="swatch"
             data-swatch=""
             data-user-content=""
+            data-share={shares?.[i]}
             aria-label={`${swatchLabel(swatches, swatch.id)}, ${hex}`}
             aria-pressed={swatch.id === selected}
             style={{ backgroundColor: hex }}
