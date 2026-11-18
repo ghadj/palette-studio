@@ -312,7 +312,8 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "the zoomed image keeps its colors in light and dark" (theme-content style)
   - `e2e/mockup-state.spec.ts` › "zoom=2 opens at 200%".
 - Done when: tests pass; `zoom-desktop` and `zoom-phone` are in the token and axe lists and the shot list.
-- [ ] Done
+- [x] Done
+  - Note: `fit()` is named `fitView()`, because Biome reads a `fit(` call as a focused test. `zoomAt` and `panBy` take the well size as a last argument, since the clamp needs it. `imageView` keeps offsets as fractions of the well, so a view survives a resize. At the ends of the range the buttons are `aria-disabled`, so keyboard focus stays on them. The zoom level is announced in a visually hidden live region; nothing visible shows the percentage. The existing theme-content test now hides the zoom controls (themed UI over the image) before its image shot, through the element's style because the CSP blocks injected style sheets. `playwright.config.ts` reads `E2E_PORT` (default 4173) and starts `vite preview` on it with `--strictPort`. The shots have no mockup (zoom isn't drawn); `mockup-state.md` and `visual-testing.md` list `zoom` and the two shots.
 
 ### M2-T11: Zoom and pan: touch gestures
 - Files:

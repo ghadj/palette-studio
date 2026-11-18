@@ -3,6 +3,7 @@
  * only re-renders what depends on it.
  */
 import { batch, signal } from "@preact/signals";
+import { fitView, type View as ImageView } from "../image/viewport";
 import type { ExtractionSettings, ImageMeta, Project, Swatch, Tab, View } from "../types";
 import { clampColors, DEFAULT_SETTINGS, SCHEMA_VERSION } from "./defaults";
 
@@ -53,6 +54,12 @@ export const progressVisible = signal(false);
 export const selectedSwatchId = signal<string | null>(null);
 export const activeTab = signal<Tab>("source");
 export const activeView = signal<View>("studio");
+
+/**
+ * Zoom and pan of the image well (decision 15), with offsets as fractions of the well's size. View
+ * state: not saved in the project, not in undo (spec 3.6), and back to Fit on a new image.
+ */
+export const imageView = signal<ImageView>(fitView());
 
 /** True in the mockup state (?demo=mockup), which never touches storage (spec 5.5). */
 export const demoMode = signal(false);

@@ -79,3 +79,9 @@ export function buildMockupState(
     activeTab: params?.tab ?? "source",
   };
 }
+
+/** `zoom=<2|4|8>` opens the image at that zoom, centered (M2 decision 15g); anything else is Fit. */
+export function parseMockupZoom(search: string): 1 | 2 | 4 | 8 {
+  const zoom = new URLSearchParams(search).get("zoom");
+  return zoom === "2" ? 2 : zoom === "4" ? 4 : zoom === "8" ? 8 : 1;
+}

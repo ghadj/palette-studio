@@ -68,6 +68,22 @@ export const M1_SHOTS: readonly Shot[] = [
     mockup: null,
     frame: "First visit, no image (spec 6.3).",
   },
+  // M2 (decision 15g): zoom is not drawn; the controls go to design review.
+  {
+    name: "zoom-desktop",
+    path: "./?demo=mockup&zoom=2",
+    viewport: DESKTOP,
+    mockup: null,
+    frame:
+      "M2 decision 15: the image at 200%, centered; Zoom out, Zoom in and Fit in the well's bottom-right corner (not drawn).",
+  },
+  {
+    name: "zoom-phone",
+    path: "./?demo=mockup&zoom=2",
+    viewport: PHONE,
+    mockup: null,
+    frame: "M2 decision 15: the image at 200%, centered; zoom controls at 44 px (not drawn).",
+  },
 ];
 
 export const SHOT_THEMES = ["light", "dark"] as const;

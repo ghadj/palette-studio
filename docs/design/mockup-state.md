@@ -15,6 +15,7 @@ A fixed demo state that reproduces the mockups' content, so screenshots of the r
 | `library` | `open`, `menu`, `undo` | Opens the library drawer or Projects sheet; `menu` also opens the current project's ⋯ menu; `undo` shows the toast after deleting "Old test" | `07`, `11` |
 | `brands` | comma-separated brand names, such as `Brand A,Brand C` | Sets the brand filter on the Materials view | `13` |
 | `filters` | `all`, `medium` | Phone only: opens the Filters sheet in the All brands or By medium scope | `13` |
+| `zoom` | `2`, `4`, `8` | Opens the image at that zoom, centered on the image (M2 decision 15g). Zoom is view state, so nothing stores it | not drawn |
 | `theme` | `light`, `dark` | Overrides the theme for this page load only | all |
 
 Rules:

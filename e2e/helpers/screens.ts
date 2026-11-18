@@ -38,6 +38,9 @@ export const M1_SCREENS: readonly Screen[] = [
   { name: "empty-desktop", path: "./", viewport: DESKTOP, device: "desktop" },
   { name: "empty-tablet", path: "./", viewport: TABLET, device: "tablet" },
   { name: "empty-phone", path: "./", viewport: PHONE, device: "phone" },
+  // M2: the image at 200%, centered, with the zoom controls (decision 15g).
+  { name: "zoom-desktop", path: "./?demo=mockup&zoom=2", viewport: DESKTOP, device: "desktop" },
+  { name: "zoom-phone", path: "./?demo=mockup&zoom=2", viewport: PHONE, device: "phone" },
 ];
 
 export const THEMES = ["light", "dark"] as const;

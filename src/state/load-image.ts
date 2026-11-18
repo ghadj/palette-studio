@@ -6,12 +6,14 @@
 import { batch } from "@preact/signals";
 import { imageClient } from "../extract/client";
 import { decodeImageFile, projectNameFromFile, unreadableMessage } from "../image/load";
+import { fitView } from "../image/viewport";
 import {
   displayImage,
   imageLoading,
   imageMessage,
   imageMeta,
   imageSrc,
+  imageView,
   masterThread,
   projectName,
 } from "./signals";
@@ -54,6 +56,7 @@ export async function loadImageFile(file: File): Promise<boolean> {
     const previous = displayImage.peek();
     batch(() => {
       displayImage.value = prepared.display;
+      imageView.value = fitView();
       imageSrc.value = null;
       masterThread.value = prepared.thread;
       imageMeta.value = { name: file.name, width: decoded.width, height: decoded.height };

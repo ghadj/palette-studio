@@ -152,4 +152,23 @@ test.describe("mockup state (mockup-state.md)", () => {
     expect(style.touchAction).toBe("none");
     expect(style.userSelect).toBe("none");
   });
+
+  test("zoom=2 opens at 200%", async ({ page }) => {
+    await page.goto(demo("zoom=2"));
+    const well = page.locator("[data-testid=image-well]:visible").first();
+    await expect(well.getByTestId("zoom-level")).toHaveText("200%");
+    await expect(well).toHaveAttribute("data-scale", "2");
+    // Centered: the image's center sits at the well's center.
+    const image = well.locator("img");
+    await expect.poll(() => image.evaluate((el) => (el as HTMLImageElement).complete)).toBe(true);
+    const [w, i] = [await well.boundingBox(), await image.boundingBox()];
+    if (!w || !i) throw new Error("no boxes");
+    expect(i.width).toBeCloseTo((w.width - 2) * 2, 0);
+    expect(i.x + i.width / 2).toBeCloseTo(w.x + w.width / 2, 0);
+    expect(i.y + i.height / 2).toBeCloseTo(w.y + w.height / 2, 0);
+    await page.goto(demo("zoom=4"));
+    await expect(well.getByTestId("zoom-level")).toHaveText("400%");
+    await page.goto(demo("zoom=8"));
+    await expect(well.getByTestId("zoom-level")).toHaveText("800%");
+  });
 });

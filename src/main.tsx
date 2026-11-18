@@ -2,14 +2,16 @@ import { batch } from "@preact/signals";
 import { render } from "preact";
 import "./styles/tokens.css";
 import "./styles/app.css";
+import { centered } from "./image/viewport";
 import { startLiveExtraction } from "./state/extraction";
-import { buildMockupState, parseMockupParams } from "./state/mockup";
+import { buildMockupState, parseMockupParams, parseMockupZoom } from "./state/mockup";
 import { MOCKUP_IMAGE_PATH } from "./state/mockup-fixture";
 import {
   activeTab,
   activeView,
   demoMode,
   imageSrc,
+  imageView,
   loadProject,
   selectedSwatchId,
 } from "./state/signals";
@@ -29,6 +31,7 @@ if (mockup) {
     selectedSwatchId.value = state.selectedSwatchId;
     activeTab.value = state.activeTab;
     activeView.value = state.activeView;
+    imageView.value = centered(parseMockupZoom(window.location.search), { width: 1, height: 1 });
   });
   document.title = `${state.name} · Palette Studio (demo)`;
 }

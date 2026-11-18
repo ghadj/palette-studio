@@ -45,6 +45,8 @@ A failure names the element (a selector path) and the value that isn't a token. 
 | studio-tablet | `?demo=mockup&view=studio` | 820 × 1180 | contract text (not drawn) |
 | empty-desktop | `/` (fresh context, not the mockup state) | 1280 × 800 | contract text (not drawn): spec 6.3 "First visit, no image" |
 | empty-phone | `/` (fresh context, not the mockup state) | 390 × 844 | contract text (not drawn): spec 6.3 "First visit, no image" |
+| zoom-desktop | `?demo=mockup&zoom=2` | 1280 × 800 | contract text (not drawn): the image at 200%, centered, with the zoom controls (M2 decision 15) |
+| zoom-phone | `?demo=mockup&zoom=2` | 390 × 844 | contract text (not drawn): as zoom-desktop, controls at 44 px (M2 decision 15) |
 
 Each shot is taken in light and dark, by setting the browser's color scheme. A shot joins the list in the milestone that builds its screen: the image views and grid in M3 and M5, the library in M5, the Materials view and filters with Part 2.
 

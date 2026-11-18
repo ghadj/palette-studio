@@ -401,6 +401,7 @@ fieldset {
 
 /* Image well (ui-contract column 1 item 1). Markers, callouts and selection stay off the image (spec 6.1). */
 .image-well {
+  position: relative;
   overflow: hidden;
   border: var(--stroke) solid var(--color-border);
   border-radius: var(--radius-card);
@@ -420,6 +421,57 @@ fieldset {
 .image-well[data-busy] .image-well__image {
   opacity: 0.6;
   transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+/* Zoom and pan (M2 decision 15): the image layer scales about its top-left corner. */
+.image-well--image {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.image-well--image[data-zoomed] {
+  cursor: grab;
+}
+
+.image-well--image[data-zoomed]:active {
+  cursor: grabbing;
+}
+
+.image-well__layer {
+  transform-origin: 0 0;
+}
+
+/* Zoom out, Zoom in and Fit in the well's bottom-right corner (decision 15e). */
+.zoom-controls {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  display: flex;
+  background: var(--color-surface);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  cursor: default;
+  touch-action: manipulation;
+}
+
+.zoom-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+}
+
+.zoom-button[aria-disabled="true"] {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.zoom-button:focus-visible {
+  outline-offset: calc(var(--stroke-selected) * -1);
 }
 
 /* Drop zone (spec 6.3 "First visit, no image"). */
