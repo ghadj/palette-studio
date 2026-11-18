@@ -626,6 +626,17 @@ fieldset {
   cursor: default;
 }
 
+.setting-row__label-group {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1) 0;
+}
+
+.setting-row__note {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
 .setting-row__value {
   display: inline-flex;
   align-items: center;
@@ -678,6 +689,13 @@ fieldset {
   color: var(--color-text);
   font-size: var(--text-sm);
   text-align: right;
+}
+
+.number-field:disabled {
+  border-color: var(--color-divider);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: default;
 }
 
 #setting-seed {

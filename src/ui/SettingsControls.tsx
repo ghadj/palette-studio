@@ -5,6 +5,7 @@
  */
 import { ChevronDown, ChevronRight } from "lucide-preact";
 import { useState } from "preact/hooks";
+import { onlyForNote, settingApplies } from "../extract/applicability";
 import { M1_ALGORITHMS } from "../extract/pipeline";
 import { clampColors, MAX_COLORS, MIN_COLORS } from "../state/defaults";
 import { settings } from "../state/signals";
@@ -83,6 +84,8 @@ function NumberField({
   min,
   max,
   label,
+  disabled = false,
+  describedBy,
   onCommit,
 }: {
   id: string;
@@ -90,6 +93,8 @@ function NumberField({
   min: number;
   max: number;
   label?: string;
+  disabled?: boolean;
+  describedBy?: string | undefined;
   onCommit: (value: number) => void;
 }) {
   const [text, setText] = useState<string | null>(null);
@@ -113,6 +118,8 @@ function NumberField({
       max={max}
       step={1}
       aria-label={label}
+      aria-describedby={describedBy}
+      disabled={disabled}
       value={text ?? String(value)}
       onInput={onInput}
       onChange={(event) => {
@@ -130,6 +137,9 @@ function NumberField({
 
 export function SettingsControls() {
   const s = settings.value;
+  // Decision 14: settings that don't apply to the algorithm are disabled, not hidden, and keep their values.
+  const seedApplies = settingApplies("seed", s.algorithm);
+  const seedNote = onlyForNote("seed");
   const algorithms: Array<Option<Algorithm>> = M1_ALGORITHMS.map((a) => ({
     value: a,
     label: ALGORITHM_LABELS[a],
@@ -216,18 +226,22 @@ export function SettingsControls() {
             onChange={(v) => update("resampling", v)}
           />
         </SettingRow>
-        <SettingRow label="Seed" htmlFor="setting-seed">
+        <SettingRow label="Seed" htmlFor="setting-seed" note={seedNote} noteId="setting-seed-note">
           <span class="slider-group">
             <NumberField
               id="setting-seed"
               value={s.seed}
               min={0}
               max={2147483647}
+              disabled={!seedApplies}
+              describedBy={seedNote ? "setting-seed-note" : undefined}
               onCommit={(v) => update("seed", v)}
             />
             <button
               type="button"
               class="pill-button"
+              disabled={!seedApplies}
+              aria-describedby={seedNote ? "setting-seed-note" : undefined}
               onClick={() => update("seed", 1 + Math.floor(Math.random() * 2147483646))}
             >
               Randomize

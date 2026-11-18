@@ -128,6 +128,26 @@ test.describe("token conformance @tokens", () => {
     }
   });
 
+  test("Median cut with Seed and Randomize disabled uses tokens, with 44 px targets on phones", async ({
+    page,
+  }) => {
+    for (const theme of THEMES) {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.emulateMedia({ colorScheme: theme });
+        await page.setViewportSize(viewport);
+        await page.goto("./");
+        await page.locator("#setting-algorithm:visible").selectOption({ label: "Median cut" });
+        await page.locator("details.chevron-row:visible summary").click();
+        await expect(page.locator("#setting-seed:visible")).toBeDisabled();
+        const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
+        expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
+      }
+    }
+  });
+
   test("checker self-test: an injected #123456 element is reported with its selector path, and the same element under data-user-content is not", async ({
     page,
   }) => {

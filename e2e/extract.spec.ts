@@ -79,6 +79,50 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     await changed();
   });
 
+  test("Median cut disables Seed and Randomize with a note; k-means++ re-enables them with the same seed and hexes (decision 14)", async ({
+    page,
+  }) => {
+    await loadSample(page, "Orbits");
+    await waitForPalette(page, 6);
+    await page.locator("details.chevron-row:visible summary").click();
+    const seed = page.locator("#setting-seed:visible");
+    const randomize = page.getByRole("button", { name: "Randomize" });
+    await seed.fill("4242");
+    // Let the debounced re-extraction for the new seed (120 ms) start and finish.
+    await page.waitForTimeout(300);
+    await waitForPalette(page);
+    const kmeansHexes = await hexes(page);
+    await expect(seed).toBeEnabled();
+    await expect(randomize).toBeEnabled();
+
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "Median cut" });
+    await expect(seed).toBeDisabled();
+    await expect(randomize).toBeDisabled();
+    const note = page.locator("#setting-seed-note");
+    await expect(note).toHaveText("Used by k-means++ only");
+    await expect(note).toBeVisible();
+    await expect(seed).toHaveAttribute("aria-describedby", "setting-seed-note");
+    await expect(randomize).toHaveAttribute("aria-describedby", "setting-seed-note");
+    await expect(seed).toHaveValue("4242");
+    // The other settings stay enabled for Median cut.
+    for (const id of [
+      "#setting-colors",
+      "#setting-space",
+      "#setting-sample-size",
+      "#setting-resampling",
+    ]) {
+      await expect(page.locator(`${id}:visible`)).toBeEnabled();
+    }
+    await expect.poll(() => hexes(page)).not.toEqual(kmeansHexes);
+    await waitForPalette(page);
+
+    await page.locator("#setting-algorithm:visible").selectOption({ label: "K-means++" });
+    await expect(seed).toBeEnabled();
+    await expect(randomize).toBeEnabled();
+    await expect(seed).toHaveValue("4242");
+    await expect.poll(() => hexes(page)).toEqual(kmeansHexes);
+  });
+
   test("reloading and loading the same image with the same seed gives the same hexes", async ({
     page,
   }) => {
