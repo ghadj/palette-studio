@@ -104,6 +104,31 @@ fieldset {
   flex: 1 0 auto;
 }
 
+/*
+ * Desktop: the app fills the window. The columns take the space between the header and the export
+ * drawer and scroll inside it, so the drawer and the footer stay at the bottom (fix L3).
+ */
+.app--desktop {
+  height: 100dvh;
+}
+
+.shell--desktop {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.shell--desktop .columns {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.shell--desktop .export-drawer {
+  flex: none;
+}
+
 /* Header (ui-contract "Header") */
 .header {
   display: flex;
