@@ -1,0 +1,46 @@
+name: Visual baselines
+
+# Manual only (visual-testing.md 3). Run it on a branch after the user has approved the review
+# page for that change. Never run it to make a failing visual check pass.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: visual-baselines-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Update visual baselines
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-jammy
+    steps:
+      - name: Make sure git is available for the commit
+        shell: bash
+        run: command -v git || (apt-get update && apt-get install -y git)
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright test --project=visual --update-snapshots
+      - name: Commit the baselines to the dispatched branch
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add e2e/visual/baselines
+          if git diff --cached --quiet; then
+            echo "Baselines unchanged."
+            exit 0
+          fi
+          git commit -m "Update visual baselines on ${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
