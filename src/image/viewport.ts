@@ -74,6 +74,31 @@ export function panBy(view: View, dx: number, dy: number, well: Size): View {
   return clampView({ scale: view.scale, x: view.x + dx, y: view.y + dy }, well);
 }
 
+const midpoint = (a: Point, b: Point): Point => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+
+/**
+ * Two-finger pinch (spec 6.1 "Gestures"). From `view` at the gesture's start, scales by the change
+ * in distance between the fingers about their starting midpoint, then pans by the midpoint's
+ * movement, so the image point between the fingers follows them.
+ */
+export function pinch(
+  view: View,
+  startPointers: readonly [Point, Point],
+  currentPointers: readonly [Point, Point],
+  well: Size,
+): View {
+  const [a0, b0] = startPointers;
+  const [a1, b1] = currentPointers;
+  const before = Math.hypot(b0.x - a0.x, b0.y - a0.y);
+  const after = Math.hypot(b1.x - a1.x, b1.y - a1.y);
+  const factor = before > 0 && after > 0 ? after / before : 1;
+  const scale = clamp(view.scale * factor, MIN_SCALE, MAX_SCALE);
+  const k = scale / view.scale;
+  const m0 = midpoint(a0, b0);
+  const m1 = midpoint(a1, b1);
+  return clampView({ scale, x: m1.x - (m0.x - view.x) * k, y: m1.y - (m0.y - view.y) * k }, well);
+}
+
 /** A view at `scale` with the image's center in the well's center. */
 export function centered(scale: number, well: Size): View {
   const s = clamp(scale, MIN_SCALE, MAX_SCALE);

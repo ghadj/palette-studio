@@ -149,7 +149,9 @@ test.describe("mockup state (mockup-state.md)", () => {
         userSelect: s.userSelect || s.getPropertyValue("-webkit-user-select"),
       };
     });
-    expect(style.touchAction).toBe("none");
+    // M2 decision 15h: at Fit a one-finger swipe on the image scrolls the page, so the image
+    // allows panning and only a pinch reaches it; zoom.spec.ts checks `none` once zoomed.
+    expect(style.touchAction).toBe("pan-x pan-y");
     expect(style.userSelect).toBe("none");
   });
 

@@ -7,10 +7,13 @@
  * Ctrl/Cmd + wheel and trackpad pinch zoom about the pointer, while a plain wheel scrolls the page
  * (15f). Dragging pans once zoomed. The focused well takes + and − to zoom, 0 to fit and the arrow
  * keys to pan by 10% of the visible area (15d). Zoom is view state (spec 3.6).
+ *
+ * Touch (spec 6.1 "Gestures"): two fingers pinch-zoom and one finger pans once zoomed. At Fit the
+ * well's touch-action lets a one-finger swipe scroll the page (15h); above Fit it is none.
  */
 import type { ComponentChildren } from "preact";
-import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
-import { isFit, type Point, panBy, zoomAt } from "../image/viewport";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { isFit, type Point, panBy, pinch, type View, zoomAt } from "../image/viewport";
 import {
   displayImage,
   imageLoading,
@@ -70,6 +73,52 @@ function toUnit(el: HTMLElement, clientX: number, clientY: number): Point {
 const onControls = (event: Event): boolean =>
   event.target instanceof Element && event.target.closest(".zoom-controls") !== null;
 
+/** A pointer gesture in progress. The view reaches `imageView` once per animation frame. */
+class Gesture {
+  /** Pointers down on the well, by id, in client coordinates. */
+  readonly pointers = new Map<number, Point>();
+  /** The pinch's two pointers, and the view and their positions (well fractions) at its start. */
+  pinch: { ids: [number, number]; view: View; start: [Point, Point] } | null = null;
+  private pending: View | null = null;
+  private frame = 0;
+
+  /** The newest view, including one still waiting for its frame. */
+  latest(): View {
+    return this.pending ?? imageView.peek();
+  }
+
+  schedule(view: View): void {
+    this.pending = view;
+    if (!this.frame) this.frame = requestAnimationFrame(() => this.commit());
+  }
+
+  /** Commits a waiting view now. */
+  flush(): void {
+    if (this.frame) cancelAnimationFrame(this.frame);
+    this.commit();
+  }
+
+  /** Drops a waiting view, for example when the well goes away. */
+  cancel(): void {
+    if (this.frame) cancelAnimationFrame(this.frame);
+    this.frame = 0;
+    this.pending = null;
+  }
+
+  private commit(): void {
+    this.frame = 0;
+    if (this.pending) imageView.value = this.pending;
+    this.pending = null;
+  }
+}
+
+/** Safari's trackpad pinch on macOS (non-standard GestureEvent). */
+interface SafariGestureEvent extends UIEvent {
+  scale: number;
+  clientX: number;
+  clientY: number;
+}
+
 interface WellAttributes {
   "data-testid": "image-well";
   "data-busy"?: true | undefined;
@@ -86,7 +135,7 @@ function ZoomableWell({
   children: ComponentChildren;
 }) {
   const well = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ id: number; last: Point } | null>(null);
+  const [gesture] = useState(() => ({ current: new Gesture() }));
   const view = imageView.value;
   const zoomed = !isFit(view);
 
@@ -115,37 +164,106 @@ function ZoomableWell({
         UNIT_WELL,
       );
     };
+    // Safari on macOS sends a trackpad pinch as gesture events, not as a wheel with ctrlKey. On
+    // touch screens they come with pointers too, so there the pointer pinch below handles them.
+    const g = gesture.current;
+    let trackpad: { view: View; anchor: Point } | null = null;
+    const onGestureStart = (event: Event) => {
+      event.preventDefault();
+      if (g.pointers.size > 0) return;
+      const { clientX, clientY } = event as SafariGestureEvent;
+      const anchor = toUnit(el, clientX, clientY);
+      trackpad = {
+        view: imageView.peek(),
+        anchor: Number.isFinite(anchor.x + anchor.y) ? anchor : { x: 0.5, y: 0.5 },
+      };
+    };
+    const onGestureChange = (event: Event) => {
+      event.preventDefault();
+      const scale = (event as SafariGestureEvent).scale;
+      if (!trackpad || g.pointers.size > 0 || !(scale > 0)) return;
+      imageView.value = zoomAt(trackpad.view, scale, trackpad.anchor, UNIT_WELL);
+    };
+    const onGestureEnd = (event: Event) => {
+      event.preventDefault();
+      trackpad = null;
+    };
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
+    el.addEventListener("gesturestart", onGestureStart);
+    el.addEventListener("gesturechange", onGestureChange);
+    el.addEventListener("gestureend", onGestureEnd);
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("gesturestart", onGestureStart);
+      el.removeEventListener("gesturechange", onGestureChange);
+      el.removeEventListener("gestureend", onGestureEnd);
+      g.cancel();
+    };
+  }, [gesture]);
 
+  // Pointer gestures (spec 6.1 "Gestures"): one pointer pans once zoomed, two pinch-zoom. Pointers
+  // are captured, the view updates once per animation frame, and pointercancel ends the gesture
+  // with the last valid view.
   const onPointerDown = (event: PointerEvent) => {
     const el = well.current;
-    if (!el || onControls(event) || !event.isPrimary) return;
+    const g = gesture.current;
+    if (!el || onControls(event) || g.pointers.size >= 2) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
-    drag.current = { id: event.pointerId, last: { x: event.clientX, y: event.clientY } };
+    g.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     try {
       el.setPointerCapture(event.pointerId);
     } catch {
-      // A pointer that is no longer active can't be captured; the drag still works without it.
+      // A pointer that is no longer active can't be captured; the gesture still works without it.
+    }
+    if (g.pointers.size === 2) {
+      const [a, b] = [...g.pointers.entries()] as [[number, Point], [number, Point]];
+      g.pinch = {
+        ids: [a[0], b[0]],
+        view: g.latest(),
+        start: [toUnit(el, a[1].x, a[1].y), toUnit(el, b[1].x, b[1].y)],
+      };
     }
   };
 
   const onPointerMove = (event: PointerEvent) => {
     const el = well.current;
-    const current = drag.current;
-    if (!el || !current || current.id !== event.pointerId) return;
-    const g = geometry(el);
-    const dx = (event.clientX - current.last.x) / g.width;
-    const dy = (event.clientY - current.last.y) / g.height;
-    current.last = { x: event.clientX, y: event.clientY };
-    const before = imageView.peek();
-    if (isFit(before)) return;
-    imageView.value = panBy(before, dx, dy, UNIT_WELL);
+    const g = gesture.current;
+    const last = g.pointers.get(event.pointerId);
+    if (!el || !last) return;
+    g.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (g.pinch) {
+      const [a, b] = g.pinch.ids.map((id) => g.pointers.get(id)) as [Point, Point];
+      g.schedule(
+        pinch(g.pinch.view, g.pinch.start, [toUnit(el, a.x, a.y), toUnit(el, b.x, b.y)], UNIT_WELL),
+      );
+      return;
+    }
+    const current = g.latest();
+    if (isFit(current)) return;
+    const box = geometry(el);
+    g.schedule(
+      panBy(
+        current,
+        (event.clientX - last.x) / box.width,
+        (event.clientY - last.y) / box.height,
+        UNIT_WELL,
+      ),
+    );
   };
 
-  const onPointerEnd = (event: PointerEvent) => {
-    if (drag.current?.id === event.pointerId) drag.current = null;
+  const onPointerUp = (event: PointerEvent) => {
+    const g = gesture.current;
+    if (!g.pointers.delete(event.pointerId)) return;
+    // Lifting one finger of a pinch carries on as a one-finger pan from where the other one is.
+    if (g.pinch?.ids.includes(event.pointerId)) g.pinch = null;
+    if (g.pointers.size === 0) g.flush();
+  };
+
+  const onPointerCancel = () => {
+    const g = gesture.current;
+    g.pointers.clear();
+    g.pinch = null;
+    g.flush();
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -202,9 +320,9 @@ function ZoomableWell({
       onKeyDown={onKeyDown}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={onPointerEnd}
-      onPointerCancel={onPointerEnd}
-      onLostPointerCapture={onPointerEnd}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onLostPointerCapture={onPointerUp}
     >
       <div class="image-well__layer" style={{ transform }}>
         {children}

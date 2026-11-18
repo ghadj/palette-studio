@@ -337,7 +337,8 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "pointercancel mid-gesture leaves a valid view"
     - "the well has touch-action pan-x pan-y at Fit and none when zoomed; the callout is off"
 - Done when: tests pass; nothing depends on hover.
-- [ ] Done
+- [x] Done
+  - Note: `pinch` takes the well size as a last argument, like `zoomAt` and `panBy`. Lifting one finger of a pinch carries on as a one-finger pan; a third finger is ignored. The image and its layer use `touch-action: inherit`, so the well alone decides, and M1's mockup-state check that the image is `none` now expects `pan-x pan-y` at Fit (decision 15h). Playwright can inject real touches only in Chromium (CDP), so on phone-webkit the one-finger tests drive the well with synthetic pointer events, and "a swipe at Fit scrolls the page" checks the well's `pan-x pan-y` and that the handlers take nothing; the real WebKit scroll is a manual check. `-webkit-touch-callout` is iOS only and no Playwright engine computes it, so the test reads it from the shipped style sheet. Safari on macOS sends trackpad pinch as gesture events rather than Ctrl + wheel, so the well also zooms on `gesturechange` when no pointer is down (manual check: desktop Safari).
 
 ### M2-T12: Presets
 - Files:

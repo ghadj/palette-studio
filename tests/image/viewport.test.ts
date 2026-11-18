@@ -6,6 +6,7 @@ import {
   MIN_SCALE,
   nextZoomStep,
   panBy,
+  pinch,
   type View,
   zoomAt,
 } from "../../src/image/viewport";
@@ -106,5 +107,73 @@ describe("viewport (spec 6 'Image view', decision 15c)", () => {
     expect(nextZoomStep(1.5, -1)).toBe(1);
     expect(nextZoomStep(3, -1)).toBe(2);
     expect(nextZoomStep(5.9, 1)).toBe(8);
+  });
+});
+
+describe("pinch (spec 6.1 'Gestures', M2-T11)", () => {
+  it("a pinch from 100 px apart to 200 px apart doubles the scale about the midpoint", () => {
+    const start = [
+      { x: 150, y: 100 },
+      { x: 250, y: 100 },
+    ] as const;
+    const current = [
+      { x: 100, y: 100 },
+      { x: 300, y: 100 },
+    ] as const;
+    expect(pinch(fitView(), start, current, WELL)).toEqual({ scale: 2, x: -200, y: -100 });
+    // Off-center and diagonal: the image point under the midpoint stays under it.
+    const from: View = { scale: 2, x: -150, y: -40 };
+    const a = [
+      { x: 60, y: 40 },
+      { x: 120, y: 120 },
+    ] as const; // 100 px apart, midpoint (90, 80)
+    const b = [
+      { x: 30, y: 0 },
+      { x: 150, y: 160 },
+    ] as const; // 200 px apart, same midpoint
+    const after = pinch(from, a, b, WELL);
+    expect(after.scale).toBeCloseTo(4, 12);
+    const under = (v: View) => ({ x: (90 - v.x) / v.scale, y: (80 - v.y) / v.scale });
+    expect(under(after).x).toBeCloseTo(under(from).x, 9);
+    expect(under(after).y).toBeCloseTo(under(from).y, 9);
+  });
+
+  it("a pinch that moves its midpoint by (30, 0) also pans by (30, 0) when not clamped", () => {
+    const from: View = { scale: 2, x: -200, y: -100 };
+    const start = [
+      { x: 150, y: 100 },
+      { x: 250, y: 100 },
+    ] as const;
+    const current = [
+      { x: 180, y: 100 },
+      { x: 280, y: 100 },
+    ] as const;
+    expect(pinch(from, start, current, WELL)).toEqual({ scale: 2, x: -170, y: -100 });
+  });
+
+  it("a pinch below scale 1 clamps to Fit", () => {
+    const start = [
+      { x: 100, y: 100 },
+      { x: 300, y: 100 },
+    ] as const;
+    const closer = [
+      { x: 170, y: 120 },
+      { x: 270, y: 120 },
+    ] as const;
+    expect(pinch(fitView(), start, closer, WELL)).toEqual(fitView());
+    expect(pinch({ scale: 1.5, x: -100, y: -50 }, start, closer, WELL)).toEqual(fitView());
+  });
+
+  it("a pinch whose fingers start on the same spot doesn't divide by zero", () => {
+    const same = [
+      { x: 100, y: 100 },
+      { x: 100, y: 100 },
+    ] as const;
+    const apart = [
+      { x: 50, y: 100 },
+      { x: 150, y: 100 },
+    ] as const;
+    const after = pinch({ scale: 2, x: -200, y: -100 }, same, apart, WELL);
+    expect(after).toEqual({ scale: 2, x: -200, y: -100 });
   });
 });

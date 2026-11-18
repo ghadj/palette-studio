@@ -293,3 +293,219 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
     }
   });
 });
+
+/*
+ * Touch (spec 6.1 "Gestures", decision 15h). Playwright can drive real touches only in Chromium,
+ * through CDP `Input.dispatchTouchEvent`, so the browser's own scrolling and touch-action apply.
+ * WebKit gets synthetic pointer events: they exercise the well's handlers but can't scroll the
+ * page, so there a page-scroll check is a manual one (plan, "Manual checks").
+ */
+type TouchPoint = { x: number; y: number };
+
+const isChromiumPhone = (name: string) => name === "phone-chromium";
+
+/** Real touches in Chromium: each entry of `frames` is the list of fingers down at that moment. */
+async function cdpTouches(page: Page, frames: TouchPoint[][]): Promise<void> {
+  const cdp = await page.context().newCDPSession(page);
+  let down = 0;
+  for (const fingers of frames) {
+    const type = down === 0 ? "touchStart" : fingers.length === 0 ? "touchEnd" : "touchMove";
+    await cdp.send("Input.dispatchTouchEvent", {
+      type,
+      touchPoints: fingers.map((p, id) => ({ x: p.x, y: p.y, id })),
+    });
+    down = fingers.length;
+  }
+  await cdp.detach();
+}
+
+/** Synthetic pointer events on the well, for browsers without touch injection. */
+async function pointer(
+  page: Page,
+  type: "pointerdown" | "pointermove" | "pointerup" | "pointercancel",
+  id: number,
+  at: TouchPoint,
+): Promise<void> {
+  await well(page).evaluate(
+    (el, a) =>
+      el.dispatchEvent(
+        new PointerEvent(a.type, {
+          pointerId: a.id,
+          pointerType: "touch",
+          isPrimary: a.id === 1,
+          clientX: a.x,
+          clientY: a.y,
+          button: a.type === "pointermove" ? -1 : 0,
+          buttons: a.type === "pointerdown" || a.type === "pointermove" ? 1 : 0,
+          bubbles: true,
+          cancelable: true,
+        }),
+      ),
+    { type, id, x: at.x, y: at.y },
+  );
+}
+
+const nextFrame = (page: Page) =>
+  page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve(null))));
+
+/** Valid: a finite view, scale 1 to 8, with the image covering the well (offsets in well units). */
+function expectValid(v: View): void {
+  for (const n of [v.scale, v.x, v.y]) expect(Number.isFinite(n)).toBe(true);
+  expect(v.scale).toBeGreaterThanOrEqual(1);
+  expect(v.scale).toBeLessThanOrEqual(8);
+  expect(v.x).toBeLessThanOrEqual(0);
+  expect(v.y).toBeLessThanOrEqual(0);
+  expect(v.x).toBeGreaterThanOrEqual(1 - v.scale - 1e-9);
+  expect(v.y).toBeGreaterThanOrEqual(1 - v.scale - 1e-9);
+}
+
+test.describe("touch gestures (spec 6.1 'Gestures', decision 15h)", () => {
+  // A shorter window, so the phone page can scroll.
+  test.beforeEach(async ({ page }, info) => {
+    test.skip(!isPhoneProject(info), "touch devices");
+    await page.setViewportSize({ width: 390, height: 560 });
+  });
+
+  test("one-finger drag pans a zoomed image and window.scrollY stays the same", async ({
+    page,
+  }, info) => {
+    await page.goto(demo("zoom=2"));
+    await expect(zoomLevel(page)).toHaveText("200%");
+    expect(await page.evaluate(() => document.documentElement.scrollHeight > innerHeight)).toBe(
+      true,
+    );
+    const box = await wellBox(page);
+    const start = await view(page);
+    const scrollY = await page.evaluate(() => window.scrollY);
+    const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const path = [0, 1, 2, 3, 4, 5, 6].map((i) => ({ x: from.x - i * 10, y: from.y - i * 10 }));
+    if (isChromiumPhone(info.project.name)) {
+      await cdpTouches(page, [...path.map((p) => [p]), []]);
+    } else {
+      await pointer(page, "pointerdown", 1, path[0] as TouchPoint);
+      for (const p of path.slice(1)) await pointer(page, "pointermove", 1, p);
+      await pointer(page, "pointerup", 1, path[6] as TouchPoint);
+    }
+    await expect.poll(async () => (await view(page)).x).toBeLessThan(start.x);
+    const end = await view(page);
+    expect(end.scale).toBe(2);
+    expect(end.x - start.x).toBeCloseTo(-60 / box.width, 2);
+    expect(end.y - start.y).toBeCloseTo(-60 / box.height, 2);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+  });
+
+  test("at Fit, a one-finger swipe on the image scrolls the page", async ({ page }, info) => {
+    await page.goto(demo());
+    await expect(zoomLevel(page)).toHaveText("100%");
+    await expect(well(page)).toHaveCSS("touch-action", "pan-x pan-y");
+    const box = await wellBox(page);
+    const from = { x: box.x + box.width / 2, y: box.y + box.height - 10 };
+    const path = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ x: from.x, y: from.y - i * 20 }));
+    if (isChromiumPhone(info.project.name)) {
+      expect(await page.evaluate(() => window.scrollY)).toBe(0);
+      await cdpTouches(page, [...path.map((p) => [p]), []]);
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(50);
+    } else {
+      // WebKit: the well lets the browser pan (above) and its handlers take nothing at Fit.
+      await pointer(page, "pointerdown", 1, path[0] as TouchPoint);
+      for (const p of path.slice(1)) await pointer(page, "pointermove", 1, p);
+      await pointer(page, "pointerup", 1, path[8] as TouchPoint);
+      await nextFrame(page);
+    }
+    expect(await view(page)).toEqual({ scale: 1, x: 0, y: 0 });
+  });
+
+  test("two-finger pinch zooms", async ({ page }, info) => {
+    test.skip(!isChromiumPhone(info.project.name), "CDP touch; WebKit pinch is a manual check");
+    await page.goto(demo());
+    const box = await wellBox(page);
+    const mid = { x: box.x + box.width * 0.4, y: box.y + box.height * 0.5 };
+    const fingers = (half: number): TouchPoint[] => [
+      { x: mid.x - half, y: mid.y },
+      { x: mid.x + half, y: mid.y },
+    ];
+    // 60 px apart to 180 px apart: about 300%, about the midpoint.
+    await cdpTouches(page, [fingers(30), fingers(45), fingers(60), fingers(75), fingers(90), []]);
+    await expect.poll(async () => (await view(page)).scale).toBeGreaterThan(2.5);
+    const v = await view(page);
+    expect(v.scale).toBeCloseTo(3, 1);
+    const anchor = { x: 0.4, y: 0.5 };
+    const under = imagePointUnder(v, anchor);
+    expect(under.x).toBeCloseTo(0.4, 2);
+    expect(under.y).toBeCloseTo(0.5, 2);
+    await expect(zoomLevel(page)).toHaveText(`${Math.round(v.scale * 100)}%`);
+  });
+
+  test("pointercancel mid-gesture leaves a valid view", async ({ page }) => {
+    await page.goto(demo("zoom=2"));
+    const box = await wellBox(page);
+    const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    // One finger: pan, then cancel. The last view stays.
+    await pointer(page, "pointerdown", 1, c);
+    await pointer(page, "pointermove", 1, { x: c.x - 40, y: c.y });
+    await pointer(page, "pointercancel", 1, { x: c.x - 40, y: c.y });
+    const afterPan = await view(page);
+    expectValid(afterPan);
+    expect(afterPan.x).toBeCloseTo(-0.5 - 40 / box.width, 3);
+    // A move after the cancel belongs to no gesture.
+    await pointer(page, "pointermove", 1, { x: c.x - 120, y: c.y });
+    await nextFrame(page);
+    expect(await view(page)).toEqual(afterPan);
+    // Two fingers: pinch out, then cancel mid-pinch.
+    await pointer(page, "pointerdown", 1, { x: c.x - 30, y: c.y });
+    await pointer(page, "pointerdown", 2, { x: c.x + 30, y: c.y });
+    await pointer(page, "pointermove", 2, { x: c.x + 90, y: c.y });
+    await pointer(page, "pointercancel", 1, { x: c.x - 30, y: c.y });
+    const afterPinch = await view(page);
+    expectValid(afterPinch);
+    expect(afterPinch.scale).toBeGreaterThan(afterPan.scale);
+    await pointer(page, "pointermove", 2, { x: c.x + 150, y: c.y });
+    await nextFrame(page);
+    expect(await view(page)).toEqual(afterPinch);
+  });
+
+  test("the well has touch-action pan-x pan-y at Fit and none when zoomed; the callout is off", async ({
+    page,
+  }) => {
+    await page.goto(demo());
+    const image = well(page).locator("img");
+    const styles = () =>
+      well(page).evaluate((el) => {
+        const img = el.querySelector("img") as HTMLElement;
+        const s = getComputedStyle(el);
+        return {
+          well: s.touchAction,
+          image: getComputedStyle(img).touchAction,
+          userSelect: s.userSelect || s.getPropertyValue("-webkit-user-select"),
+          imageUserSelect:
+            getComputedStyle(img).userSelect ||
+            getComputedStyle(img).getPropertyValue("-webkit-user-select"),
+        };
+      });
+    await expect(image).toBeVisible();
+    let s = await styles();
+    expect([s.well, s.image]).toEqual(["pan-x pan-y", "pan-x pan-y"]);
+    expect([s.userSelect, s.imageUserSelect]).toEqual(["none", "none"]);
+    // -webkit-touch-callout is iOS only: no desktop engine Playwright runs computes it, so check
+    // the shipped style sheet declares it on the well and on the image.
+    const css = await page.evaluate(async () => {
+      const hrefs = [...document.styleSheets].map((sheet) => sheet.href).filter(Boolean);
+      const texts = await Promise.all(
+        hrefs.map((href) => fetch(href as string).then((r) => r.text())),
+      );
+      return texts.join("\n");
+    });
+    for (const selector of [".image-well--image", ".image-well__image"]) {
+      const rule = new RegExp(
+        `${selector.replace(".", "\\.")}\\s*\\{[^}]*-webkit-touch-callout:\\s*none`,
+      );
+      expect(css, selector).toMatch(rule);
+    }
+    await button(page, "Zoom in").click();
+    await expect(zoomLevel(page)).toHaveText("200%");
+    s = await styles();
+    expect([s.well, s.image]).toEqual(["none", "none"]);
+    await button(page, "Fit").click();
+    await expect(well(page)).toHaveCSS("touch-action", "pan-x pan-y");
+  });
+});

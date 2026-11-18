@@ -412,7 +412,8 @@ fieldset {
   display: block;
   width: 100%;
   height: auto;
-  touch-action: none;
+  /* The well decides what touch does (decision 15h); the image and its layer follow it. */
+  touch-action: inherit;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
@@ -423,14 +424,21 @@ fieldset {
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-/* Zoom and pan (M2 decision 15): the image layer scales about its top-left corner. */
+/*
+ * Zoom and pan (M2 decision 15): the image layer scales about its top-left corner. At Fit a
+ * one-finger swipe scrolls the page and only a pinch reaches the well; once zoomed the well takes
+ * every touch, so one finger pans the image (decision 15h, spec 6.1 "Gestures"). No callout or text
+ * selection on the image (spec 6.1 "Callouts").
+ */
 .image-well--image {
+  touch-action: pan-x pan-y;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
 }
 
 .image-well--image[data-zoomed] {
+  touch-action: none;
   cursor: grab;
 }
 
@@ -440,6 +448,7 @@ fieldset {
 
 .image-well__layer {
   transform-origin: 0 0;
+  touch-action: inherit;
 }
 
 /* Zoom out, Zoom in and Fit in the well's bottom-right corner (decision 15e). */
