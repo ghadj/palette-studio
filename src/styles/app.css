@@ -123,16 +123,6 @@ fieldset {
   min-height: 0;
 }
 
-.shell--desktop .columns {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.shell--desktop .export-drawer {
-  flex: none;
-}
-
 /* Header (ui-contract "Header") */
 .header {
   display: flex;
@@ -149,20 +139,6 @@ fieldset {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   column-gap: var(--space-4);
-}
-
-.header--desktop .header__brand {
-  justify-self: start;
-  max-width: 100%;
-}
-
-.header--desktop .view-tabs {
-  margin-left: 0;
-}
-
-.header--desktop .header__actions {
-  justify-self: end;
-  margin-left: 0;
 }
 
 .header--compact {
@@ -260,6 +236,21 @@ fieldset {
 .header__actions--icons {
   gap: 0;
   flex-shrink: 0;
+}
+
+/* Desktop header grid placement (after the base rules they override). */
+.header--desktop .header__brand {
+  justify-self: start;
+  max-width: 100%;
+}
+
+.header--desktop .view-tabs {
+  margin-left: 0;
+}
+
+.header--desktop .header__actions {
+  justify-self: end;
+  margin-left: 0;
 }
 
 .text-button {
@@ -367,6 +358,12 @@ fieldset {
 
 .columns--three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.shell--desktop .columns {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .column {
@@ -892,6 +889,10 @@ fieldset {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0 var(--space-6);
   border-top: var(--stroke) solid var(--color-divider);
+}
+
+.shell--desktop .export-drawer {
+  flex: none;
 }
 
 .export-half {
