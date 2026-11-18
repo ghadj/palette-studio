@@ -4,6 +4,7 @@
  * decoded as an image element from a blob URL and never inlined, so scripts in it never run (7.8).
  */
 import { formatNumber } from "../export/format";
+import { MASTER_MAX, masterSize, type Size } from "./tiers";
 
 export const WORKING_FORMATS = "JPEG, PNG, WebP, GIF, AVIF or SVG";
 
@@ -93,12 +94,48 @@ export function projectNameFromFile(name: string): string {
 }
 
 export interface Decoders {
-  raster(file: Blob): Promise<ImageBitmap>;
+  /**
+   * Reads the displayed (EXIF-oriented) size without decoding the pixels, or null when it can't.
+   * Optional: without it, rasters decode at full size.
+   */
+  probe?(file: Blob): Promise<Size | null>;
+  /** Decodes honoring EXIF orientation; `resize` is the oriented output size. */
+  raster(file: Blob, resize?: Size): Promise<ImageBitmap>;
   svg(file: Blob): Promise<ImageBitmap>;
 }
 
 export const browserDecoders: Decoders = {
-  raster: (file) => createImageBitmap(file, { imageOrientation: "from-image" }),
+  // An image element knows its oriented size once loaded, before its pixels are decoded.
+  async probe(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const image = new Image();
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("probe failed"));
+        image.src = url;
+      });
+      const { naturalWidth: width, naturalHeight: height } = image;
+      image.src = "";
+      return width && height ? { width, height } : null;
+    } catch {
+      return null;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  },
+  raster: (file, resize) =>
+    createImageBitmap(
+      file,
+      resize
+        ? {
+            imageOrientation: "from-image",
+            resizeWidth: resize.width,
+            resizeHeight: resize.height,
+            resizeQuality: "high",
+          }
+        : { imageOrientation: "from-image" },
+    ),
   async svg(file) {
     const url = URL.createObjectURL(file);
     try {
@@ -117,8 +154,9 @@ export const browserDecoders: Decoders = {
 export type DecodeResult =
   | {
       ok: true;
+      /** At most the working-master size when the original size could be read first. */
       bitmap: ImageBitmap;
-      /** Size after EXIF orientation. */
+      /** Original size after EXIF orientation. */
       width: number;
       height: number;
       format: string;
@@ -133,19 +171,31 @@ export async function decodeImageFile(
   const info = classifyFile(file);
   if (info.kind === "unsupported") return { ok: false, message: unsupportedMessage(info.format) };
   let bitmap: ImageBitmap;
+  // Spec 7.4: a large photo is decoded straight to the working-master size where the browser can,
+  // so it is never held decoded at full size. The probe gives the original size for the project.
+  let original: Size | null = null;
   try {
-    bitmap = info.kind === "svg" ? await decoders.svg(file) : await decoders.raster(file);
+    if (info.kind === "svg") bitmap = await decoders.svg(file);
+    else {
+      original = decoders.probe ? await decoders.probe(file) : null;
+      const large = original && Math.max(original.width, original.height) > MASTER_MAX;
+      bitmap =
+        original && large
+          ? await decoders.raster(file, masterSize(original.width, original.height))
+          : await decoders.raster(file);
+    }
   } catch {
     return {
       ok: false,
       message: info.kind === "heic" ? HEIC_MESSAGE : unreadableMessage(info.format),
     };
   }
-  const { width, height } = bitmap;
-  if (!width || !height) {
+  if (!bitmap.width || !bitmap.height) {
     bitmap.close();
     return { ok: false, message: unreadableMessage(info.format) };
   }
+  const width = original?.width ?? bitmap.width;
+  const height = original?.height ?? bitmap.height;
   return {
     ok: true,
     bitmap,

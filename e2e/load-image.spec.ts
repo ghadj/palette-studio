@@ -110,6 +110,27 @@ test.describe("load an image (spec 2.1, 6 Input, 6.1, 6.3)", () => {
     expect(bottom?.[0]).toBeLessThan(60);
   });
 
+  test("a large EXIF-rotated photo is decoded straight to the master size and stays upright", async ({
+    page,
+  }) => {
+    await page.getByTestId("file-input").setInputFiles(fixture("exif-orientation-6-large.jpg"));
+    // The project keeps the original, oriented size; the display copy is at most 2048 px.
+    await expectLoaded(page, "exif-orientation-6-large.jpg", 2500, 5000);
+    await expect(canvas(page)).toHaveAttribute("width", "1024");
+    await expect(canvas(page)).toHaveAttribute("height", "2048");
+    const [top, bottom] = await canvas(page).evaluate((el) => {
+      const ctx = (el as HTMLCanvasElement).getContext("2d");
+      return [
+        Array.from(ctx?.getImageData(512, 200, 1, 1).data ?? []),
+        Array.from(ctx?.getImageData(512, 1800, 1, 1).data ?? []),
+      ];
+    });
+    expect(top?.[0]).toBeGreaterThan(200);
+    expect(top?.[2]).toBeLessThan(60);
+    expect(bottom?.[2]).toBeGreaterThan(200);
+    expect(bottom?.[0]).toBeLessThan(60);
+  });
+
   test("project name becomes the file name without extension", async ({ page }) => {
     await expect(projectButton(page)).toHaveText("Untitled");
     await page.getByTestId("file-input").setInputFiles(fixture("two-color.png"));

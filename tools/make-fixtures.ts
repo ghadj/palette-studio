@@ -74,23 +74,33 @@ async function main() {
   // so it displays as 40 × 80 portrait with red on top.
   const browser = await chromium.launch();
   const page = await browser.newPage();
-  const dataUrl = await page.evaluate(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 80;
-    canvas.height = 40;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("no 2d context");
-    ctx.fillStyle = "#ff0000";
-    ctx.fillRect(0, 0, 40, 40);
-    ctx.fillStyle = "#0000ff";
-    ctx.fillRect(40, 0, 40, 40);
-    return canvas.toDataURL("image/jpeg", 1);
-  });
+  // The large one (5000 × 2500 stored, 2500 × 5000 shown) exercises decoding straight to the
+  // working-master size (spec 7.4).
+  for (const [name, width, height, quality] of [
+    ["exif-orientation-6.jpg", 80, 40, 1],
+    ["exif-orientation-6-large.jpg", 5000, 2500, 0.8],
+  ] as const) {
+    const dataUrl = await page.evaluate(
+      ({ width, height, quality }) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("no 2d context");
+        ctx.fillStyle = "#ff0000";
+        ctx.fillRect(0, 0, width / 2, height);
+        ctx.fillStyle = "#0000ff";
+        ctx.fillRect(width / 2, 0, width / 2, height);
+        return canvas.toDataURL("image/jpeg", quality);
+      },
+      { width, height, quality },
+    );
+    const jpeg = Buffer.from(dataUrl.split(",")[1] ?? "", "base64");
+    if (jpeg[0] !== 0xff || jpeg[1] !== 0xd8) throw new Error("not a JPEG");
+    const withExif = Buffer.concat([jpeg.subarray(0, 2), exifOrientation(6), jpeg.subarray(2)]);
+    writeFileSync(resolve(dir, name), withExif);
+  }
   await browser.close();
-  const jpeg = Buffer.from(dataUrl.split(",")[1] ?? "", "base64");
-  if (jpeg[0] !== 0xff || jpeg[1] !== 0xd8) throw new Error("not a JPEG");
-  const withExif = Buffer.concat([jpeg.subarray(0, 2), exifOrientation(6), jpeg.subarray(2)]);
-  writeFileSync(resolve(dir, "exif-orientation-6.jpg"), withExif);
   process.stdout.write("fixtures written\n");
 }
 

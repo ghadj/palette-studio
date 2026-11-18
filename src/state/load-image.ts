@@ -1,6 +1,7 @@
 /**
  * Loading an image (spec 2.1 steps 1 and 2, 6.3, 7.4): decode, make the working master and the
- * display copy, then update the project. A failed load leaves the previous image in place.
+ * display copy, then update the project. A failed load leaves the previous image in place. The
+ * previous palette stays visible, dimmed, until the new image's extraction lands (spec 6.3).
  */
 import { batch } from "@preact/signals";
 import { imageClient } from "../extract/client";
@@ -12,9 +13,7 @@ import {
   imageMeta,
   imageSrc,
   masterThread,
-  palette,
   projectName,
-  selectedSwatchId,
 } from "./signals";
 
 let sequence = 0;
@@ -59,8 +58,6 @@ export async function loadImageFile(file: File): Promise<boolean> {
       masterThread.value = prepared.thread;
       imageMeta.value = { name: file.name, width: decoded.width, height: decoded.height };
       projectName.value = projectNameFromFile(file.name);
-      palette.value = [];
-      selectedSwatchId.value = null;
       imageMessage.value = decoded.note ? { kind: "note", text: decoded.note } : null;
     });
     previous?.close();
@@ -78,12 +75,15 @@ export async function loadImageFile(file: File): Promise<boolean> {
 }
 
 export async function loadImageFromUrl(url: string, name: string): Promise<boolean> {
+  const before = sequence;
+  imageLoading.value = true;
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error(String(response.status));
     const blob = await response.blob();
     return loadImageFile(new File([blob], name, { type: blob.type }));
   } catch {
+    if (sequence === before) imageLoading.value = false;
     imageMessage.value = { kind: "error", text: `The sample image ${name} couldn't be loaded.` };
     return false;
   }

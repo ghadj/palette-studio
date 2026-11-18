@@ -134,6 +134,38 @@ describe("loading image files (spec 6, 6.3)", () => {
     expect(normal.ok && normal.note).toBeFalsy();
   });
 
+  it("a large raster is decoded straight to the working-master size when its size can be read first", async () => {
+    const calls: Array<{ width: number; height: number } | undefined> = [];
+    const probing: Decoders = {
+      probe: async () => ({ width: 8064, height: 6048 }),
+      raster: async (_file, resize) => {
+        calls.push(resize);
+        return fakeBitmap(resize?.width ?? 8064, resize?.height ?? 6048);
+      },
+      svg: async () => fakeBitmap(1, 1),
+    };
+    const result = await decodeImageFile(file("IMG_48MP.jpg", "image/jpeg"), probing);
+    expect(calls).toEqual([{ width: 4096, height: 3072 }]);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      // The project keeps the original size; the bitmap is master-sized.
+      expect([result.width, result.height]).toEqual([8064, 6048]);
+      expect([result.bitmap.width, result.bitmap.height]).toEqual([4096, 3072]);
+      expect(result.note).toMatch(/48\.8 megapixels/);
+    }
+    // Small images, and files whose size can't be read first, decode at full size.
+    calls.length = 0;
+    await decodeImageFile(file("small.png", "image/png"), {
+      ...probing,
+      probe: async () => ({ width: 1600, height: 800 }),
+    });
+    await decodeImageFile(file("unknown.png", "image/png"), {
+      ...probing,
+      probe: async () => null,
+    });
+    expect(calls).toEqual([undefined, undefined]);
+  });
+
   it("SVG goes through the image-element decoder; empty bitmaps are rejected and closed", async () => {
     const d = decoders(fakeBitmap(300, 150));
     const svg = await decodeImageFile(file("logo.svg", "image/svg+xml"), d);

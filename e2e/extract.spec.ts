@@ -113,6 +113,44 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     expect(await hexes(page)).toEqual(viaWorker);
   });
 
+  test("a new image keeps the previous palette visible and dimmed until its extraction lands", async ({
+    page,
+  }) => {
+    await page.getByTestId("file-input").setInputFiles(fixture("two-color.png"));
+    await waitForPalette(page, 2);
+    // Record the swatch count on every change of the strip, so a moment with no palette shows up.
+    await page.evaluate(() => {
+      const counts: number[] = [];
+      (window as unknown as { __counts: number[] }).__counts = counts;
+      new MutationObserver(() => {
+        const strip = Array.from(document.querySelectorAll("[data-testid=swatch-strip]")).find(
+          (el) => (el as HTMLElement).offsetParent !== null,
+        );
+        counts.push(strip ? strip.querySelectorAll("[data-swatch]").length : 0);
+      }).observe(document.body, { subtree: true, childList: true, attributes: true });
+    });
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route(/sample-tiles\.png$/, async (route) => {
+      await gate;
+      await route.continue();
+    });
+    await page.locator("header").getByRole("button", { name: "Replace image" }).click();
+    await page.getByRole("menuitem", { name: "Tiles sample" }).click();
+    // While the new image loads, the old palette stays, dimmed.
+    await expect(page.locator("[data-testid=swatch-strip][data-busy]:visible")).toHaveCount(1);
+    await expect(strip(page)).toHaveCount(2);
+    release();
+    await waitForPalette(page, 6);
+    const counts = await page.evaluate(
+      () => (window as unknown as { __counts: number[] }).__counts,
+    );
+    expect(counts.length).toBeGreaterThan(0);
+    expect(Math.min(...counts)).toBeGreaterThan(0);
+  });
+
   test("Colors field has inputmode=decimal and 16 px type at phone width", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("./");
