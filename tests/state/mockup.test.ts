@@ -73,23 +73,35 @@ describe("mockup state (mockup-state.md)", () => {
       view: "studio",
       tab: "source",
       theme: null,
+      rows: [],
     });
     expect(parseMockupParams("?demo=mockup&tab=gradient&theme=dark")).toEqual({
       view: "studio",
       tab: "gradient",
       theme: "dark",
+      rows: [],
     });
     expect(parseMockupParams("?demo=mockup&view=materials&tab=palette&theme=light")).toEqual({
       view: "materials",
       tab: "palette",
       theme: "light",
+      rows: [],
     });
     expect(
       parseMockupParams("?demo=mockup&image=values&grid=on&library=open&tab=bogus&theme=purple"),
-    ).toEqual({ view: "studio", tab: "source", theme: null });
+    ).toEqual({ view: "studio", tab: "source", theme: null, rows: [] });
     expect(buildMockupState(parseMockupParams("?demo=mockup&tab=gradient")).activeTab).toBe(
       "gradient",
     );
+  });
+
+  it("rows=filters opens the Filters row; unknown rows are ignored (M2-T8)", () => {
+    expect(parseMockupParams("?demo=mockup&rows=filters")?.rows).toEqual(["filters"]);
+    expect(parseMockupParams("?demo=mockup&rows=bogus")?.rows).toEqual([]);
+    expect(buildMockupState(parseMockupParams("?demo=mockup&rows=filters")).openRows).toEqual([
+      "filters",
+    ]);
+    expect(buildMockupState().openRows).toEqual([]);
   });
 
   it("nothing in src/state/mockup.ts imports storage code", () => {

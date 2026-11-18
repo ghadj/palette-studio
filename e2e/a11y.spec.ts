@@ -61,7 +61,7 @@ test.describe("accessibility @a11y", () => {
       await page.emulateMedia({ colorScheme: theme });
       await page.goto("./");
       await page.locator("#setting-algorithm:visible").selectOption({ label: "Median cut" });
-      await page.locator("details.chevron-row:visible summary").click();
+      await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
       await expect(page.locator("#setting-seed:visible")).toBeDisabled();
       await settled(page);
       const results = await new AxeBuilder({ page }).analyze();
@@ -98,7 +98,7 @@ test.describe("accessibility @a11y", () => {
     for (const theme of THEMES) {
       await page.emulateMedia({ colorScheme: theme });
       await page.goto("./");
-      await page.locator("details.chevron-row:visible summary").click();
+      await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
       await settled(page);
       const results = await new AxeBuilder({ page }).analyze();
       expect(results.violations.map((v) => `${theme} ${v.id}: ${v.help}`)).toEqual([]);

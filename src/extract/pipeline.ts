@@ -10,6 +10,7 @@ import type { Algorithm, ExtractionSettings } from "../types";
 import { balanced } from "./balanced";
 import { evenSpread } from "./even-spread";
 import { exactColors } from "./exact";
+import { filterPixels } from "./filters";
 import { buildHistogram, weightByVividness } from "./histogram";
 import { kmeans } from "./kmeans";
 import { type Cluster, medianCut } from "./median-cut";
@@ -38,9 +39,37 @@ export interface AnalysisImage {
   data: Uint8ClampedArray | Uint8Array;
 }
 
+/** An extraction's colors, and why they are empty when every pixel was filtered out. */
+export interface ExtractionResult {
+  colors: ExtractedColor[];
+  /** "all-filtered": the filters dropped every pixel (M2 decision 18). */
+  reason: "all-filtered" | null;
+}
+
+/**
+ * Filters the pixels (spec 2.1 step 3), then extracts. When the filters drop every pixel, the
+ * result is empty with the reason "all-filtered", so the app can ask the user to loosen a filter.
+ */
+export function runExtraction(
+  image: AnalysisImage,
+  settings: ExtractionSettings,
+): ExtractionResult {
+  const { mask, kept } = filterPixels(image.data, settings);
+  if (kept === 0 && image.data.length >= 4) return { colors: [], reason: "all-filtered" };
+  return { colors: paletteFrom(image, settings, mask), reason: null };
+}
+
 export function extractPalette(
   image: AnalysisImage,
   settings: ExtractionSettings,
+): ExtractedColor[] {
+  return runExtraction(image, settings).colors;
+}
+
+function paletteFrom(
+  image: AnalysisImage,
+  settings: ExtractionSettings,
+  mask: Uint8Array,
 ): ExtractedColor[] {
   const count = clampColors(settings.colors);
   const algorithm = settings.algorithm;
@@ -51,6 +80,7 @@ export function extractPalette(
     space: settings.workingSpace,
     alphaCutoff: settings.alphaCutoff,
     bits: settings.histogramBits,
+    mask,
   });
   const h = weightByVividness(histogram, vividness, settings.workingSpace);
   // Keep one outlier: extract N − 1 colors, then add the most distinct small cluster (decision 8).
@@ -80,6 +110,7 @@ export function extractPalette(
         n,
         space: settings.workingSpace,
         alphaCutoff: settings.alphaCutoff,
+        mask,
       });
       break;
     case "even-spread":

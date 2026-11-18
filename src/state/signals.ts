@@ -64,6 +64,9 @@ export const imageView = signal<ImageView>(fitView());
 /** True in the mockup state (?demo=mockup), which never touches storage (spec 5.5). */
 export const demoMode = signal(false);
 
+/** Chevron rows that start expanded, such as "filters": the mockup state's `rows` parameter. */
+export const initialOpenRows = signal<readonly string[]>([]);
+
 export function loadProject(project: Project, name: string): void {
   batch(() => {
     schemaVersion.value = project.schemaVersion;

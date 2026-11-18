@@ -84,6 +84,21 @@ export const M1_SHOTS: readonly Shot[] = [
     mockup: null,
     frame: "M2 decision 15: the image at 200%, centered; zoom controls at 44 px (not drawn).",
   },
+  // M2-T8: the Filters row is not drawn; it goes to design review (M2 plan, Screens affected).
+  {
+    name: "filters-desktop",
+    path: "./?demo=mockup&rows=filters",
+    viewport: DESKTOP,
+    mockup: null,
+    frame: "M2 decision 2b: the Filters chevron row after Working space, open.",
+  },
+  {
+    name: "filters-phone",
+    path: "./?demo=mockup&rows=filters",
+    viewport: PHONE,
+    mockup: null,
+    frame: "M2 decision 2b: the Filters chevron row on the Source tab, open.",
+  },
 ];
 
 export const SHOT_THEMES = ["light", "dark"] as const;

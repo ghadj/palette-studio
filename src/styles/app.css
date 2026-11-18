@@ -837,6 +837,59 @@ fieldset {
   }
 }
 
+/* Toggle (ui-contract Components "Toggle"): pill track with the control border, round thumb. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  border-radius: var(--radius-pill);
+}
+
+.toggle__track {
+  display: inline-flex;
+  align-items: center;
+  width: calc(var(--space-8) + var(--space-2));
+  height: var(--space-6);
+  padding: 0 calc((var(--space-6) - 2 * var(--stroke) - var(--space-4)) / 2);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.toggle__thumb {
+  width: var(--space-4);
+  height: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-border-control);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.toggle[aria-checked="true"] .toggle__track {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.toggle[aria-checked="true"] .toggle__thumb {
+  background: var(--color-surface);
+  transform: translateX(var(--space-4));
+}
+
+.toggle:disabled {
+  cursor: default;
+}
+
+.toggle:disabled .toggle__track {
+  border-color: var(--color-divider);
+  background: transparent;
+}
+
+.toggle:disabled .toggle__thumb {
+  background: var(--color-divider);
+}
+
 /* Chevron row (ui-contract Components): label left, chevron right, divider below. */
 .chevron-row__summary {
   display: flex;

@@ -6,6 +6,7 @@
  */
 import { batch, effect } from "@preact/signals";
 import { imageClient } from "../extract/client";
+import type { ExtractionResult } from "../extract/pipeline";
 import type { ExtractedColor } from "../extract/postprocess";
 import { missingRoles } from "../extract/swatches";
 import { createSwatch } from "../palette/model";
@@ -60,19 +61,29 @@ const jobVersions = new Map<number, number>();
 /** The algorithm each job ran with, so its result is read the way it was made. */
 const jobAlgorithms = new Map<number, Algorithm>();
 
-const scheduler = createJobScheduler<ExtractedColor[]>({
+/** M2 decision 18: the filters dropped every pixel. */
+export const ALL_FILTERED_MESSAGE = "Every pixel is filtered out. Loosen a filter.";
+
+const scheduler = createJobScheduler<ExtractionResult>({
   run: (jobId) => {
     jobVersions.set(jobId, imageVersion);
     const current = settings.peek();
     jobAlgorithms.set(jobId, current.algorithm);
     return imageClient().extract(current);
   },
-  apply: (colors, jobId) => {
+  apply: ({ colors, reason }, jobId) => {
     paletteVersion = jobVersions.get(jobId) ?? imageVersion;
     const algorithm = jobAlgorithms.get(jobId);
     jobVersions.clear();
     jobAlgorithms.clear();
     applyColors(colors, algorithm);
+    if (reason === "all-filtered") {
+      // No pixel was left to fill any role, so only the filter message shows.
+      batch(() => {
+        emptyRoles.value = [];
+        imageMessage.value = { kind: "note", text: ALL_FILTERED_MESSAGE, fromExtraction: true };
+      });
+    }
   },
   onBusy: (busy) => {
     extracting.value = busy;

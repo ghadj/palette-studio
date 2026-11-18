@@ -11,6 +11,7 @@ class FakeWorker {
   received: ToWorker[] = [];
   terminated = false;
   answerExtract = true;
+  allFiltered = false;
 
   addEventListener(type: string, listener: Listener) {
     this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
@@ -34,7 +35,8 @@ class FakeWorker {
         this.emit("message", {
           type: "extracted",
           jobId: message.jobId,
-          colors: [{ lab: { l: 0.5, a: 0, b: 0 }, population: 1 }],
+          colors: this.allFiltered ? [] : [{ lab: { l: 0.5, a: 0, b: 0 }, population: 1 }],
+          reason: this.allFiltered ? "all-filtered" : null,
           ms: 1,
         });
     });
@@ -78,8 +80,9 @@ describe("image worker client (spec 7.4; evaluator note 6)", () => {
       expect(first.terminated).toBe(true);
 
       // The next job gets a new worker, which rebuilds the master from the original image.
-      const colors = await client.extract(DEFAULT_SETTINGS);
+      const { colors, reason } = await client.extract(DEFAULT_SETTINGS);
       expect(colors).toHaveLength(1);
+      expect(reason).toBeNull();
       expect(workers).toHaveLength(2);
       expect(restores()).toBe(1);
       expect((workers[1] as FakeWorker).received.map((m) => m.type)).toEqual([
@@ -89,6 +92,16 @@ describe("image worker client (spec 7.4; evaluator note 6)", () => {
       ]);
     });
   }
+
+  it("an all-filtered reply resolves with no colors and the reason (M2-T8)", async () => {
+    const { client, workers } = setup();
+    await client.prepare(bitmap());
+    (workers[0] as FakeWorker).allFiltered = true;
+    await expect(client.extract(DEFAULT_SETTINGS)).resolves.toEqual({
+      colors: [],
+      reason: "all-filtered",
+    });
+  });
 
   it("a worker that fails before it says hello rejects, and the next job tries a new one", async () => {
     const workers: FakeWorker[] = [];

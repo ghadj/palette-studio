@@ -7,7 +7,13 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { chromium } from "@playwright/test";
-import { SINGLE_COLOR, TWELVE_COLORS, TWO_COLOR } from "./fixture-colors";
+import {
+  GRAYSCALE_RED,
+  SINGLE_COLOR,
+  TWELVE_COLORS,
+  TWO_COLOR,
+  WHITE_BACKGROUND,
+} from "./fixture-colors";
 import { encodePng, hexBytes } from "./png";
 
 const dir = resolve(process.cwd(), "tests/fixtures");
@@ -78,6 +84,36 @@ async function main() {
       120,
       20,
       solid(120, 20, (x) => [...(twelve[Math.floor(x / 10)] ?? [0, 0, 0]), 255]),
+    ),
+  );
+
+  // 100 × 100: a centered #E8693A disk covering about 20% of the pixels on white (M2-T8).
+  const [white, disk] = [hexBytes(WHITE_BACKGROUND.background), hexBytes(WHITE_BACKGROUND.disk)];
+  const radius = Math.sqrt(2000 / Math.PI);
+  writeFileSync(
+    resolve(dir, "white-background.png"),
+    encodePng(
+      100,
+      100,
+      solid(100, 100, (x, y) => [
+        ...(Math.hypot(x + 0.5 - 50, y + 0.5 - 50) < radius ? disk : white),
+        255,
+      ]),
+    ),
+  );
+
+  // 240 × 60: a gray ramp from black to white across, with a red band over rows 24 to 35 (20%).
+  // The same image as e2e/helpers/grayscale-plus-red.ts builds in memory (M2-T6).
+  const red = hexBytes(GRAYSCALE_RED);
+  writeFileSync(
+    resolve(dir, "grayscale-plus-red.png"),
+    encodePng(
+      240,
+      60,
+      solid(240, 60, (x, y) => {
+        const v = Math.round((x * 255) / 239);
+        return [...(y >= 24 && y < 36 ? red : [v, v, v]), 255];
+      }),
     ),
   );
 

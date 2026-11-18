@@ -243,7 +243,13 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "filtering everything shows 'Every pixel is filtered out. Loosen a filter.' in a live region and an empty strip; loosening it brings the palette back"
     - "the threshold slider is disabled while its toggle is off"
 - Done when: tests pass; the screens `filters-desktop` and `filters-phone` are in the token and axe lists.
-- [ ] Done
+- [x] Done
+  - Note: #111111 has OKLab L 0.178, not 0.173 (culori agrees). The test asserts 0.178; it is still dropped at 0.2.
+  - Note: `runExtraction` returns `{ colors, reason }`, and the worker, client and extraction state carry the reason. `extractPalette` still returns the colors only. "All filtered" counts the alpha cutoff, because it is in the Filters row, so a fully transparent image shows the message too.
+  - Note: each threshold has its own row under its toggle ("Dark threshold", "Light threshold"), with a slider and a number field. Both run over OKLab L 0 to 1 in steps of 0.01. Minimum chroma steps by 0.01. Alpha cutoff has a slider and an integer field.
+  - Note: built in parallel with T7, so `src/ui/Toggle.tsx` is a minimal toggle (a switch button) and `src/ui/DecimalField.tsx` is a minimal decimal field. Reconcile both with T7's Toggle and NumberField on merge.
+  - Note: the existing e2e locators `details.chevron-row:visible summary` now name the Advanced row, since Filters is a second chevron row. `filters-desktop` and `filters-phone` are also in the review shot list, without a mockup. `rows` isn't in `mockup-state.md` yet; T13 records it.
+  - Note: `tests/fixtures/grayscale-plus-red.png` is byte-identical to the in-memory image from T6's `e2e/helpers/grayscale-plus-red.ts` (240 × 60, red band on rows 24 to 35). With Swatch roles, an all-filtered result shows only the filter message, not six empty roles.
 
 ### M2-T9: Ignore background and spatial weighting
 - Files:

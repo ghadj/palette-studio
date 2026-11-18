@@ -12,6 +12,7 @@ import {
   demoMode,
   imageSrc,
   imageView,
+  initialOpenRows,
   loadProject,
   selectedSwatchId,
 } from "./state/signals";
@@ -32,6 +33,7 @@ if (mockup) {
     activeTab.value = state.activeTab;
     activeView.value = state.activeView;
     imageView.value = centered(parseMockupZoom(window.location.search), { width: 1, height: 1 });
+    initialOpenRows.value = state.openRows;
   });
   document.title = `${state.name} · Palette Studio (demo)`;
 }

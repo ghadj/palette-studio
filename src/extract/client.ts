@@ -14,7 +14,7 @@ import {
 } from "../image/tiers";
 import type { ExtractionSettings } from "../types";
 import type { FromWorker, PixelBuffer, ToWorker } from "./messages";
-import type { ExtractedColor } from "./postprocess";
+import type { ExtractionResult } from "./pipeline";
 
 export interface PreparedImage {
   display: ImageBitmap;
@@ -203,7 +203,7 @@ export class ImageClient {
   }
 
   /** Runs extraction on the current image's analysis copy (spec 2.1, 2.4). */
-  async extract(settings: ExtractionSettings): Promise<ExtractedColor[]> {
+  async extract(settings: ExtractionSettings): Promise<ExtractionResult> {
     const inWorker = await this.connect();
     if (inWorker && this.masterLost) {
       // A new worker has no master yet: rebuild it from the original image.
@@ -225,7 +225,7 @@ export class ImageClient {
     }
     const jobId = this.nextJob++;
     const reply = await this.request({ type: "extract", jobId, settings, pixels }, transfer);
-    if (reply.type === "extracted") return reply.colors;
+    if (reply.type === "extracted") return { colors: reply.colors, reason: reply.reason };
     throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
   }
 }

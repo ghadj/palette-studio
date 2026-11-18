@@ -8,9 +8,11 @@ import { useState } from "preact/hooks";
 import { settingApplies, settingNote } from "../extract/applicability";
 import { AVAILABLE_ALGORITHMS } from "../extract/pipeline";
 import { clampColors, MAX_COLORS, MIN_COLORS } from "../state/defaults";
-import { settings } from "../state/signals";
+import { initialOpenRows, settings } from "../state/signals";
 import type { Algorithm, ExtractionSettings, Resampling, SampleSize, WorkingSpace } from "../types";
+import { DecimalField } from "./DecimalField";
 import { SettingRow } from "./SettingRow";
+import { Toggle } from "./Toggle";
 
 export const ALGORITHM_LABELS: Record<Algorithm, string> = {
   "median-cut": "Median cut",
@@ -207,6 +209,7 @@ export function SettingsControls() {
           onChange={(v) => update("workingSpace", v)}
         />
       </SettingRow>
+      <FiltersRow s={s} />
       <details class="chevron-row">
         <summary class="chevron-row__summary">
           <span>Advanced</span>
@@ -263,5 +266,152 @@ export function SettingsControls() {
         </SettingRow>
       </details>
     </div>
+  );
+}
+
+/** OKLab L thresholds for ignore dark and light: the whole L range (M2 decision 3). */
+const L_MIN = 0;
+const L_MAX = 1;
+const L_STEP = 0.01;
+/** Minimum chroma, OKLab C 0 to 0.2 (spec 2.4). */
+const CHROMA_MAX = 0.2;
+const CHROMA_STEP = 0.01;
+/** Alpha cutoff, 0 to 255 (spec 2.4). */
+const ALPHA_MAX = 255;
+
+/** A slider with a decimal field beside it (ui-contract Components "Slider"). */
+function DecimalSlider({
+  id,
+  label,
+  value,
+  min,
+  max,
+  step,
+  disabled = false,
+  onCommit,
+}: {
+  id: string;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  disabled?: boolean;
+  onCommit: (value: number) => void;
+}) {
+  return (
+    <span class="slider-group">
+      <input
+        class="slider"
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        disabled={disabled}
+        aria-label={`${label} slider`}
+        onInput={(event) => onCommit(Number(event.currentTarget.value))}
+      />
+      <DecimalField
+        id={id}
+        value={value}
+        min={min}
+        max={max}
+        decimals={2}
+        disabled={disabled}
+        onCommit={onCommit}
+      />
+    </span>
+  );
+}
+
+/**
+ * The collapsed Filters row after Working space (M2 decision 2b; spec 2.1 step 3, 2.4): ignore
+ * dark and light, each a toggle with its OKLab L threshold, then minimum chroma and the alpha
+ * cutoff. A threshold stays visible but disabled while its toggle is off, and keeps its value
+ * (M1 decision 14). Filters apply to every algorithm.
+ */
+function FiltersRow({ s }: { s: ExtractionSettings }) {
+  return (
+    <details
+      class="chevron-row"
+      data-testid="filters-row"
+      open={initialOpenRows.peek().includes("filters")}
+    >
+      <summary class="chevron-row__summary">
+        <span>Filters</span>
+        <ChevronRight class="chevron-row__chevron" size={16} strokeWidth={1.5} aria-hidden="true" />
+      </summary>
+      <SettingRow label="Ignore dark" htmlFor="setting-ignore-dark">
+        <Toggle
+          id="setting-ignore-dark"
+          checked={s.ignoreDark.on}
+          onChange={(on) => update("ignoreDark", { ...s.ignoreDark, on })}
+        />
+      </SettingRow>
+      <SettingRow label="Dark threshold" htmlFor="setting-dark-threshold">
+        <DecimalSlider
+          id="setting-dark-threshold"
+          label="Dark threshold"
+          value={s.ignoreDark.threshold}
+          min={L_MIN}
+          max={L_MAX}
+          step={L_STEP}
+          disabled={!s.ignoreDark.on}
+          onCommit={(threshold) => update("ignoreDark", { ...s.ignoreDark, threshold })}
+        />
+      </SettingRow>
+      <SettingRow label="Ignore light" htmlFor="setting-ignore-light">
+        <Toggle
+          id="setting-ignore-light"
+          checked={s.ignoreLight.on}
+          onChange={(on) => update("ignoreLight", { ...s.ignoreLight, on })}
+        />
+      </SettingRow>
+      <SettingRow label="Light threshold" htmlFor="setting-light-threshold">
+        <DecimalSlider
+          id="setting-light-threshold"
+          label="Light threshold"
+          value={s.ignoreLight.threshold}
+          min={L_MIN}
+          max={L_MAX}
+          step={L_STEP}
+          disabled={!s.ignoreLight.on}
+          onCommit={(threshold) => update("ignoreLight", { ...s.ignoreLight, threshold })}
+        />
+      </SettingRow>
+      <SettingRow label="Minimum chroma" htmlFor="setting-min-chroma">
+        <DecimalSlider
+          id="setting-min-chroma"
+          label="Minimum chroma"
+          value={s.minChroma}
+          min={0}
+          max={CHROMA_MAX}
+          step={CHROMA_STEP}
+          onCommit={(v) => update("minChroma", v)}
+        />
+      </SettingRow>
+      <SettingRow label="Alpha cutoff" htmlFor="setting-alpha-cutoff">
+        <span class="slider-group">
+          <input
+            class="slider"
+            type="range"
+            min={0}
+            max={ALPHA_MAX}
+            step={1}
+            value={s.alphaCutoff}
+            aria-label="Alpha cutoff slider"
+            onInput={(event) => update("alphaCutoff", Number(event.currentTarget.value))}
+          />
+          <NumberField
+            id="setting-alpha-cutoff"
+            value={s.alphaCutoff}
+            min={0}
+            max={ALPHA_MAX}
+            onCommit={(v) => update("alphaCutoff", v)}
+          />
+        </span>
+      </SettingRow>
+    </details>
   );
 }

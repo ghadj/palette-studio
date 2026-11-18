@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { oklabToHex } from "../../src/color/convert";
-import { extractPalette } from "../../src/extract/pipeline";
+import { extractPalette, runExtraction } from "../../src/extract/pipeline";
 import { DEFAULT_SETTINGS } from "../../src/state/defaults";
 import type { Algorithm, ExtractionSettings, WorkingSpace } from "../../src/types";
 import { TWELVE_COLORS } from "../../tools/fixture-colors";
@@ -91,6 +91,36 @@ describe("extraction pipeline (spec 2.1, 8)", () => {
       );
       expect(out.length, algorithm).toBe(12);
     }
+  });
+
+  it("every pixel filtered gives an empty palette with reason 'all-filtered', no throw", () => {
+    // M2 decision 18: the app then says "Every pixel is filtered out. Loosen a filter."
+    const dark = row(
+      pixels([
+        ["#000000", 30],
+        ["#111111", 10],
+      ]),
+    );
+    for (const algorithm of ALGORITHMS) {
+      for (const workingSpace of SPACES) {
+        const s = settings({ algorithm, workingSpace, ignoreDark: { on: true, threshold: 0.2 } });
+        const label = `${algorithm} ${workingSpace}`;
+        expect(runExtraction(dark, s), label).toEqual({ colors: [], reason: "all-filtered" });
+        expect(extractPalette(dark, s), label).toEqual([]);
+      }
+    }
+    // Minimum chroma on a gray image, and the alpha cutoff on a half-transparent one.
+    const grays = row(pixels([["#808080", 10]]));
+    expect(runExtraction(grays, settings({ minChroma: 0.05 }))).toEqual({
+      colors: [],
+      reason: "all-filtered",
+    });
+    const faint = row(pixels([["#E8693A", 10, 120]]));
+    expect(runExtraction(faint, settings({ alphaCutoff: 128 })).reason).toBe("all-filtered");
+    // Loosening the filter brings the palette back, with no reason.
+    const loose = runExtraction(dark, settings({ ignoreDark: { on: false, threshold: 0.2 } }));
+    expect(loose.reason).toBeNull();
+    expect(loose.colors.length).toBeGreaterThan(0);
   });
 
   it("refuses an unknown algorithm", () => {

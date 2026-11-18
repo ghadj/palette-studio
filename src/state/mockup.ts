@@ -1,7 +1,8 @@
 /**
  * The mockup state, ?demo=mockup (docs/design/mockup-state.md). It never reads or writes autosave,
  * the project library or any browser storage (spec 5.5), so nothing here imports storage code.
- * M1 reads the `view`, `tab` and `theme` parameters; the others are ignored until their milestone.
+ * M1 reads the `view`, `tab` and `theme` parameters, and M2 `rows`; the others are ignored until
+ * their milestone.
  */
 import { hexToOklab } from "../color/convert";
 import { createSwatch } from "../palette/model";
@@ -14,10 +15,16 @@ import {
   MOCKUP_SWATCHES,
 } from "./mockup-fixture";
 
+/** Chevron rows the `rows` parameter can open (M2 decision 14b). */
+export type MockupRow = "filters";
+const ROWS: readonly MockupRow[] = ["filters"];
+
 export interface MockupParams {
   view: View;
   tab: Tab;
   theme: "light" | "dark" | null;
+  /** Chevron rows open at load, from `rows=filters` (comma-separated). */
+  rows: MockupRow[];
 }
 
 export interface MockupState {
@@ -26,6 +33,7 @@ export interface MockupState {
   selectedSwatchId: string | null;
   activeView: View;
   activeTab: Tab;
+  openRows: MockupRow[];
 }
 
 const VIEWS: readonly View[] = ["studio", "materials"];
@@ -44,11 +52,12 @@ export function parseMockupParams(search: string): MockupParams | null {
     view: pick(params.get("view"), VIEWS, "studio"),
     tab: pick(params.get("tab"), TABS, "source"),
     theme: theme === "light" || theme === "dark" ? theme : null,
+    rows: ROWS.filter((r) => (params.get("rows") ?? "").split(",").includes(r)),
   };
 }
 
 export function buildMockupState(
-  params: MockupParams | null = { view: "studio", tab: "source", theme: null },
+  params: MockupParams | null = { view: "studio", tab: "source", theme: null, rows: [] },
 ): MockupState {
   const palette = MOCKUP_SWATCHES.map(({ hex, point }, i) =>
     createSwatch(hexToOklab(hex), {
@@ -77,6 +86,7 @@ export function buildMockupState(
     selectedSwatchId: palette[MOCKUP_SELECTED_INDEX]?.id ?? null,
     activeView: params?.view ?? "studio",
     activeTab: params?.tab ?? "source",
+    openRows: [...(params?.rows ?? [])],
   };
 }
 

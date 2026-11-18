@@ -83,7 +83,7 @@ test.describe("token conformance @tokens", () => {
         await page.emulateMedia({ colorScheme: theme });
         await page.setViewportSize(viewport);
         await page.goto("./");
-        await page.locator("details.chevron-row:visible summary").click();
+        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
         await expect(page.locator("#setting-seed:visible")).toBeVisible();
         const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
         expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
@@ -141,7 +141,7 @@ test.describe("token conformance @tokens", () => {
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.locator("#setting-algorithm:visible").selectOption({ label: "Median cut" });
-        await page.locator("details.chevron-row:visible summary").click();
+        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
         await expect(page.locator("#setting-seed:visible")).toBeDisabled();
         const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
         expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);

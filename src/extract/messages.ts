@@ -26,5 +26,12 @@ export type FromWorker =
       masterWidth: number;
       masterHeight: number;
     }
-  | { type: "extracted"; jobId: number; colors: ExtractedColor[]; ms: number }
+  | {
+      type: "extracted";
+      jobId: number;
+      colors: ExtractedColor[];
+      /** "all-filtered" when the filters dropped every pixel (M2 decision 18). */
+      reason: "all-filtered" | null;
+      ms: number;
+    }
   | { type: "error"; jobId: number; message: string };

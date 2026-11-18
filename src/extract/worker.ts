@@ -13,7 +13,7 @@ import {
 } from "../image/tiers";
 import type { ExtractionSettings } from "../types";
 import type { FromWorker, PixelBuffer, ToWorker } from "./messages";
-import { type AnalysisImage, extractPalette } from "./pipeline";
+import { type AnalysisImage, runExtraction } from "./pipeline";
 
 interface WorkerScope {
   postMessage(message: FromWorker, transfer?: Transferable[]): void;
@@ -81,8 +81,8 @@ function extract(jobId: number, settings: ExtractionSettings, pixels: PixelBuffe
   const image: AnalysisImage = pixels
     ? { width: pixels.width, height: pixels.height, data: new Uint8ClampedArray(pixels.data) }
     : analysisImage(settings);
-  const colors = extractPalette(image, settings);
-  scope.postMessage({ type: "extracted", jobId, colors, ms: performance.now() - start });
+  const { colors, reason } = runExtraction(image, settings);
+  scope.postMessage({ type: "extracted", jobId, colors, reason, ms: performance.now() - start });
 }
 
 scope.addEventListener("message", (event) => {

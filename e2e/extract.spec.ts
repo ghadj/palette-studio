@@ -169,7 +169,7 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     await loadSample(page, "Orbits");
     await waitForPalette(page, 6);
     await expect(page.locator("#setting-algorithm:visible")).toHaveValue("balanced");
-    await page.locator("details.chevron-row:visible summary").click();
+    await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
     const seed = page.locator("#setting-seed:visible");
     await expect(seed).toBeDisabled();
     await expect(page.getByRole("button", { name: "Randomize" })).toBeDisabled();
@@ -228,7 +228,7 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
     await waitForPalette(page);
     await page.locator("#setting-algorithm:visible").selectOption({ label: "Exact colors" });
-    await page.locator("details.chevron-row:visible summary").click();
+    await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
     await page.locator("#setting-resampling:visible").selectOption({ label: "Nearest" });
     await page.locator("#setting-colors:visible").fill("12");
     await waitForPalette(page, 12);
@@ -252,7 +252,9 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     await changed();
     await page.locator("#setting-space:visible").selectOption({ label: "sRGB" });
     await changed();
-    const advanced = page.locator("details.chevron-row:visible");
+    const advanced = page.locator(
+      'details.chevron-row:visible:has(> summary:has-text("Advanced"))',
+    );
     await expect(advanced).not.toHaveAttribute("open", "");
     await advanced.locator("summary").click();
     await page.locator("#setting-sample-size:visible").selectOption({ label: "64 px" });
@@ -270,7 +272,7 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     await waitForPalette(page, 6);
     // The default is Balanced, which doesn't use Seed: start from k-means++.
     await page.locator("#setting-algorithm:visible").selectOption({ label: "K-means++" });
-    await page.locator("details.chevron-row:visible summary").click();
+    await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
     const seed = page.locator("#setting-seed:visible");
     const randomize = page.getByRole("button", { name: "Randomize" });
     await expect(seed).toBeEnabled();
