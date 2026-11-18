@@ -219,7 +219,7 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
   - Note: decimal fields use T8's `DecimalField` (one decimal field, decision from the coordinator after T8 landed first). T7 extends it with a `step`, `role=spinbutton` with `aria-valuemin`, `aria-valuemax`, `aria-valuenow` and `aria-valuetext`, arrow and Page Up/Down steps, and a commit on blur that clamps only out-of-range values, so a value typed before a metric switch isn't read again in the new units. T8's `DecimalSlider` gains `decimals` and `describedBy`; Merge threshold and Population vs. vividness use it. Whole-number fields (Colors, Seed, Iterations, Restarts, Alpha cutoff) stay `NumberField` number inputs. The planned `tests/ui/number-field.test.ts` cases ("'0,05' commits 0.05", "shows '0.05' with the locale forced to de-DE") are in `tests/ui/decimal-field.test.ts`.
   - Note: Merge threshold steps by 0.005 and shows 3 decimals ("0.030"); under CIEDE2000 it steps by 0.5 and shows 1 decimal ("3.0"). Population vs. vividness steps by 0.05 and shows 2 decimals. These steps and decimals aren't in the spec.
   - Note: Keep one outlier uses T8's `src/ui/Toggle.tsx` and its CSS (one Toggle). The Advanced row opens with `rows=advanced` through T8's `initialOpenRows` and comma-separated `rows`, so `rows=filters,advanced` opens both.
-  - Note: every Advanced row follows decision 14b, Seed included: its note and `aria-describedby` show only while the row is disabled. Iterations, Restarts, Merge threshold, Population vs. vividness and Keep one outlier read the applicability tables. Histogram bits, Distance metric and Sort apply to every algorithm, so they have no note. The "Median cut disables Seed" e2e test now also checks that Seed's note is gone under k-means++.
+  - Note: every Advanced row follows decision 14c, Seed included: its note and `aria-describedby` show only while the row is disabled. Iterations, Restarts, Merge threshold, Population vs. vividness and Keep one outlier read the applicability tables. Histogram bits, Distance metric and Sort apply to every algorithm, so they have no note. The "Median cut disables Seed" e2e test now also checks that Seed's note is gone under k-means++.
   - Note: built on T6, T8, T10 and T11 (rebased onto milestone/M2 at 4837800). T6's `.slider:disabled` style covers the new disabled sliders. The Advanced e2e locators name the Advanced row, as T8's do.
   - Note: `.select__control` gained `min-width: var(--hit)`, because the Histogram bits select ("5") was 38 px wide at phone width.
   - Note: hue sort puts grays at 0°, the same rule as `oklabToOklch`. Ties in lightness, chroma and hue sorts keep the population order.
@@ -540,7 +540,7 @@ Decisions 1 to 14 and 16 to 18 accept the proposed option A. Decision 15 changes
 14. **Mockup fixture.**
     - a. Populations become 0.832, 0.147 and 0.005 × 4, normalized.
     - b. The `rows` and `cluster` parameters and the new shots are approved. The `zoom` parameter is approved (15g).
-14b. **Applicability notes** (user decision, 2026-11-18; it extends M1 decision 14 and is separate from item 14 b above). A "Used by …" or "Not used by …" note shows under a setting only while its control is disabled. This covers every row, Seed included, whose note was always visible in M1. Colors follows it from T6, the Advanced rows from T7.
+14c. **Applicability notes** (user decision, 2026-11-18; it extends M1 decision 14 and is separate from item 14b above). A "Used by …" or "Not used by …" note shows under a setting only while its control is disabled. This covers every row, Seed included, whose note was always visible in M1. Colors follows it from T6, the Advanced rows from T7.
 15. **Region of interest and zoom.**
     - a. **No region of interest. The user's final decision: extraction always uses the whole image.** This departs on purpose from spec 2.1 step 3 ("outside the region of interest"), spec 2.4 (the "Region of interest" row) and spec 6 "Image view" ("region-of-interest tool"). `docs/SPEC.md` is not edited. The earlier questions on the region's default, keyboard model and re-extraction no longer apply.
     - b. **Zoom and pan are in M2**, per spec 6 "Image view" and 6.1 "Gestures": pinch-zoom and one-finger pan on touch; wheel or trackpad and drag on desktop. There are also visible zoom controls, so zoom works without gestures and from the keyboard. Zoom is view state, outside undo (3.6) and outside the project. The cluster overlay follows zoom and pan.
@@ -564,7 +564,7 @@ Remaining spec departures:
 
 Confirmed by the user before leaving:
 - 6c. Vividness is disabled, with its note, for both Exact colors and Swatch roles.
-- 14b. A "Used by" or "Not used by" note shows only while its control is disabled. This includes Seed.
+- 14c. A "Used by" or "Not used by" note shows only while its control is disabled. This includes Seed.
 - 10d. Swatch-roles results follow the Sort setting; "As extracted" gives role order.
 
 Open points the implementers raised. Nothing was changed for these; they wait for the user:

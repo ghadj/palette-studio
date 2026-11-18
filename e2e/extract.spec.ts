@@ -291,7 +291,7 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     const kmeansHexes = await hexes(page);
     await expect(seed).toBeEnabled();
     await expect(randomize).toBeEnabled();
-    // The note shows only while Seed is disabled (M2 decision 14b).
+    // The note shows only while Seed is disabled (M2 decision 14c).
     await expect(page.locator("#setting-seed-note")).toHaveCount(0);
     await expect(seed).not.toHaveAttribute("aria-describedby");
 
@@ -582,7 +582,7 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
       await expect(iterations).toHaveAttribute("aria-describedby", "setting-iterations-note");
       await expect(restarts).toHaveAttribute("aria-describedby", "setting-restarts-note");
     }
-    // Notes show only while their control is disabled (M2 decision 14b).
+    // Notes show only while their control is disabled (M2 decision 14c).
     await select.selectOption({ label: "Balanced" });
     await expect(iterations).toBeEnabled();
     await expect(iterationsNote).toHaveCount(0);

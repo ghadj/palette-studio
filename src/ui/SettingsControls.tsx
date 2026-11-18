@@ -166,7 +166,7 @@ function NumberField({
 
 /**
  * Whether a setting applies to the algorithm, for a row's controls (M1 decision 14). Its "Used by …"
- * or "Not used by …" note shows only while the controls are disabled (M2 decision 14b).
+ * or "Not used by …" note shows only while the controls are disabled (M2 decision 14c).
  */
 function applicability(key: SettingKey, algorithm: Algorithm, noteId: string) {
   const enabled = settingApplies(key, algorithm);
@@ -178,7 +178,7 @@ export function SettingsControls() {
   const s = settings.value;
   // Decision 14: settings that don't apply to the algorithm are disabled, not hidden, and keep their values.
   const seedApplies = settingApplies("seed", s.algorithm);
-  // The note shows only while Seed is disabled (M2 decision 14b).
+  // The note shows only while Seed is disabled (M2 decision 14c).
   const seedNote = seedApplies ? null : settingNote("seed");
   // Swatch roles ignore Colors (M2 decision 10c). The note shows only while it doesn't apply, so
   // the always-visible rows keep the mockup layout.
