@@ -91,6 +91,51 @@ test.describe("responsive shell (spec 6.1)", () => {
     await expect(page.locator("#setting-seed")).toBeInViewport();
   });
 
+  test("below 320 px wide the page stops shrinking and scrolls sideways", async ({ page }) => {
+    for (const width of [300, 280]) {
+      await page.setViewportSize({ width, height: 640 });
+      await page.goto(demo());
+      const root = await box(page, "#app-root");
+      expect(root.width, `${width}`).toBeCloseTo(320, 0);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBeGreaterThanOrEqual(320);
+      // The header is laid out at 320 px: every control keeps its 44 px.
+      for (const button of await page.locator("header").getByRole("button").all()) {
+        const b = await button.boundingBox();
+        expect(b?.width ?? 0).toBeGreaterThanOrEqual(44);
+        expect(b?.height ?? 0).toBeGreaterThanOrEqual(44);
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto(demo());
+    expect(await hasHorizontalScroll(page)).toBe(false);
+  });
+
+  test("desktop: below about 640 px tall the page scrolls instead of squashing the columns and drawer", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "desktop viewport");
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await page.goto(demo());
+    const atMinimum = await box(page, ".columns");
+    for (const height of [600, 480]) {
+      await page.setViewportSize({ width: 1280, height });
+      await page.goto(demo());
+      const root = await box(page, "#app-root");
+      expect(root.height, `${height}`).toBeCloseTo(640, 0);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollHeight),
+      ).toBeGreaterThanOrEqual(640);
+      const columns = await box(page, ".columns");
+      expect(columns.height).toBeCloseTo(atMinimum.height, 0);
+      const drawer = await box(page, "[data-testid=export-drawer]");
+      const footer = await box(page, "footer");
+      expect(drawer.y + drawer.height).toBeCloseTo(footer.y, 0);
+      expect(footer.y + footer.height).toBeCloseTo(640, 0);
+    }
+  });
+
   test("desktop header: the Studio and Materials tabs stay centered whatever the side groups' widths", async ({
     page,
   }, info) => {

@@ -27,7 +27,9 @@ html {
   text-size-adjust: 100%;
 }
 
+/* Below 320 px wide the page stops shrinking and scrolls sideways (fix L4; spec 6.1 "from 320 px"). */
 body {
+  min-width: calc(var(--space-8) * 10);
   margin: 0;
   background: var(--color-surface);
   color: var(--color-text);
@@ -110,6 +112,8 @@ fieldset {
  */
 .app--desktop {
   height: 100dvh;
+  /* About 640 px: below that the page scrolls instead of squashing the columns (fix L4). */
+  min-height: calc(var(--space-8) * 20);
 }
 
 .shell--desktop {
