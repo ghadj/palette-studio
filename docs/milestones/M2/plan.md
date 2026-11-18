@@ -547,3 +547,16 @@ Remaining spec departures:
 - Phone sample size 256 instead of 128 (M1 decision 5).
 - The cluster-map toggle on the Palette tab instead of the swatch sheet, until M3 (13d).
 - Page scroll allowed on the image at Fit, instead of `touch-action: none` (15h).
+
+## Notes for the user's review (orchestrator, 2026-11-18, while the user was away)
+
+Confirmed by the user before leaving:
+- 6c. Vividness is disabled, with its note, for both Exact colors and Swatch roles.
+- 14b. A "Used by" or "Not used by" note shows only while its control is disabled. This includes Seed.
+- 10d. Swatch-roles results follow the Sort setting; "As extracted" gives role order.
+
+Open points the implementers raised. Nothing was changed for these; they wait for the user:
+- T8: a fully transparent image now shows "Every pixel is filtered out. Loosen a filter.", because the alpha cutoff counts as a filter.
+- T8: when the filters empty the strip, the desktop Palette column still shows "Load an image to extract a palette." even though an image is loaded. M1 does the same for transparent images. Empty and error states are M6 (spec 6.3).
+- T8: the filters review shots cover the viewport only, so the Minimum chroma and Alpha cutoff rows fall below the fold. Design review may need full-page shots.
+- T10: the zoom controls in the bottom-right corner of the image cover patch 5 of the demo image. M3 markers there would sit under them.
