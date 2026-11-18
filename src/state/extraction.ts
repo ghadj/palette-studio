@@ -42,9 +42,25 @@ function applyColors(colors: ExtractedColor[]): void {
   });
 }
 
+/*
+ * Which image the palette belongs to (fix L9). A new image keeps the old palette, dimmed, until its
+ * own extraction lands (spec 6.3); if that extraction fails, the old palette no longer describes the
+ * image on screen, so it is cleared rather than left to be copied.
+ */
+let imageVersion = 0;
+let paletteVersion = 0;
+const jobVersions = new Map<number, number>();
+
 const scheduler = createJobScheduler<ExtractedColor[]>({
-  run: () => imageClient().extract(settings.peek()),
-  apply: applyColors,
+  run: (jobId) => {
+    jobVersions.set(jobId, imageVersion);
+    return imageClient().extract(settings.peek());
+  },
+  apply: (colors, jobId) => {
+    paletteVersion = jobVersions.get(jobId) ?? imageVersion;
+    jobVersions.clear();
+    applyColors(colors);
+  },
   onBusy: (busy) => {
     extracting.value = busy;
   },
@@ -52,17 +68,31 @@ const scheduler = createJobScheduler<ExtractedColor[]>({
     extractionProgress = visible;
     updateProgress();
   },
-  onError: () => {
-    imageMessage.value = {
-      kind: "error",
-      text: "The palette couldn't be extracted from this image. Try another sample size or image.",
-      fromExtraction: true,
-    };
+  onError: (_error, jobId) => {
+    const forImage = jobVersions.get(jobId) ?? imageVersion;
+    jobVersions.clear();
+    batch(() => {
+      if (forImage !== paletteVersion) {
+        palette.value = [];
+        selectedSwatchId.value = null;
+      }
+      imageMessage.value = {
+        kind: "error",
+        text: "The palette couldn't be extracted from this image. Try another sample size or image.",
+        fromExtraction: true,
+      };
+    });
   },
 });
 
 /** Runs an extraction now, superseding any pending one. */
 export function extractNow(): void {
+  scheduler.runNow();
+}
+
+/** Extracts for a newly loaded image. */
+export function extractNewImage(): void {
+  imageVersion += 1;
   scheduler.runNow();
 }
 
@@ -72,7 +102,7 @@ let started = false;
 export function startLiveExtraction(): void {
   if (started) return;
   started = true;
-  onImageLoaded(extractNow);
+  onImageLoaded(extractNewImage);
   let first = true;
   effect(() => {
     settings.value;

@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const extract = vi.fn();
 vi.mock("../../src/extract/client", () => ({ imageClient: () => ({ extract }) }));
 
-const { extractNow } = await import("../../src/state/extraction");
-const { extracting, imageMessage, palette } = await import("../../src/state/signals");
+const { extractNewImage, extractNow } = await import("../../src/state/extraction");
+const { extracting, imageMessage, palette, selectedSwatchId } = await import(
+  "../../src/state/signals"
+);
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const color = (l: number, population: number) => ({ lab: { l, a: 0, b: 0 }, population });
@@ -41,6 +43,36 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
     await flush();
     expect(extracting.value).toBe(false);
     expect(imageMessage.value).toMatchObject({ kind: "error", fromExtraction: true });
+  });
+
+  it("if a new image's extraction fails, the previous image's palette is cleared and the error stays (L9)", async () => {
+    extract.mockResolvedValueOnce([color(0.4, 0.6), color(0.8, 0.4)]);
+    extractNewImage();
+    await flush();
+    expect(palette.value).toHaveLength(2);
+    selectedSwatchId.value = palette.value[1]?.id ?? null;
+
+    extract.mockRejectedValueOnce(new Error("boom"));
+    extractNewImage();
+    expect(extracting.value).toBe(true);
+    await flush();
+    expect(palette.value).toEqual([]);
+    expect(selectedSwatchId.value).toBeNull();
+    expect(extracting.value).toBe(false);
+    expect(imageMessage.value).toMatchObject({ kind: "error", fromExtraction: true });
+  });
+
+  it("a failed re-extraction of the same image keeps its palette, no longer dimmed", async () => {
+    extract.mockResolvedValueOnce([color(0.4, 0.6), color(0.8, 0.4)]);
+    extractNewImage();
+    await flush();
+    const current = palette.value;
+    extract.mockRejectedValueOnce(new Error("boom"));
+    extractNow();
+    await flush();
+    expect(palette.value).toBe(current);
+    expect(extracting.value).toBe(false);
+    expect(imageMessage.value?.kind).toBe("error");
   });
 
   it("other messages, such as the large-image note or a file error, stay after a successful extraction", async () => {
