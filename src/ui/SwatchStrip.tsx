@@ -16,7 +16,6 @@ import { clusterFocus, clusterHover, shareText, shownCluster } from "../state/cl
 import { commit } from "../state/history";
 import { removeSwatch } from "../state/remove-swatch";
 import {
-  activeTab,
   clusterMap,
   emptyRoles,
   extracting,
