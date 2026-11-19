@@ -92,7 +92,13 @@ async function connect(mainThread: boolean) {
 }
 
 const COLORS: Oklab[] = [hexToOklab("#E8693A"), hexToOklab("#14386B")];
-const PALETTE: ViewRequest = { mode: "palette", colors: COLORS, bands: 5, dither: false };
+const PALETTE: ViewRequest = {
+  mode: "palette",
+  colors: COLORS,
+  bands: 5,
+  dither: false,
+  alphaCutoff: 128,
+};
 const VALUES: ViewRequest = { ...PALETTE, mode: "values" };
 
 describe("image view cache (spec 3.8, plan M3-T11)", () => {
@@ -129,6 +135,10 @@ describe("image view cache (spec 3.8, plan M3-T11)", () => {
     expect(palette).toHaveBeenCalledTimes(2);
     await client.view({ ...PALETTE, colors: [COLORS[1] as Oklab, COLORS[0] as Oklab] });
     expect(palette).toHaveBeenCalledTimes(3);
+    // The alpha cutoff is part of the key and reaches the worker (decision 30).
+    await client.view({ ...PALETTE, alphaCutoff: 64 });
+    expect(palette).toHaveBeenCalledTimes(4);
+    expect(palette.mock.calls[3]?.[3]).toBe(64);
 
     await client.view(VALUES);
     await client.view({ ...VALUES, bands: 3 });

@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { hexToOklab, hexToRgb, oklabToHex } from "../../src/color/convert";
 import type { AnalysisImage } from "../../src/extract/pipeline";
-import { type DrawnView, paletteView, valuesView } from "../../src/image/views";
+import { type DrawnView, paletteView, valuesView, viewKey } from "../../src/image/views";
 import { TWO_COLOR } from "../../tools/fixture-colors";
 import { image } from "../extract/helpers";
 import { readPng } from "./decode-png";
@@ -195,5 +195,37 @@ describe("Values view (spec 3.8)", () => {
     const view = valuesView(img, 5);
     expect(view.bandShares).toEqual([1, 0, 0, 0, 0]);
     expect(view.data[3]).toBe(0);
+  });
+});
+
+describe("the user's alpha cutoff (spec 2.4; decision 30)", () => {
+  // Left half alpha 100, right half alpha 200.
+  const half = () => image(2, 1, (x) => ["#E8693A", x === 0 ? 100 : 200] as const);
+  const colors = [hexToOklab("#E8693A")];
+
+  it("the Palette view leaves out pixels below the cutoff", () => {
+    const at128 = paletteView(half(), colors, false, 128);
+    expect(at128.data[3]).toBe(0);
+    expect(at128.data[7]).toBe(255);
+    const at50 = paletteView(half(), colors, false, 50);
+    expect(at50.data[3]).toBe(255);
+    expect(at50.data[7]).toBe(255);
+    const at250 = paletteView(half(), colors, false, 250);
+    expect(at250.shares).toEqual([0]);
+  });
+
+  it("the Values view leaves out pixels below the cutoff, and band shares follow it", () => {
+    expect(valuesView(half(), 5, 128).data[3]).toBe(0);
+    expect(valuesView(half(), 5, 50).data[3]).toBe(255);
+    expect(sum(valuesView(half(), 5, 50).bandShares)).toBeCloseTo(1, 9);
+  });
+
+  it("the cache key includes the cutoff", () => {
+    expect(viewKey(1, "values", [], 5, false, 128)).not.toBe(
+      viewKey(1, "values", [], 5, false, 64),
+    );
+    expect(viewKey(1, "palette", colors, 5, false, 128)).not.toBe(
+      viewKey(1, "palette", colors, 5, false, 64),
+    );
   });
 });

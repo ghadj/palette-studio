@@ -234,7 +234,7 @@ function viewImage(version: number, pixels: PixelBuffer | null): AnalysisImage {
 
 /**
  * Draws the Palette or Values view (spec 3.8), or reuses the last one drawn for the same image
- * version, mode, palette hexes, bands and dither, so switching views never recomputes or
+ * version, mode, palette hexes, bands, dither and alpha cutoff, so switching views never recomputes or
  * extracts. Each reply gets its own copy of the pixels, since the cached ones stay here.
  */
 function view(
@@ -244,13 +244,17 @@ function view(
   colors: Oklab[],
   bands: ViewSettings["bands"],
   dither: boolean,
+  alphaCutoff: number,
   pixels: PixelBuffer | null,
 ): void {
   const image = viewImage(version, pixels);
-  const key = viewKey(version, mode, colors, bands, dither);
+  const key = viewKey(version, mode, colors, bands, dither, alphaCutoff);
   let drawn = viewCache.get(mode)?.key === key ? viewCache.get(mode)?.drawn : undefined;
   if (!drawn) {
-    drawn = mode === "palette" ? paletteView(image, colors, dither) : valuesView(image, bands);
+    drawn =
+      mode === "palette"
+        ? paletteView(image, colors, dither, alphaCutoff)
+        : valuesView(image, bands, alphaCutoff);
     viewCache.set(mode, { key, drawn });
   }
   const { width, height, shares, bandShares } = drawn;
@@ -298,7 +302,7 @@ scope.addEventListener("message", (event) => {
         return;
       case "view": {
         const m = message;
-        view(m.jobId, m.version, m.mode, m.colors, m.bands, m.dither, m.pixels);
+        view(m.jobId, m.version, m.mode, m.colors, m.bands, m.dither, m.alphaCutoff, m.pixels);
         return;
       }
     }

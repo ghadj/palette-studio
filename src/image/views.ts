@@ -20,9 +20,8 @@ export interface DrawnView {
 }
 
 /**
- * Pixels with alpha below this aren't part of the image a view shows: they are drawn transparent
- * and left out of the shares. It is the default alpha cutoff (spec 2.4), since a view request
- * carries no extraction settings.
+ * Pixels with alpha below the user's alpha cutoff (spec 2.4; decision 30) aren't part of the image
+ * a view shows: they are drawn transparent and left out of the shares. This is the default, 128.
  */
 export const VIEW_ALPHA_CUTOFF = 128;
 
@@ -69,6 +68,7 @@ export function paletteView(
   image: AnalysisImage,
   colors: readonly Oklab[],
   dither: boolean,
+  alphaCutoff = VIEW_ALPHA_CUTOFF,
 ): DrawnView {
   const { width, height, data } = image;
   const count = width * height;
@@ -100,7 +100,7 @@ export function paletteView(
     for (let x = 0; x < width; x += 1) {
       const i = y * width + x;
       const o = i * 4;
-      if ((data[o + 3] ?? 0) < VIEW_ALPHA_CUTOFF) continue;
+      if ((data[o + 3] ?? 0) < alphaCutoff) continue;
       const r = data[o] ?? 0;
       const g = data[o + 1] ?? 0;
       const b = data[o + 2] ?? 0;
@@ -169,7 +169,11 @@ function grayByte(l: number): number {
  * 5 bands, L splits into equal steps and each band is drawn as the gray at its middle (with 5
  * bands: L 0.1, 0.3, 0.5, 0.7 and 0.9); L 1 goes in the top band.
  */
-export function valuesView(image: AnalysisImage, bands: ViewSettings["bands"]): DrawnView {
+export function valuesView(
+  image: AnalysisImage,
+  bands: ViewSettings["bands"],
+  alphaCutoff = VIEW_ALPHA_CUTOFF,
+): DrawnView {
   const { width, height, data } = image;
   const count = width * height;
   const out = new Uint8ClampedArray(count * 4);
@@ -184,7 +188,7 @@ export function valuesView(image: AnalysisImage, bands: ViewSettings["bands"]): 
   let lastBand = 0;
   for (let i = 0; i < count; i += 1) {
     const o = i * 4;
-    if ((data[o + 3] ?? 0) < VIEW_ALPHA_CUTOFF) continue;
+    if ((data[o + 3] ?? 0) < alphaCutoff) continue;
     const r = data[o] ?? 0;
     const g = data[o + 1] ?? 0;
     const b = data[o + 2] ?? 0;
@@ -214,7 +218,7 @@ export function valuesView(image: AnalysisImage, bands: ViewSettings["bands"]): 
 /**
  * What a drawn view depends on, as a cache key (plan M3-T11): the image version and the mode, and
  * for the Palette view the palette's hexes (it draws colors by their hex) and dither, or for the
- * Values view the bands.
+ * Values view the bands, and for both the alpha cutoff (decision 30).
  */
 export function viewKey(
   version: number,
@@ -222,8 +226,9 @@ export function viewKey(
   colors: readonly Oklab[],
   bands: ViewSettings["bands"],
   dither: boolean,
+  alphaCutoff = VIEW_ALPHA_CUTOFF,
 ): string {
   return mode === "palette"
-    ? `${version}|palette|${colors.map(oklabToHex).join(",")}|${dither ? "dither" : "flat"}`
-    : `${version}|values|${bands}`;
+    ? `${version}|palette|${colors.map(oklabToHex).join(",")}|${dither ? "dither" : "flat"}|a${alphaCutoff}`
+    : `${version}|values|${bands}|a${alphaCutoff}`;
 }

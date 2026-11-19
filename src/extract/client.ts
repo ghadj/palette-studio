@@ -54,6 +54,8 @@ export interface ViewRequest {
   colors: readonly Oklab[];
   bands: ViewSettings["bands"];
   dither: boolean;
+  /** The user's alpha cutoff (spec 2.4; decision 30). */
+  alphaCutoff: number;
 }
 
 /** A drawn image view (spec 3.8). */
@@ -405,6 +407,7 @@ export class ImageClient {
         colors: [...request.colors],
         bands: request.bands,
         dither: request.dither,
+        alphaCutoff: request.alphaCutoff,
         pixels,
       },
       pixels ? [pixels.data] : [],

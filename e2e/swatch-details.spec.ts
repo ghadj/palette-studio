@@ -216,6 +216,39 @@ test.describe("sample settings", () => {
   });
 });
 
+test.describe("resampling (decision 31)", () => {
+  test("changing the radius resamples the swatch at once, as one undo step, in the demo", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "the sheet covers the header's Undo; the unit tests cover it");
+    await open(page);
+    const radius = details(page).getByTestId("sample-radius");
+    const stat = details(page).getByTestId("sample-stat");
+    const undo = (name: string) => page.locator("header").getByRole("button", { name });
+    // The marker's patch is uniform, so the resampled color is the same; the step is what shows.
+    const hex = details(page).getByLabel("HEX", { exact: true });
+    await expect(hex).toHaveValue("#14386B");
+    await radius.getByRole("button", { name: "11", exact: true }).click();
+    await expect(undo("Undo Sample radius")).toBeVisible();
+    await expect(hex).toHaveValue("#14386B");
+    await stat.getByRole("button", { name: "Median" }).click();
+    await undo("Undo Sample statistic").click();
+    await expect(stat.getByRole("button", { name: "Mean" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(radius.getByRole("button", { name: "11", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await undo("Undo Sample radius").click();
+    await expect(radius.getByRole("button", { name: "Auto" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+});
+
 test.describe("cluster map toggle (D21, 13d)", () => {
   test("the toggle in the swatch row shows the overlay on desktop too", async ({ page }, info) => {
     test.skip(isPhoneProject(info), "the phone case is below");

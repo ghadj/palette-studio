@@ -35,8 +35,10 @@ import {
 import { clusterPinned, clusterToggle } from "../state/cluster";
 import { placeOnImage } from "../state/extraction";
 import { commit } from "../state/history";
+import { changeSampling } from "../state/resample";
 import {
   displayImage,
+  masterThread,
   outputPalette,
   palette,
   selectedSwatchId,
@@ -213,10 +215,6 @@ function edit(label: string, change: (p: Swatch[]) => Swatch[]): void {
   if (next === palette.peek()) return;
   palette.value = next;
   commit(label);
-}
-
-function patch(id: string, label: string, changes: Partial<Omit<Swatch, "id">>): void {
-  edit(label, (p) => p.map((s) => (s.id === id ? { ...s, ...changes } : s)));
 }
 
 const sameColor = (a: Oklch, b: Oklch): boolean => a.l === b.l && a.c === b.c && a.h === b.h;
@@ -404,6 +402,7 @@ function SwatchControls({ swatch, index }: { swatch: Swatch; index: number }) {
   const output = outputPalette.value.find((s) => s.id === swatch.id) ?? swatch;
   const delta = deltaText(swatch);
   const extracted = swatch.extracted;
+  const available = displayImage.value !== null || masterThread.value !== null;
   const edited =
     extracted !== null &&
     (!sameColor(extracted.color, swatch.color) ||
@@ -490,13 +489,13 @@ function SwatchControls({ swatch, index }: { swatch: Swatch; index: number }) {
             type="button"
             class="pill-button"
             data-testid="place-on-image"
-            disabled={!displayImage.value}
-            aria-describedby={displayImage.value ? undefined : `${base}-place`}
+            disabled={!available}
+            aria-describedby={available ? undefined : `${base}-place`}
             onClick={() => void placeOnImage(swatch.id)}
           >
             Place on image
           </button>
-          {!displayImage.value && (
+          {!available && (
             <span class="swatch-note" id={`${base}-place`}>
               Load an image first
             </span>
@@ -508,7 +507,7 @@ function SwatchControls({ swatch, index }: { swatch: Swatch; index: number }) {
           label="Sample radius"
           options={RADII}
           value={swatch.sampleRadius}
-          onChange={(r) => patch(swatch.id, "Sample radius", { sampleRadius: r })}
+          onChange={(r) => void changeSampling(swatch.id, "Sample radius", { sampleRadius: r })}
           testId="sample-radius"
         />
       </Field>
@@ -520,7 +519,7 @@ function SwatchControls({ swatch, index }: { swatch: Swatch; index: number }) {
             { value: "median", label: "Median" },
           ]}
           value={swatch.sampleStat}
-          onChange={(s) => patch(swatch.id, "Sample statistic", { sampleStat: s })}
+          onChange={(s) => void changeSampling(swatch.id, "Sample statistic", { sampleStat: s })}
           testId="sample-stat"
         />
       </Field>

@@ -13,6 +13,7 @@ import { swatchHex, swatchOklab } from "../palette/model";
 import {
   compareBefore,
   displayImage,
+  settings as extractionSettings,
   imageLoading,
   imageSrc,
   masterThread,
@@ -42,7 +43,8 @@ export function ViewLayer() {
   const master = masterThread.value;
   const canvas = useRef<HTMLCanvasElement>(null);
   const [drawn, setDrawn] = useState<Drawn | null>(null);
-  const key = `${mode}|${hexes.join(",")}|${settings.bands}|${settings.dither}`;
+  const alphaCutoff = extractionSettings.value.alphaCutoff;
+  const key = `${mode}|${hexes.join(",")}|${settings.bands}|${settings.dither}|${alphaCutoff}`;
 
   // Ask the worker for the view; the newest request wins.
   useLayoutEffect(() => {
@@ -59,6 +61,7 @@ export function ViewLayer() {
         colors: swatches.map(swatchOklab),
         bands: settings.bands,
         dither: settings.dither,
+        alphaCutoff,
       })
       .then(
         (result) => {

@@ -95,6 +95,8 @@ export type ToWorker =
       colors: Oklab[];
       bands: ViewSettings["bands"];
       dither: boolean;
+      /** The user's alpha cutoff, 0 to 255 (spec 2.4). */
+      alphaCutoff: number;
       pixels: PixelBuffer | null;
     };
 

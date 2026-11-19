@@ -91,7 +91,13 @@ describe("reserved worker requests (plan M3-T2)", () => {
       const sampled = await client.sample({ x: 0.5, y: 0.25 }, "auto", "mean");
       expect(sampled.crop).toMatchObject({ width: 15, height: 15 });
       await expect(client.place(COLORS, [1], DEFAULT_SETTINGS)).resolves.toHaveLength(1);
-      const view = { mode: "palette", colors: COLORS, bands: 5, dither: false } as const;
+      const view = {
+        mode: "palette",
+        colors: COLORS,
+        bands: 5,
+        dither: false,
+        alphaCutoff: 128,
+      } as const;
       // M3-T11 built the views: both round-trip and resolve at the display size.
       await expect(client.view(view)).resolves.toMatchObject({ width: 400, height: 200 });
       await expect(client.view({ ...view, mode: "values" })).resolves.toMatchObject({

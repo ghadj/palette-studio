@@ -15,6 +15,7 @@ import type { Algorithm, ExtractionSettings, ImagePoint, Swatch } from "../types
 import * as history from "./history";
 import { createJobScheduler, DEBOUNCE_MS, PROGRESS_DELAY_MS } from "./jobs";
 import { onImageLoaded } from "./load-image";
+import { imageAvailable } from "./resample";
 import { settingsChangeLabel } from "./setting-labels";
 import {
   backgroundNotFound,
@@ -236,7 +237,7 @@ export function extractNewImage(): void {
 export async function placeOnImage(id: string): Promise<boolean> {
   const list = palette.peek();
   const index = list.findIndex((s) => s.id === id);
-  if (index < 0 || !displayImage.peek()) return false;
+  if (index < 0 || !imageAvailable()) return false;
   try {
     const [point] = await imageClient().place(list.map(swatchOklab), [index], settings.peek());
     // Nothing lands over a palette that changed while the worker worked.
