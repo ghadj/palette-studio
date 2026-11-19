@@ -2,16 +2,18 @@
  * The Swatch row's content (M3 decision 5a): expands in place under the editor on desktop, and is
  * the swatch sheet on phones (spec 6.1). For the selected swatch it holds (spec 3.2, 3.7; plan T4):
  * a format choice (HEX, RGB, HSL, OKLCH) with editable fields, Name with the nearest CSS color name
- * as a chip (D15), Copy in the selected format (D14), Duplicate, Delete, Reset to extracted with the
+ * as a chip (D15), a copy icon beside the color code (D14; decision 39: no Duplicate or Delete here,
+ * the strip's X removes a swatch, decision 38), Reset to extracted with the
  * ΔE (D13), the sample radius and Mean or Median (D8), and the Cluster map toggle, which shows on
  * desktop too (D21; it was phone-only in M2, decisions 13d and 13f). M3-T13 adds Place on image.
  *
  * The fields show the displayed (output) color, like the strip, Copy and the color editor. An edit
- * sets exactly that color and locks the swatch (decision 1b), so base and output agree after it.
+ * sets the base color and pins the swatch (decision 24).
  * Edits commit on Enter or blur (D16).
  * Every button here is one undo step.
  */
 import { batch, signal } from "@preact/signals";
+import { Copy } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 import { useId, useLayoutEffect, useState } from "preact/hooks";
 import { bytesToOklch, hslIntsToOklch, oklchToBytes, oklchToHslInts } from "../color/bytes";
@@ -21,9 +23,6 @@ import { deltaE } from "../color/delta-e";
 import { parseHex } from "../color/hex";
 import { formatHsl, formatNumber, formatOklch, formatRgb } from "../export/format";
 import {
-  canAdd,
-  deleteSwatch,
-  duplicateSwatch,
   FULL_MESSAGE,
   renameSwatch,
   resetToExtracted,
@@ -42,7 +41,6 @@ import {
   outputPalette,
   palette,
   selectedSwatchId,
-  selectSwatch,
   settings,
 } from "../state/signals";
 import type { SampleRadius, SampleStat, Swatch } from "../types";
@@ -304,6 +302,22 @@ export function setExact(p: Swatch[], id: string, color: Oklch): Swatch[] {
 }
 
 /** `swatch` is the output (displayed) swatch: the fields show what the strip shows. */
+/** The copy icon beside the color code: copies the value in the current format (decision 39; D14). */
+function CopyIcon({ color, format }: { color: Oklch; format: SwatchFormat }) {
+  const name = FORMATS.find((f) => f.id === format)?.label ?? format.toUpperCase();
+  return (
+    <button
+      type="button"
+      class="icon-pill copy-icon"
+      data-testid="copy-value"
+      aria-label={`Copy ${name} value`}
+      onClick={() => void copySelected(color, format)}
+    >
+      <Copy aria-hidden="true" size={18} strokeWidth={1.5} />
+    </button>
+  );
+}
+
 function ValueFields({ swatch }: { swatch: Swatch }) {
   const base = useId();
   const format = swatchFormat.value;
@@ -313,39 +327,45 @@ function ValueFields({ swatch }: { swatch: Swatch }) {
     <div class="swatch-fields" data-testid="swatch-fields">
       {format === "hex" ? (
         <Field label="HEX" htmlFor={`${base}-hex`}>
-          <CommitField
-            id={`${base}-hex`}
-            className="number-field swatch-hex-field"
-            inputMode="text"
-            label="HEX"
-            value={hex}
-            onCommit={(raw) => {
-              const parsed = parseHex(raw);
-              if (parsed === null) return false;
-              const next = hexToOklch(parsed);
-              edit("Color", (p) => setExact(p, swatch.id, next));
-              return true;
-            }}
-          />
+          <span class="copy-group">
+            <CommitField
+              id={`${base}-hex`}
+              className="number-field swatch-hex-field"
+              inputMode="text"
+              label="HEX"
+              value={hex}
+              onCommit={(raw) => {
+                const parsed = parseHex(raw);
+                if (parsed === null) return false;
+                const next = hexToOklch(parsed);
+                edit("Color", (p) => setExact(p, swatch.id, next));
+                return true;
+              }}
+            />
+            <CopyIcon color={color} format={format} />
+          </span>
         </Field>
       ) : (
-        channels(format, color).map((channel) => (
+        channels(format, color).map((channel, at) => (
           <Field
             key={`${format}-${channel.label}`}
             label={channel.label}
             htmlFor={`${base}-${channel.label}`}
           >
-            <CommitField
-              id={`${base}-${channel.label}`}
-              label={`${format.toUpperCase()} ${channel.label}`}
-              value={channel.text}
-              onCommit={(raw) => {
-                const next = channel.apply(raw);
-                if (!next) return false;
-                edit("Color", (p) => setExact(p, swatch.id, next));
-                return true;
-              }}
-            />
+            <span class="copy-group">
+              <CommitField
+                id={`${base}-${channel.label}`}
+                label={`${format.toUpperCase()} ${channel.label}`}
+                value={channel.text}
+                onCommit={(raw) => {
+                  const next = channel.apply(raw);
+                  if (!next) return false;
+                  edit("Color", (p) => setExact(p, swatch.id, next));
+                  return true;
+                }}
+              />
+              {at === 0 && <CopyIcon color={color} format={format} />}
+            </span>
           </Field>
         ))
       )}
@@ -398,7 +418,6 @@ function deltaText(swatch: Swatch): string | null {
 
 function SwatchControls({ swatch, index }: { swatch: Swatch; index: number }) {
   const base = useId();
-  const full = !canAdd(palette.value);
   const output = outputPalette.value.find((s) => s.id === swatch.id) ?? swatch;
   const delta = deltaText(swatch);
   const extracted = swatch.extracted;
@@ -408,7 +427,6 @@ function SwatchControls({ swatch, index }: { swatch: Swatch; index: number }) {
     (!sameColor(extracted.color, swatch.color) ||
       extracted.point?.x !== swatch.point?.x ||
       extracted.point?.y !== swatch.point?.y);
-  const label = swatch.name || `Swatch ${index + 1}`;
   return (
     <>
       <Field label="Format">
@@ -424,51 +442,6 @@ function SwatchControls({ swatch, index }: { swatch: Swatch; index: number }) {
       </Field>
       <ValueFields swatch={output} />
       <NameField swatch={swatch} index={index} />
-      <div class="swatch-actions">
-        <button
-          type="button"
-          class="pill-button"
-          onClick={() => void copySelected(output.color, swatchFormat.value)}
-        >
-          Copy
-        </button>
-        <button
-          type="button"
-          class="pill-button"
-          disabled={full}
-          aria-describedby={full ? `${base}-full` : undefined}
-          onClick={() =>
-            edit("Duplicate", (p) => {
-              const next = duplicateSwatch(p, swatch.id);
-              const copy = next[p.findIndex((s) => s.id === swatch.id) + 1];
-              if (copy && next !== p) selectSwatch(copy.id);
-              return next;
-            })
-          }
-        >
-          Duplicate
-        </button>
-        <button
-          type="button"
-          class="pill-button"
-          aria-label={`Delete ${label}`}
-          onClick={() => {
-            const at = palette.peek().findIndex((s) => s.id === swatch.id);
-            edit("Delete", (p) => deleteSwatch(p, swatch.id));
-            const rest = palette.peek();
-            selectSwatch(rest[Math.min(at, rest.length - 1)]?.id ?? null);
-          }}
-        >
-          Delete
-        </button>
-      </div>
-      <div class="live-region" role="status">
-        {full && (
-          <p class="swatch-note" id={`${base}-full`}>
-            {FULL_MESSAGE}
-          </p>
-        )}
-      </div>
       <div class="swatch-actions">
         <button
           type="button"

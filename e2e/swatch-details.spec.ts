@@ -1,6 +1,6 @@
 /**
  * The Swatch row and sheet (M3-T4; spec 3.2, 3.7; plan D13 to D15, D21): format fields, Name with
- * the CSS-name suggestion, Copy, Duplicate, Delete, Reset to extracted, the sample settings and the
+ * the CSS-name suggestion, the copy icon, the D shortcut, Reset to extracted, the sample settings and the
  * Cluster map toggle. The mockup state selects swatch 3 (#14386B); `rows=swatch` opens the row in
  * place on desktop and as the sheet on phones.
  */
@@ -94,60 +94,99 @@ test.describe("fields", () => {
   });
 });
 
-test.describe("copy", () => {
-  test("Copy writes the selected format", async ({ page, context, browserName }) => {
+test.describe("copy icon (decision 39)", () => {
+  test("the icon sits beside the color field, on its row, and copies the current format", async ({
+    page,
+    context,
+    browserName,
+  }, info) => {
+    await open(page);
+    const hexField = details(page).getByLabel("HEX", { exact: true });
+    const icon = details(page).getByRole("button", { name: "Copy HEX value" });
+    const f = await hexField.boundingBox();
+    const c = await icon.boundingBox();
+    if (!f || !c) throw new Error("no boxes");
+    // Same row, directly beside the field, within 8 px.
+    expect(Math.abs(f.y + f.height / 2 - (c.y + c.height / 2))).toBeLessThanOrEqual(2);
+    expect(c.x - (f.x + f.width)).toBeGreaterThanOrEqual(0);
+    expect(c.x - (f.x + f.width)).toBeLessThanOrEqual(8);
+    expect(c.width).toBeGreaterThanOrEqual(isPhoneProject(info) ? 44 : 32);
+    expect(c.height).toBeGreaterThanOrEqual(isPhoneProject(info) ? 44 : 32);
+    // There is no text Copy, Duplicate or Delete button any more.
+    for (const name of ["Copy", "Duplicate", /^Delete/]) {
+      await expect(details(page).getByRole("button", { name, exact: name === "Copy" })).toHaveCount(
+        0,
+      );
+    }
+
     test.skip(
       browserName !== "chromium",
       "Playwright grants clipboard permissions in Chromium only",
     );
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    await open(page);
     const read = () => page.evaluate(() => navigator.clipboard.readText());
-    const copy = details(page).getByRole("button", { name: "Copy", exact: true });
-    await copy.click();
+    await icon.click();
     await expect.poll(read).toBe("#14386B");
     const format = details(page).getByTestId("swatch-format");
     await format.getByRole("button", { name: "RGB" }).click();
-    await copy.click();
+    await details(page).getByRole("button", { name: "Copy RGB value" }).click();
     await expect.poll(read).toBe("rgb(20 56 107)");
     await format.getByRole("button", { name: "HSL" }).click();
-    await copy.click();
+    await details(page).getByRole("button", { name: "Copy HSL value" }).click();
     await expect.poll(read).toBe("hsl(215 69% 25%)");
     await format.getByRole("button", { name: "OKLCH" }).click();
-    await copy.click();
+    await details(page).getByRole("button", { name: "Copy OKLCH value" }).click();
     await expect.poll(read).toMatch(/^oklch\(0\.\d{3} 0\.\d{3} \d{1,3}\.\d\)$/);
   });
 });
 
-test.describe("duplicate and delete", () => {
-  test("Duplicate adds the copy right after swatch 3; at 12 it is disabled with a note", async ({
+test.describe("duplicate by shortcut, delete by the strip's X (decisions 38, 39)", () => {
+  test("D duplicates swatch 3 right after itself, selects the copy; Undo removes it; at 12 it only announces", async ({
     page,
   }) => {
     await open(page);
     await expect(strip(page)).toHaveCount(6);
-    const duplicate = details(page).getByRole("button", { name: "Duplicate" });
-    await duplicate.click();
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press("d");
     await expect(strip(page)).toHaveCount(7);
-    // The copy sits at position 4 with swatch 3's color, and is selected.
     const labels = await strip(page).evaluateAll((els) =>
       els.map((e) => e.getAttribute("aria-label") ?? ""),
     );
     expect(labels[3]?.split(", ")[1]).toBe("#14386B");
     expect(labels[2]?.split(", ")[1]).toBe("#14386B");
     await expect(label(page)).toHaveText("Swatch 4");
-    for (let i = 7; i < 12; i++) await duplicate.click();
+    await undoKey(page);
+    await expect(strip(page)).toHaveCount(6);
+    for (let i = 0; i < 6; i++) await page.keyboard.press("d");
     await expect(strip(page)).toHaveCount(12);
-    await expect(duplicate).toBeDisabled();
-    await expect(details(page)).toContainText("A palette holds at most 12 colors.");
-    await expect(duplicate).toHaveAccessibleDescription("A palette holds at most 12 colors.");
+    await page.keyboard.press("d");
+    await expect(strip(page)).toHaveCount(12);
+    await expect(
+      page.locator("[role=status]").filter({ hasText: "at most 12 colors" }).first(),
+    ).toBeAttached();
   });
 
-  test("Delete, then Undo, restores the swatch in place", async ({ page }) => {
+  test("D is ignored while a text field has focus", async ({ page }) => {
+    await open(page);
+    const name = details(page).getByLabel("Name", { exact: true });
+    await name.focus();
+    await page.keyboard.type("dd");
+    await expect(strip(page)).toHaveCount(6);
+    await expect(name).toHaveValue("dd");
+  });
+
+  test("removing the selected swatch with the strip's X, then Undo, restores it in place", async ({
+    page,
+  }, info) => {
+    test.skip(
+      isPhoneProject(info),
+      "the sheet covers the strip on a phone; strip-actions covers it",
+    );
     await open(page);
     const before = await strip(page).evaluateAll((els) =>
       els.map((e) => e.getAttribute("aria-label") ?? ""),
     );
-    await details(page).getByRole("button", { name: "Delete Swatch 3" }).click();
+    await page.getByRole("button", { name: "Remove swatch 3" }).click();
     await expect(strip(page)).toHaveCount(5);
     await expect(label(page)).toHaveText("Swatch 3");
     await undoKey(page);
@@ -288,8 +327,8 @@ test.describe("live regions (spec 6.3)", () => {
 
   test("reaching 12 colors is announced through a live region", async ({ page }) => {
     await open(page);
-    const duplicate = details(page).getByRole("button", { name: "Duplicate" });
-    for (let i = 6; i < 12; i++) await duplicate.click();
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    for (let i = 6; i < 12; i++) await page.keyboard.press("d");
     await expect(strip(page)).toHaveCount(12);
     await expect(live(page, "A palette holds at most 12 colors.").first()).toBeAttached();
   });

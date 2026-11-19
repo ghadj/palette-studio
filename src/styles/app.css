@@ -1705,6 +1705,18 @@ fieldset {
   text-align: left;
 }
 
+/* The copy icon sits directly beside the color code (decision 39). */
+.copy-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.copy-icon {
+  min-width: var(--hit);
+  min-height: var(--hit);
+}
+
 .swatch-name {
   display: flex;
   flex-direction: column;

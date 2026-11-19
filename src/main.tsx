@@ -4,6 +4,7 @@ import "./styles/tokens.css";
 import "./styles/app.css";
 import { centered } from "./image/viewport";
 import { clusterPinned } from "./state/cluster";
+import { duplicateSelected } from "./state/duplicate-swatch";
 import { startLiveExtraction } from "./state/extraction";
 import { redo, undo } from "./state/history";
 import {
@@ -33,6 +34,7 @@ import { App } from "./ui/App";
 import { installFocusClearance } from "./ui/focusClearance";
 import { copySelectedHex } from "./ui/SwatchDetails";
 import { registerShortcut } from "./ui/shortcuts";
+import { showToast } from "./ui/Toast";
 
 initTheme();
 installFocusClearance();
@@ -67,6 +69,8 @@ registerShortcut("mod+z", undo);
 registerShortcut("mod+shift+z", redo);
 // C copies the selected swatch's HEX (M3 plan D17).
 registerShortcut("c", () => void copySelectedHex());
+// D duplicates the selected swatch: the Swatch row has no Duplicate button (decision 39).
+registerShortcut("d", () => duplicateSelected(showToast));
 
 const root = document.getElementById("app");
 if (root) render(<App />, root);
