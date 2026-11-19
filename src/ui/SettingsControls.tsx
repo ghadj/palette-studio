@@ -7,7 +7,6 @@
  * weighting (M2-T9), Keep one outlier and Sort (M2-T7). Every change re-extracts live (spec 1, 7.4).
  */
 import { ChevronDown, ChevronRight } from "lucide-preact";
-import { useLayoutEffect, useState } from "preact/hooks";
 import { type SettingKey, settingApplies, settingNote } from "../extract/applicability";
 import { AVAILABLE_ALGORITHMS } from "../extract/pipeline";
 import {
@@ -33,7 +32,9 @@ import type {
   WorkingSpace,
 } from "../types";
 import { DecimalField } from "./DecimalField";
+import { NumberField } from "./NumberField";
 import { SettingRow } from "./SettingRow";
+import { Slider } from "./Slider";
 import { Toggle } from "./Toggle";
 
 export const ALGORITHM_LABELS: Record<Algorithm, string> = {
@@ -129,70 +130,6 @@ function Select<T extends string | number>({
   );
 }
 
-/** A number field that accepts typing freely and commits valid integers in range. */
-function NumberField({
-  id,
-  value,
-  min,
-  max,
-  label,
-  disabled = false,
-  describedBy,
-  onCommit,
-}: {
-  id: string;
-  value: number;
-  min: number;
-  max: number;
-  label?: string;
-  disabled?: boolean;
-  describedBy?: string | undefined;
-  onCommit: (value: number) => void;
-}) {
-  const [text, setText] = useState<string | null>(null);
-  const parse = (raw: string): number | null => {
-    const n = Number(raw.trim());
-    return raw.trim() !== "" && Number.isInteger(n) && n >= min && n <= max ? n : null;
-  };
-  // A change from elsewhere, such as a preset, replaces a draft that no longer matches it. A
-  // layout effect runs with the render, before the next input event; a deferred effect could
-  // run after the user has typed again and drop that new draft.
-  useLayoutEffect(() => {
-    setText((t) => (t !== null && parse(t) !== value ? null : t));
-  }, [value]);
-  const onInput = (event: Event) => {
-    const raw = (event.currentTarget as HTMLInputElement).value;
-    setText(raw);
-    const n = parse(raw);
-    if (n !== null) onCommit(n);
-  };
-  return (
-    <input
-      id={id}
-      class="number-field"
-      type="number"
-      inputMode="decimal"
-      min={min}
-      max={max}
-      step={1}
-      aria-label={label}
-      aria-describedby={describedBy}
-      disabled={disabled}
-      value={text ?? String(value)}
-      onInput={onInput}
-      onChange={(event) => {
-        // On commit (blur or Enter), clamp out-of-range numbers instead of dropping them.
-        const n = Number((event.currentTarget as HTMLInputElement).value.trim());
-        if (Number.isFinite(n) && (event.currentTarget as HTMLInputElement).value.trim() !== "") {
-          onCommit(Math.min(max, Math.max(min, Math.round(n))));
-        }
-        setText(null);
-      }}
-      onBlur={() => setText(null)}
-    />
-  );
-}
-
 /**
  * Whether a setting applies to the algorithm, for a row's controls (M1 decision 14). Its "Used by …"
  * or "Not used by …" note shows only while the controls are disabled (M2 decision 14c).
@@ -266,29 +203,16 @@ export function SettingsControls() {
         noteId="setting-colors-note"
         disabled={!colorsApplies}
       >
-        <span class="slider-group">
-          <input
-            class="slider"
-            type="range"
-            min={MIN_COLORS}
-            max={MAX_COLORS}
-            step={1}
-            value={s.colors}
-            aria-label="Colors slider"
-            disabled={!colorsApplies}
-            aria-describedby={colorsNote ? "setting-colors-note" : undefined}
-            onInput={(event) => update("colors", clampColors(Number(event.currentTarget.value)))}
-          />
-          <NumberField
-            id="setting-colors"
-            value={s.colors}
-            min={MIN_COLORS}
-            max={MAX_COLORS}
-            disabled={!colorsApplies}
-            describedBy={colorsNote ? "setting-colors-note" : undefined}
-            onCommit={(v) => update("colors", clampColors(v))}
-          />
-        </span>
+        <Slider
+          id="setting-colors"
+          label="Colors"
+          value={s.colors}
+          min={MIN_COLORS}
+          max={MAX_COLORS}
+          disabled={!colorsApplies}
+          describedBy={colorsNote ? "setting-colors-note" : undefined}
+          onChange={(v) => update("colors", clampColors(v))}
+        />
       </SettingRow>
       <SettingRow label="Working space" htmlFor="setting-space">
         <Select

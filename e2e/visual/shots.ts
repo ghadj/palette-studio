@@ -17,6 +17,8 @@ export interface Shot {
 const DESKTOP = { width: 1280, height: 800 };
 const TABLET = { width: 820, height: 1180 };
 const PHONE = { width: 390, height: 844 };
+/** Desktop shots with an open row in a column, tall enough that the column doesn't scroll. */
+const TALL_DESKTOP = { width: 1280, height: 1280 };
 
 export const M1_SHOTS: readonly Shot[] = [
   {
@@ -24,7 +26,8 @@ export const M1_SHOTS: readonly Shot[] = [
     path: "./?demo=mockup&view=studio",
     viewport: DESKTOP,
     mockup: { light: "01-studio-light.png", dark: "02-studio-dark.png" },
-    frame: "Whole frame. M1 has no markers, hint, editor, chevron rows or gradient controls.",
+    frame:
+      "Whole frame. Column 2 has the chevron rows and the Lock and Ramp pills (M3-T2); markers, hint, L/C/H and HEX arrive in later M3 tasks, gradient controls in M4.",
   },
   {
     // M2-T7. Taller than the other desktop shots, so the open Advanced rows fit in column 1
@@ -48,7 +51,8 @@ export const M1_SHOTS: readonly Shot[] = [
     path: "./?demo=mockup&tab=palette",
     viewport: PHONE,
     mockup: null,
-    frame: "ui-contract Phone, Palette tab. M1 has the swatch strip and selection label only.",
+    frame:
+      "ui-contract Phone, Palette tab (not drawn): the strip, label, editor row (Lock, Ramp) and the chevron rows Swatch, Adjustments, Contrast and CVD, which open sheets.",
   },
   {
     name: "gradient-phone",
@@ -124,7 +128,132 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: PHONE,
     mockup: null,
     frame:
-      "M2 decision 13: the Source tab with swatch 3's cluster map over the image (not drawn). The Cluster map toggle is in palette-phone.",
+      "M2 decision 13: the Source tab with swatch 3's cluster map over the image (not drawn). The Cluster map toggle is in swatch-sheet-phone (13d).",
+  },
+  // M3 (plan "Screens affected"), registered by M3-T2. Until a shot's task lands it shows that
+  // task's stub ("Coming in a later version"). The desktop row shots are taller, so the open row
+  // fits in column 2 without scrolling it, as advanced-desktop does for column 1.
+  {
+    name: "swatch-desktop",
+    path: "./?demo=mockup&rows=swatch",
+    viewport: TALL_DESKTOP,
+    mockup: null,
+    frame:
+      "Not drawn (M3 decision 5a). Column 2 with the Swatch chevron row open in place: formats, Name with its suggestion, Copy, Duplicate, Delete, Reset to extracted, Sample radius, Mean or Median, Cluster map.",
+  },
+  {
+    name: "adjustments-desktop",
+    path: "./?demo=mockup&rows=adjustments",
+    viewport: TALL_DESKTOP,
+    mockup: null,
+    frame:
+      "Not drawn. Column 2 item 5 with the Adjustments row open in place: one slider per adjustment (spec 3.3, plan D1), Even out, Harmonize, Gamut, Reset and Compare.",
+  },
+  {
+    name: "contrast-desktop",
+    path: "./?demo=mockup&rows=contrast",
+    viewport: TALL_DESKTOP,
+    mockup: null,
+    frame:
+      "Not drawn. Column 2 item 5 with the Contrast row open in place: the 6 × 6 WCAG matrix with text badges and the close pairs (spec 3.5, M3 decision 6c).",
+  },
+  {
+    name: "cvd-desktop",
+    path: "./?demo=mockup&rows=cvd",
+    viewport: TALL_DESKTOP,
+    mockup: null,
+    frame:
+      "Not drawn. Column 2 item 5 with the CVD row open in place: Normal plus one labelled strip per type (spec 3.5, plan D6).",
+  },
+  {
+    name: "ramp-desktop",
+    path: "./?demo=mockup&rows=ramp",
+    viewport: TALL_DESKTOP,
+    mockup: null,
+    frame:
+      "Not drawn. The Ramp panel under the editor row: 11 steps 50 to 950 and the harmonies (spec 3.4, plan D4, D5).",
+  },
+  {
+    name: "loupe-desktop",
+    path: "./?demo=mockup&loupe=3",
+    viewport: DESKTOP,
+    mockup: { light: "01-studio-light.png", dark: "02-studio-dark.png" },
+    frame:
+      "Column 1 item 1, markers as drawn; the loupe over marker 3 (8×, crosshair, #14386B) is not drawn (contract Components 'Marker', dragging).",
+  },
+  {
+    name: "palette-view-desktop",
+    path: "./?demo=mockup&image=palette",
+    viewport: DESKTOP,
+    mockup: { light: "03-image-views-light.png", dark: "04-image-views-dark.png" },
+    frame: "Left column: the Palette view, area-share bar, legend, Colors from and Dither.",
+  },
+  {
+    name: "values-view-desktop",
+    path: "./?demo=mockup&image=values",
+    viewport: DESKTOP,
+    mockup: { light: "03-image-views-light.png", dark: "04-image-views-dark.png" },
+    frame:
+      "Middle column: the Values view, band strip, Bands and Close in value rows, the flagged pair; the bracket on the strip in column 2.",
+  },
+  {
+    name: "palette-view-phone",
+    path: "./?demo=mockup&image=palette",
+    viewport: PHONE,
+    mockup: { light: "11-mobile-features-light.png", dark: "12-mobile-features-dark.png" },
+    frame: "Middle phone: the Source tab in the Palette view.",
+  },
+  {
+    name: "values-phone",
+    path: "./?demo=mockup&image=values",
+    viewport: PHONE,
+    mockup: { light: "11-mobile-features-light.png", dark: "12-mobile-features-dark.png" },
+    frame:
+      "Left phone without the grid (M5): gray bands, the close pair bracketed on the strip, Bands and Close in value.",
+  },
+  {
+    name: "loupe-phone",
+    path: "./?demo=mockup&loupe=3",
+    viewport: PHONE,
+    mockup: { light: "09-mobile-light.png", dark: "10-mobile-dark.png" },
+    frame:
+      "Left phone, markers as drawn; the loupe above marker 3 is not drawn (contract Components 'Marker', dragging).",
+  },
+  {
+    name: "swatch-sheet-phone",
+    path: "./?demo=mockup&tab=palette&rows=swatch",
+    viewport: PHONE,
+    mockup: null,
+    frame:
+      "Not drawn (contract 'Not drawn': bottom sheets for the swatch editor). The Swatch sheet over the Palette tab, with the Cluster map toggle (M2 decision 13d).",
+  },
+  {
+    name: "adjustments-sheet-phone",
+    path: "./?demo=mockup&tab=palette&rows=adjustments",
+    viewport: PHONE,
+    mockup: null,
+    frame: "Not drawn. The Adjustments sheet over the Palette tab (spec 6.1).",
+  },
+  {
+    name: "ramp-sheet-phone",
+    path: "./?demo=mockup&tab=palette&rows=ramp",
+    viewport: PHONE,
+    mockup: null,
+    frame: "Not drawn. The Ramp sheet over the Palette tab (spec 6.1).",
+  },
+  {
+    name: "contrast-sheet-phone",
+    path: "./?demo=mockup&tab=palette&rows=contrast",
+    viewport: PHONE,
+    mockup: null,
+    frame: "Not drawn. The Contrast sheet over the Palette tab.",
+  },
+  {
+    name: "cvd-sheet-phone",
+    path: "./?demo=mockup&tab=palette&rows=cvd",
+    viewport: PHONE,
+    mockup: null,
+    frame: "Not drawn. The CVD sheet over the Palette tab.",
   },
 ];
 

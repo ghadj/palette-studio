@@ -47,6 +47,13 @@ test.describe("token conformance @tokens", () => {
               (f) => f.kind === "touch-target",
             );
             expect(failures, describeFailures(failures)).toEqual([]);
+            // A screen that opens a bottom sheet (M3, `rows=`) has just been checked with it open.
+            // The sheet is modal, so close it to reach the header's theme button.
+            const sheet = page.locator("dialog[open]");
+            if ((await sheet.count()) > 0) {
+              await page.keyboard.press("Escape");
+              await expect(sheet).toHaveCount(0);
+            }
             // The theme menu's options too.
             await page.getByRole("button", { name: /^Theme/ }).click();
             const open = (await checkTokens(page, { touchTargets: true })).filter(

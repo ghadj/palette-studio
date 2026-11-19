@@ -4,7 +4,7 @@ import { demo, isPhoneProject } from "./helpers/app";
 
 /**
  * The cluster map (spec 2.6; M2 decisions 13 and 14b): hovering or focusing a swatch, or the
- * phone's Cluster map toggle, shows the pixels nearest that swatch over the image, with every
+ * phone's Cluster map toggle (in the Swatch sheet since M3-T2, decision 13d), shows the pixels nearest that swatch over the image, with every
  * other pixel dimmed, and the selection label gives its share. The overlay follows zoom and pan.
  */
 
@@ -52,6 +52,20 @@ async function overlayShows(page: Page, index: number): Promise<void> {
 
 async function tab(page: Page, name: "Source" | "Palette"): Promise<void> {
   await page.getByTestId("tabbar").getByRole("tab", { name }).click();
+}
+
+/** Opens the Swatch sheet on the phone Palette tab, which holds the toggle (decision 13d). */
+async function openSwatchSheet(page: Page): Promise<void> {
+  await page
+    .locator("[data-panel=palette]")
+    .getByRole("button", { name: "Swatch", exact: true })
+    .click();
+  await expect(page.getByRole("dialog", { name: "Swatch" })).toBeVisible();
+}
+
+async function closeSheet(page: Page): Promise<void> {
+  await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 }
 
 /** The overlay canvas's clear (undimmed) pixels, in fractions of the image. */
@@ -131,6 +145,7 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
       await page.goto(demo("tab=palette"));
       await demoMapReady(page);
       await expect(label(page)).toHaveText("Swatch 3");
+      await openSwatchSheet(page);
       await toggle(page).click();
     } else {
       await page.goto(demo());
@@ -167,10 +182,10 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
     await expect(overlay(page)).toHaveCount(0);
   });
 
-  test("phone: the Cluster map toggle on the Palette tab shows the selected swatch's map", async ({
+  test("phone: the Cluster map toggle in the Swatch sheet shows the selected swatch's map", async ({
     page,
   }, info) => {
-    test.skip(!isPhoneProject(info), "the toggle is on the phone Palette tab");
+    test.skip(!isPhoneProject(info), "the toggle is in the phone Swatch sheet");
     await page.goto(demo());
     await demoMapReady(page);
     // Tapping a swatch selects it and shows no map: nothing depends on hover (spec 6.1).
@@ -178,19 +193,23 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
     await expect(swatches(page).nth(0)).toHaveAttribute("aria-pressed", "true");
     await expect(overlay(page)).toHaveCount(0);
     await tab(page, "Palette");
+    await openSwatchSheet(page);
     await expect(toggle(page)).toHaveAttribute("aria-checked", "false");
     await expect(toggle(page)).toHaveAccessibleName("Cluster map");
     await toggle(page).tap();
     await expect(toggle(page)).toHaveAttribute("aria-checked", "true");
     await expectShareLabel(page, 0);
     // Changing the selection changes the map.
+    await closeSheet(page);
     await swatches(page).nth(3).tap();
     await expectShareLabel(page, 3);
     await tab(page, "Source");
     await overlayShows(page, 3);
     await tab(page, "Palette");
+    await openSwatchSheet(page);
     await toggle(page).tap();
     await expect(toggle(page)).toHaveAttribute("aria-checked", "false");
+    await closeSheet(page);
     await expect(label(page)).toHaveText("Swatch 4");
     await tab(page, "Source");
     await expect(overlay(page)).toHaveCount(0);
@@ -270,7 +289,9 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
     if (phone) {
       await swatches(page).nth(0).tap();
       await tab(page, "Palette");
+      await openSwatchSheet(page);
       await toggle(page).tap();
+      await closeSheet(page);
       await tab(page, "Source");
     } else {
       await swatches(page).nth(0).hover();

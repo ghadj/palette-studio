@@ -109,8 +109,18 @@ export const eyedropperMode = signal<EyedropperMode>("off");
 /** True in the mockup state (?demo=mockup), which never touches storage (spec 5.5). */
 export const demoMode = signal(false);
 
-/** Chevron rows that start expanded, such as "filters": the mockup state's `rows` parameter. */
+/**
+ * Chevron rows that start expanded, such as "filters": the mockup state's `rows` parameter. On
+ * phones the Palette column's rows ("swatch", "adjustments", "contrast", "cvd") and the Ramp panel
+ * ("ramp") open as bottom sheets instead (plan D20).
+ */
 export const initialOpenRows = signal<readonly string[]>([]);
+
+/**
+ * The palette index of the swatch whose marker shows the loupe at load: the mockup state's
+ * `loupe=<n>` parameter (plan D20). Null for none. M3-T12's Loupe reads it.
+ */
+export const initialLoupe = signal<number | null>(null);
 
 export function loadProject(project: Project, name: string): void {
   batch(() => {

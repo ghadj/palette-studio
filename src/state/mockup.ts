@@ -1,12 +1,12 @@
 /**
  * The mockup state, ?demo=mockup (docs/design/mockup-state.md). It never reads or writes autosave,
  * the project library or any browser storage (spec 5.5), so nothing here imports storage code.
- * M1 reads the `view`, `tab` and `theme` parameters, and M2 `rows`; the others are ignored until
- * their milestone.
+ * M1 reads the `view`, `tab` and `theme` parameters, M2 `rows`, `zoom` and `cluster`, and M3 more
+ * `rows`, `image` and `loupe` (plan D20); the others are ignored until their milestone.
  */
 import { hexToOklab, hexToOklch } from "../color/convert";
 import { createSwatch } from "../palette/model";
-import type { Project, Tab, View } from "../types";
+import type { ImageViewMode, Project, Tab, View } from "../types";
 import {
   DEFAULT_ADJUSTMENTS,
   DEFAULT_VIEW_SETTINGS,
@@ -21,9 +21,28 @@ import {
   MOCKUP_SWATCHES,
 } from "./mockup-fixture";
 
-/** Chevron rows the `rows` parameter can open (M2 decision 14b). */
-export type MockupRow = "filters" | "advanced";
-const ROWS: readonly MockupRow[] = ["filters", "advanced"];
+/**
+ * Chevron rows the `rows` parameter can open: M2's Filters and Advanced under the image (M2
+ * decision 14b), and M3's rows in the Palette column, plus the Ramp panel (plan D20). On phones
+ * the M3 ones open as bottom sheets, so their shots use `tab=palette`.
+ */
+export type MockupRow =
+  | "filters"
+  | "advanced"
+  | "swatch"
+  | "adjustments"
+  | "ramp"
+  | "contrast"
+  | "cvd";
+const ROWS: readonly MockupRow[] = [
+  "filters",
+  "advanced",
+  "swatch",
+  "adjustments",
+  "ramp",
+  "contrast",
+  "cvd",
+];
 
 export interface MockupParams {
   view: View;
@@ -113,5 +132,21 @@ export function parseMockupCluster(search: string): number | null {
   const n = ["1", "2", "3", "4", "5", "6"].indexOf(
     new URLSearchParams(search).get("cluster") ?? "",
   );
+  return n < 0 ? null : n;
+}
+
+const IMAGE_VIEWS: readonly ImageViewMode[] = ["image", "palette", "values"];
+
+/** `image=image|palette|values` opens that image view (spec 3.8); anything else is the Image view. */
+export function parseMockupImage(search: string): ImageViewMode {
+  return pick(new URLSearchParams(search).get("image"), IMAGE_VIEWS, "image");
+}
+
+/**
+ * `loupe=<1 to 6>` shows the loupe over that swatch's marker, as a drag does (spec 3.7, plan D20).
+ * Returns the swatch's palette index, or null for no loupe.
+ */
+export function parseMockupLoupe(search: string): number | null {
+  const n = ["1", "2", "3", "4", "5", "6"].indexOf(new URLSearchParams(search).get("loupe") ?? "");
   return n < 0 ? null : n;
 }

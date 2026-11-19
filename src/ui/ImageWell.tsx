@@ -1,7 +1,14 @@
 /**
  * The image well (ui-contract column 1 item 1). The image is user content: it keeps its own colors
- * in both themes (spec 6.2). With no image yet it holds the drop zone (spec 6.3). Sample-point
- * markers arrive in M3.
+ * in both themes (spec 6.2). With no image yet it holds the drop zone (spec 6.3).
+ *
+ * M3 slots (plan M3-T2), each its own component and file:
+ * - `ViewLayer` in the transformed layer: the Palette and Values views (M3-T14).
+ * - `MarkerLayer` over the well, untransformed, so markers keep their size (M3-T12, M3-T15).
+ * - `EyedropperLayer` over the well (M3-T16).
+ * - `WellTools` in the corner beside the zoom controls (M3-T12, M3-T16).
+ * Pan and pinch ignore a pointerdown on a marker and every one while the eyedropper is on, and the
+ * arrow keys don't pan from a marker (`pointerRouting.ts`).
  *
  * Zoom and pan (spec 6 "Image view"; M2 decision 15): the image sits in a transformed layer.
  * Ctrl/Cmd + wheel and trackpad pinch zoom about the pointer, while a plain wheel scrolls the page
@@ -17,6 +24,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { isFit, type Point, panBy, pinch, type View, zoomAt } from "../image/viewport";
 import {
   displayImage,
+  eyedropperMode,
   imageLoading,
   imageMessage,
   imageMeta,
@@ -26,6 +34,11 @@ import {
 } from "../state/signals";
 import { ClusterOverlay } from "./ClusterOverlay";
 import { DropZone } from "./DropZone";
+import { EyedropperLayer } from "./EyedropperLayer";
+import { MarkerLayer } from "./MarkerLayer";
+import { keysIgnored, panIgnores } from "./pointerRouting";
+import { ViewLayer } from "./ViewLayer";
+import { WellTools } from "./WellTools";
 import { UNIT_WELL, ZoomControls, zoomFit, zoomStep } from "./ZoomControls";
 
 function DisplayCanvas({ bitmap, label }: { bitmap: ImageBitmap; label: string }) {
@@ -70,10 +83,6 @@ function toUnit(el: HTMLElement, clientX: number, clientY: number): Point {
   const g = geometry(el);
   return { x: (clientX - g.left) / g.width, y: (clientY - g.top) / g.height };
 }
-
-/** True for events that start on the zoom buttons, which handle themselves. */
-const onControls = (event: Event): boolean =>
-  event.target instanceof Element && event.target.closest(".zoom-controls") !== null;
 
 /** A pointer gesture in progress. The view reaches `imageView` once per animation frame. */
 class Gesture {
@@ -209,7 +218,7 @@ function ZoomableWell({
   const onPointerDown = (event: PointerEvent) => {
     const el = well.current;
     const g = gesture.current;
-    if (!el || onControls(event) || g.pointers.size >= 2) return;
+    if (!el || panIgnores(event.target, eyedropperMode.peek()) || g.pointers.size >= 2) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
     g.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     try {
@@ -288,7 +297,7 @@ function ZoomableWell({
       case "ArrowUp":
       case "ArrowDown": {
         // At Fit there is nothing to pan, so the arrows keep scrolling the page.
-        if (isFit(current) || onControls(event)) return;
+        if (isFit(current) || keysIgnored(event.target)) return;
         const dx = event.key === "ArrowLeft" ? KEY_PAN : event.key === "ArrowRight" ? -KEY_PAN : 0;
         const dy = event.key === "ArrowUp" ? KEY_PAN : event.key === "ArrowDown" ? -KEY_PAN : 0;
         imageView.value = panBy(current, dx, dy, UNIT_WELL);
@@ -328,11 +337,15 @@ function ZoomableWell({
     >
       <div class="image-well__layer" style={{ transform }}>
         {children}
+        <ViewLayer />
         <ClusterOverlay />
       </div>
+      <MarkerLayer />
+      <EyedropperLayer />
       <span id="image-view-keys" class="visually-hidden">
         Press + or − to zoom, 0 to fit, and the arrow keys to pan.
       </span>
+      <WellTools />
       <ZoomControls />
     </div>
   );

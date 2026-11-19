@@ -9,6 +9,8 @@ import { redo, undo } from "./state/history";
 import {
   buildMockupState,
   parseMockupCluster,
+  parseMockupImage,
+  parseMockupLoupe,
   parseMockupParams,
   parseMockupZoom,
 } from "./state/mockup";
@@ -20,9 +22,11 @@ import {
   demoMode,
   imageSrc,
   imageView,
+  initialLoupe,
   initialOpenRows,
   loadProject,
   selectedSwatchId,
+  viewSettings,
 } from "./state/signals";
 import { initTheme } from "./state/theme";
 import { App } from "./ui/App";
@@ -43,6 +47,9 @@ if (mockup) {
     activeView.value = state.activeView;
     imageView.value = centered(parseMockupZoom(window.location.search), { width: 1, height: 1 });
     initialOpenRows.value = state.openRows;
+    // `image=<view>` and `loupe=<n>` (plan D20). The view is view state, never in undo (3.6).
+    viewSettings.value = { ...viewSettings.peek(), mode: parseMockupImage(window.location.search) };
+    initialLoupe.value = parseMockupLoupe(window.location.search);
     // `cluster=<n>` shows that swatch's map once the worker has made it (decision 14b).
     const cluster = parseMockupCluster(window.location.search);
     clusterPinned.value = cluster === null ? null : (state.project.palette[cluster]?.id ?? null);

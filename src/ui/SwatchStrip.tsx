@@ -3,6 +3,10 @@
  * With more than 6 swatches it breaks into two even rows when one row would make them smaller than
  * 44 px (decision 13). Swatches are user content and are never themed (spec 6.2). Hovering a
  * swatch with a fine pointer, or focusing it from the keyboard, shows its cluster map (spec 2.6).
+ *
+ * Swatch and marker are linked both ways (spec 3.7): pointing at a swatch (mouse or pen) or
+ * focusing it from the keyboard sets `hoveredSwatchId`, and the swatch it names carries
+ * `data-linked`, whether a swatch or its marker (M3-T12) set it.
  */
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { swatchHex, swatchLabel } from "../palette/model";
@@ -11,6 +15,7 @@ import {
   clusterMap,
   emptyRoles,
   extracting,
+  hoveredSwatchId,
   imageLoading,
   outputPalette,
   selectedSwatchId,
@@ -31,6 +36,9 @@ const keyboardFocus = (el: Element): boolean => {
   }
 };
 
+/** Touch has no hover (spec 6.1): a tap selects instead. */
+const points = (event: PointerEvent): boolean => event.pointerType !== "touch";
+
 const clear = (target: typeof clusterHover, id: string): void => {
   if (target.peek() === id) target.value = null;
 };
@@ -38,6 +46,7 @@ const clear = (target: typeof clusterHover, id: string): void => {
 export function SwatchStrip() {
   const swatches = outputPalette.value;
   const selected = selectedSwatchId.value;
+  const linked = hoveredSwatchId.value;
   const strip = useRef<HTMLFieldSetElement>(null);
   const [size, setSize] = useState({ width: 0, gap: 0 });
   const shown = swatches.length > 0;
@@ -79,16 +88,26 @@ export function SwatchStrip() {
             data-share={shares?.[i]}
             aria-label={`${swatchLabel(swatches, swatch.id)}, ${hex}`}
             aria-pressed={swatch.id === selected}
+            data-linked={swatch.id === linked ? "" : undefined}
             style={{ backgroundColor: hex }}
             onClick={() => selectSwatch(swatch.id)}
             onPointerEnter={(e) => {
               if (hovers(e)) clusterHover.value = swatch.id;
+              if (points(e)) hoveredSwatchId.value = swatch.id;
             }}
-            onPointerLeave={() => clear(clusterHover, swatch.id)}
+            onPointerLeave={() => {
+              clear(clusterHover, swatch.id);
+              clear(hoveredSwatchId, swatch.id);
+            }}
             onFocus={(e) => {
-              if (keyboardFocus(e.currentTarget)) clusterFocus.value = swatch.id;
+              if (!keyboardFocus(e.currentTarget)) return;
+              clusterFocus.value = swatch.id;
+              hoveredSwatchId.value = swatch.id;
             }}
-            onBlur={() => clear(clusterFocus, swatch.id)}
+            onBlur={() => {
+              clear(clusterFocus, swatch.id);
+              clear(hoveredSwatchId, swatch.id);
+            }}
           />
         );
       })}

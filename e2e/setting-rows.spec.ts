@@ -5,6 +5,7 @@
 import { expect, test } from "@playwright/test";
 import { demo, hasHorizontalScroll } from "./helpers/app";
 import { measure, openRows } from "./helpers/rows";
+import { sheetSettled } from "./helpers/sheet";
 
 const ALGORITHMS = ["balanced", "exact", "swatch-roles", "kmeans"] as const;
 const WIDTHS = [1280, 1024, 820, 390, 320] as const;
@@ -53,4 +54,27 @@ for (const width of WIDTHS) {
       }
     });
   }
+}
+
+// M3-T2: the setting rows in the Palette tab's bottom sheets never overlap either.
+for (const width of [820, 390, 320] as const) {
+  test(`sheet rows never intersect and nothing scrolls sideways at ${width} px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(demo("tab=palette&rows=swatch"));
+    await sheetSettled(page);
+    const rows = await measure(page);
+    expect(rows.map((r) => r.name)).toEqual(["Cluster map"]);
+    for (const r of rows) {
+      if (!r.value) continue;
+      const apart =
+        r.group.right <= r.value.left + 0.5 ||
+        r.value.right <= r.group.left + 0.5 ||
+        r.group.bottom <= r.value.top + 0.5 ||
+        r.value.bottom <= r.group.top + 0.5;
+      expect(apart, `${r.name}: label group overlaps its value`).toBe(true);
+    }
+    expect(await hasHorizontalScroll(page)).toBe(false);
+  });
 }

@@ -5,7 +5,6 @@
  *   readable width. This departs on purpose, by the user's choice, from spec 6.1's two-column row.
  * - 1024 px and up: three equal columns plus the export drawer
  */
-import { useEffect, useState } from "preact/hooks";
 import { activeTab } from "../state/signals";
 import type { Tab } from "../types";
 import { ExportDrawer } from "./ExportDrawer";
@@ -14,28 +13,9 @@ import { PalettePanel } from "./PalettePanel";
 import { SourcePanel } from "./SourcePanel";
 import { panelId, TabBar, tabId } from "./TabBar";
 
-export type Layout = "phone" | "desktop";
+export { type Layout, useLayout } from "./layout";
 
-const DESKTOP = "(min-width: 1024px)";
-
-function currentLayout(): Layout {
-  if (typeof window === "undefined" || !window.matchMedia) return "desktop";
-  return window.matchMedia(DESKTOP).matches ? "desktop" : "phone";
-}
-
-export function useLayout(): Layout {
-  const [layout, setLayout] = useState<Layout>(currentLayout);
-  useEffect(() => {
-    const queries = [window.matchMedia(DESKTOP)];
-    const update = () => setLayout(currentLayout());
-    for (const q of queries) q.addEventListener("change", update);
-    update();
-    return () => {
-      for (const q of queries) q.removeEventListener("change", update);
-    };
-  }, []);
-  return layout;
-}
+import type { Layout } from "./layout";
 
 const PHONE_TABS: readonly Tab[] = ["source", "palette", "gradient", "materials"];
 

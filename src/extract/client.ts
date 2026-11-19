@@ -12,16 +12,56 @@ import {
   displaySize,
   masterSize,
   readPixels,
+  readWindow,
   resample,
+  SAMPLE_WINDOW_HALF,
 } from "../image/tiers";
-import type { ExtractionSettings } from "../types";
+import type {
+  ExtractionSettings,
+  ImagePoint,
+  SampleRadius,
+  SampleStat,
+  ViewSettings,
+} from "../types";
 import type { ClusterMap } from "./cluster-map";
-import type { FromWorker, PixelBuffer, ToWorker } from "./messages";
+import type { DrawnViewMode, FromWorker, PixelBuffer, ToWorker } from "./messages";
 import type { ExtractionResult } from "./pipeline";
 
 /** An extraction's result with the cluster map for its colors (spec 2.6). */
 export interface Extraction extends ExtractionResult {
   map: ClusterMap;
+  /** One marker point per color (spec 3.7), once M3-T10 sends them. */
+  points?: ImagePoint[];
+}
+
+/** RGBA pixels with their size, as the page draws them with putImageData. */
+export interface Pixels {
+  width: number;
+  height: number;
+  data: Uint8ClampedArray<ArrayBuffer>;
+}
+
+/** A sampled patch (spec 3.7): its color, and the loupe's crop. */
+export interface SampleResult {
+  color: Oklab;
+  crop: Pixels;
+}
+
+/** What an image view request names (spec 3.8). */
+export interface ViewRequest {
+  mode: DrawnViewMode;
+  /** The palette the view uses, in OKLab and palette order (plan D18). */
+  colors: readonly Oklab[];
+  bands: ViewSettings["bands"];
+  dither: boolean;
+}
+
+/** A drawn image view (spec 3.8). */
+export interface ViewResult extends Pixels {
+  /** Palette view: each color's share, in palette order; else empty. */
+  shares: number[];
+  /** Values view: each band's share, dark to light; else empty. */
+  bandShares: number[];
 }
 
 export interface PreparedImage {
@@ -77,6 +117,10 @@ export class ImageClient {
   private restore: (() => Promise<ImageBitmap>) | null = null;
   /** True when the worker that held the master has stopped. */
   private masterLost = false;
+  /** Counts prepared images; the worker caches image views by it (M3-T11). */
+  private version = 0;
+  /** The image version whose display pixels the fallback has sent to the worker, or 0. */
+  private displaySent = 0;
   private readonly createWorker: () => Worker;
   private readonly forceMainThread: () => boolean;
 
@@ -102,6 +146,7 @@ export class ImageClient {
     this.worker = null;
     this.offscreen = null;
     this.masterLost = this.mainMaster === null;
+    this.displaySent = 0;
     const pending = [...this.pending.values()];
     this.pending.clear();
     for (const p of pending) p.reject(new WorkerStoppedError());
@@ -177,6 +222,7 @@ export class ImageClient {
 
   /** Makes the working master from a decoded image (which is consumed) and returns a display copy. */
   async prepare(bitmap: ImageBitmap): Promise<PreparedImage> {
+    this.version += 1;
     if (await this.connect()) {
       if (this.mainMaster) {
         this.mainMaster.width = 0;
@@ -215,6 +261,21 @@ export class ImageClient {
    * if a new worker lost it), or the analysis copy made here in the main-thread fallback.
    */
   private async analysisPixels(settings: ExtractionSettings): Promise<PixelBuffer | null> {
+    const master = await this.fallbackMaster();
+    if (!master) return null;
+    const size = analysisSize(master.width, master.height, settings.sampleSize);
+    const canvas = resample(master, size, settings.resampling, createMainCanvas);
+    const data = readPixels(canvas).data;
+    canvas.width = 0;
+    canvas.height = 0;
+    return { width: size.width, height: size.height, data: data.buffer as ArrayBuffer };
+  }
+
+  /**
+   * Null when the worker holds the master (rebuilt first if a new worker lost it), or the master
+   * here in the main-thread fallback, whose pixels then travel with the job.
+   */
+  private async fallbackMaster(): Promise<AnyCanvas | null> {
     const inWorker = await this.connect();
     if (inWorker && this.masterLost) {
       // A new worker has no master yet: rebuild it from the original image.
@@ -224,12 +285,7 @@ export class ImageClient {
     }
     if (inWorker) return null;
     if (!this.mainMaster) throw new Error("No image");
-    const size = analysisSize(this.mainMaster.width, this.mainMaster.height, settings.sampleSize);
-    const canvas = resample(this.mainMaster, size, settings.resampling, createMainCanvas);
-    const data = readPixels(canvas).data;
-    canvas.width = 0;
-    canvas.height = 0;
-    return { width: size.width, height: size.height, data: data.buffer as ArrayBuffer };
+    return this.mainMaster;
   }
 
   /**
@@ -244,8 +300,11 @@ export class ImageClient {
       pixels ? [pixels.data] : [],
     );
     if (reply.type === "extracted") {
-      const { colors, reason, map, background } = reply;
-      return background ? { colors, reason, map, background } : { colors, reason, map };
+      const { colors, reason, map, background, points } = reply;
+      const extraction: Extraction = { colors, reason, map };
+      if (background) extraction.background = background;
+      if (points) extraction.points = points;
+      return extraction;
     }
     throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
   }
@@ -278,6 +337,82 @@ export class ImageClient {
       [labels],
     );
     if (reply.type === "overlaid") return new Uint8ClampedArray(reply.data);
+    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
+  }
+
+  /**
+   * Samples the patch under a marker (spec 3.7, M3-T10): its color and the loupe's crop. The
+   * fallback reads the master pixels around the point here and sends them (spec 7.4).
+   */
+  async sample(point: ImagePoint, radius: SampleRadius, stat: SampleStat): Promise<SampleResult> {
+    const master = await this.fallbackMaster();
+    const window = master ? readWindow(master, point, SAMPLE_WINDOW_HALF) : null;
+    const jobId = this.nextJob++;
+    const reply = await this.request(
+      { type: "sample", jobId, point: { ...point }, radius, stat, window },
+      window ? [window.data] : [],
+    );
+    if (reply.type === "sampled") {
+      const { width, height, data } = reply.crop;
+      return { color: reply.color, crop: { width, height, data: new Uint8ClampedArray(data) } };
+    }
+    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
+  }
+
+  /**
+   * Places markers (spec 3.7, M3-T10) for the swatches at `indexes` of a palette (OKLab, in
+   * palette order). Returns one normalized point per index.
+   */
+  async place(
+    colors: readonly Oklab[],
+    indexes: readonly number[],
+    settings: ExtractionSettings,
+  ): Promise<ImagePoint[]> {
+    const pixels = await this.analysisPixels(settings);
+    const jobId = this.nextJob++;
+    const reply = await this.request(
+      { type: "place", jobId, colors: [...colors], indexes: [...indexes], settings, pixels },
+      pixels ? [pixels.data] : [],
+    );
+    if (reply.type === "placed") return reply.points;
+    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
+  }
+
+  /**
+   * Draws the Palette or Values view (spec 3.8, M3-T11) of the current image at display size.
+   * The fallback sends the display-size pixels once per image; the worker keeps them.
+   */
+  async view(request: ViewRequest): Promise<ViewResult> {
+    const master = await this.fallbackMaster();
+    const version = this.version;
+    let pixels: PixelBuffer | null = null;
+    if (master && this.displaySent !== version) {
+      const size = displaySize(master.width, master.height);
+      const canvas = resample(master, size, "smooth", createMainCanvas);
+      const data = readPixels(canvas).data;
+      canvas.width = 0;
+      canvas.height = 0;
+      pixels = { width: size.width, height: size.height, data: data.buffer as ArrayBuffer };
+      this.displaySent = version;
+    }
+    const jobId = this.nextJob++;
+    const reply = await this.request(
+      {
+        type: "view",
+        jobId,
+        version,
+        mode: request.mode,
+        colors: [...request.colors],
+        bands: request.bands,
+        dither: request.dither,
+        pixels,
+      },
+      pixels ? [pixels.data] : [],
+    );
+    if (reply.type === "viewed") {
+      const { width, height, data, shares, bandShares } = reply;
+      return { width, height, data: new Uint8ClampedArray(data), shares, bandShares };
+    }
     throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
   }
 }

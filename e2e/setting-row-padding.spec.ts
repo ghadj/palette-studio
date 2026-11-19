@@ -5,6 +5,7 @@
 import { expect, test } from "@playwright/test";
 import { demo, tokenPx } from "./helpers/app";
 import { measure, openRows } from "./helpers/rows";
+import { sheetSettled } from "./helpers/sheet";
 
 for (const width of [320, 820] as const) {
   test(`rows have vertical padding around their controls at ${width} px`, async ({ page }) => {
@@ -35,6 +36,34 @@ for (const width of [320, 820] as const) {
       .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
     expect(heights.length).toBe(2);
     for (const h of heights) expect(h).toBeGreaterThanOrEqual(touch + 2 * pad - 0.5);
+  });
+}
+
+// M3-T2: the Palette tab's chevron rows and the rows in its bottom sheets follow the same rule.
+for (const width of [320, 820] as const) {
+  test(`Palette-tab chevron rows and the Swatch sheet's rows are padded at ${width} px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(demo("tab=palette"));
+    const pad = await tokenPx(page, "--space-2");
+    const touch = await tokenPx(page, "--touch-target");
+    const heights = await page
+      .locator("[data-testid=palette-rows] .chevron-row__summary:visible")
+      .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
+    expect(heights.length).toBe(4);
+    for (const h of heights) expect(h).toBeGreaterThanOrEqual(touch + 2 * pad - 0.5);
+    await page.getByTestId("palette-rows").getByRole("button", { name: "Swatch" }).click();
+    await sheetSettled(page);
+    const rows = await measure(page);
+    expect(rows.map((r) => r.name)).toContain("Cluster map");
+    for (const r of rows) {
+      if (!r.tallest) continue;
+      expect(r.tallest.top - r.row.top, `${r.name}: space above`).toBeGreaterThanOrEqual(pad - 0.5);
+      expect(r.row.bottom - r.tallest.bottom, `${r.name}: space below`).toBeGreaterThanOrEqual(
+        pad - 0.5,
+      );
+    }
   });
 }
 

@@ -9,6 +9,7 @@ import { CopyButtons } from "./CopyButtons";
 import { comingSoon } from "./comingSoon";
 import { ImageMessageBanner, ImageWell } from "./ImageWell";
 import { SettingsControls } from "./SettingsControls";
+import { StripMarks } from "./StripMarks";
 import { EmptyRolesNote, SwatchStrip } from "./SwatchStrip";
 
 /** View bar (spec 3.8): the views and the grid arrive in M3 and M5; Image is the current view. */
@@ -84,6 +85,8 @@ function StripDock() {
   return (
     <div ref={dock} class="strip-dock" data-testid="strip-dock">
       <SwatchStrip />
+      {/* The strip's marks, such as the Values view's close-pair bracket, pin with it (M3-T2). */}
+      <StripMarks />
     </div>
   );
 }

@@ -1236,3 +1236,250 @@ fieldset {
     transform: none;
   }
 }
+
+/*
+ * ==== M3 ====
+ * One labelled section per M3 task (plan M3-T2, "Parallel execution"). Each task adds its rules
+ * only inside its own section, below its "styles go here" line, so parallel branches touch
+ * separate hunks. Don't reformat or reorder the sections.
+ */
+
+/* ---- M3-T2 scaffolding: chevron rows, bottom sheet, editor row, stubs ---- */
+
+/* Chevron rows in the Palette column (ui-contract column 2 item 5; Components "Chevron row"). */
+.chevron-rows {
+  border-top: var(--stroke) solid var(--color-divider);
+}
+
+/* A button version of the summary: it keeps the summary's padding and touch text size (M2 F4, F7). */
+.chevron-row__button {
+  width: 100%;
+  text-align: left;
+}
+
+/* On desktop the row expands in place; on phones it opens a sheet and the chevron stays put. */
+.app--desktop .chevron-row__button[aria-expanded="true"] .chevron-row__chevron {
+  transform: rotate(90deg);
+}
+
+.chevron-row__content {
+  padding: var(--space-2) 0 var(--space-3);
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+/* The editor's HEX, Lock and Ramp row (ui-contract column 2 item 4). */
+.swatch-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.swatch-editor__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch-editor > .chevron-row__content {
+  border-top: var(--stroke) solid var(--color-divider);
+}
+
+/* A panel that is still to come: one muted line ("Coming in a later version"). */
+.panel-stub {
+  padding: var(--space-2) 0;
+}
+
+/*
+ * Bottom sheet (ui-contract Components "Bottom sheet (phone)"; spec 6.1). A modal dialog that
+ * fills the viewport and holds the scrim and the panel, so both use tokens (a ::backdrop can't
+ * read them in older browsers). The panel clears the home indicator and the side insets.
+ */
+.bottom-sheet {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.bottom-sheet::backdrop {
+  background: transparent;
+}
+
+.bottom-sheet__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--color-scrim);
+  animation: sheet-fade var(--duration-slow) var(--ease-out);
+}
+
+.bottom-sheet__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: calc(var(--space-8) * 20);
+  max-height: calc(100dvh - var(--header-height));
+  margin: 0 auto;
+  padding-top: 0;
+  padding-right: calc(var(--space-4) + env(safe-area-inset-right));
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+  padding-left: calc(var(--space-4) + env(safe-area-inset-left));
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  background: var(--color-surface);
+  animation: sheet-in var(--duration-slow) var(--ease-out);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.bottom-sheet__panel[data-dragging] {
+  transition: none;
+}
+
+/* The grabber and title take the downward swipe, so the browser mustn't scroll them. */
+.bottom-sheet__header {
+  flex: none;
+  padding-top: var(--space-2);
+  touch-action: none;
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.bottom-sheet__grabber {
+  display: block;
+  width: var(--space-8);
+  height: var(--space-1);
+  margin: 0 auto var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+}
+
+.bottom-sheet__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.bottom-sheet__title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-strong);
+}
+
+.bottom-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  margin-right: calc(var(--space-2) * -1);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.bottom-sheet__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  cursor: auto;
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-sheet__panel,
+  .bottom-sheet__scrim {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ---- end M3-T2 ---- */
+
+/* ---- M3-T3 color editor (SwatchEditor.tsx) ---- */
+/* M3-T3 styles go here. */
+
+/* ---- end M3-T3 ---- */
+
+/* ---- M3-T4 swatch row and sheet (SwatchDetails.tsx) ---- */
+/* M3-T4 styles go here. */
+
+/* ---- end M3-T4 ---- */
+
+/* ---- M3-T5 strip actions: "+" tile, reorder (SwatchStrip.tsx) ---- */
+/* M3-T5 styles go here. */
+
+/* ---- end M3-T5 ---- */
+
+/* ---- M3-T6 adjustments and compare (AdjustmentsPanel.tsx) ---- */
+/* M3-T6 styles go here. */
+
+/* ---- end M3-T6 ---- */
+
+/* ---- M3-T7 ramps and harmonies (RampPanel.tsx) ---- */
+/* M3-T7 styles go here. */
+
+/* ---- end M3-T7 ---- */
+
+/* ---- M3-T8 contrast matrix and close pairs (ContrastPanel.tsx, ClosePairsMark.tsx) ---- */
+/* M3-T8 styles go here. */
+
+/* ---- end M3-T8 ---- */
+
+/* ---- M3-T9 CVD simulation (CvdPanel.tsx) ---- */
+/* M3-T9 styles go here. */
+
+/* ---- end M3-T9 ---- */
+
+/* ---- M3-T12 markers, linking, well tools, loupe (MarkerLayer.tsx, WellTools.tsx, Loupe.tsx) ---- */
+/* M3-T12 styles go here. */
+
+/* ---- end M3-T12 ---- */
+
+/* ---- M3-T13 Place on image (SwatchDetails.tsx) ---- */
+/* M3-T13 styles go here. */
+
+/* ---- end M3-T13 ---- */
+
+/* ---- M3-T14 Palette and Values views (ViewLayer.tsx, *ViewRows.tsx, StripMarks.tsx) ---- */
+/* M3-T14 styles go here. */
+
+/* ---- end M3-T14 ---- */
+
+/* ---- M3-T15 marker drag (MarkerLayer.tsx) ---- */
+/* M3-T15 styles go here. */
+
+/* ---- end M3-T15 ---- */
+
+/* ---- M3-T16 eyedropper (WellTools.tsx, EyedropperLayer.tsx) ---- */
+/* M3-T16 styles go here. */
+
+/* ---- end M3-T16 ---- */

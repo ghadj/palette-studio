@@ -151,7 +151,8 @@ Rules that hold for every task:
   - Tests pass.
   - The UI looks the same apart from the live Undo and Redo.
   - Copy HEX and the strip read `outputPalette`.
-- [ ] Done
+- [x] Done
+  - Note: Undo and Redo are `aria-disabled` rather than `disabled` when empty, so keyboard focus stays on them. Settings steps are named in `src/state/setting-labels.ts`. T1's choices for step labels, the selection after undo, cancelling a pending job and a duplicate's population were confirmed by the user as decisions 3c to 3f.
 
 ### M3-T2: Scaffolding for parallel work (shells, slots, registries, docs)
 - Files:
@@ -215,7 +216,26 @@ Rules that hold for every task:
   - Tests pass.
   - The visible changes are the four chevron rows and the Lock and Ramp pills (all "coming later").
   - T3 to T16 can each be done without touching a registry, a design doc, `PalettePanel.tsx`, `messages.ts` or another task's file.
-- [ ] Done
+- [x] Done
+  - Note: `e2e/tokens.spec.ts` got one edit after all. Its phone touch-target test clicks the header's Theme button, which is inert behind a modal sheet. It now checks the screen with the sheet open, then presses Esc before the theme-menu step. Nothing it checked before is dropped.
+  - Note: three M2 phone tests in `e2e/cluster-map.spec.ts` now open the Swatch sheet before using the Cluster map toggle, which moved there (13d). Their assertions are unchanged.
+  - Note: the reserved requests:
+    - `view` replies with RGBA pixels (like `overlay`), not an `ImageBitmap`. `client.view()` returns them, and T14's `ViewLayer` draws them with `putImageData`. The fallback worker may have no OffscreenCanvas, and the client test runs in Node.
+    - `place` also carries the settings, as `assign` does, for the analysis copy and filters.
+    - `sample` sends a master window (`readWindow`, `SAMPLE_WINDOW_HALF` = 32 px in `src/image/tiers.ts`). The worker reads it from its master; the fallback reads it on the main thread with a canvas read. Both pass the same `MasterWindow` to `samplePatch`.
+    - The fallback sends display-size pixels for `view` once per image version, and the worker keeps them.
+    - The `extracted` reply reserves `points?`, and `client.extract()` passes them through, so T10 needn't edit `messages.ts` or `client.ts`.
+  - Note: other additions:
+    - `src/ui/EyedropperLayer.tsx`, an extra slot for T16.
+    - The `well-tools` class, whose pointers pan ignores.
+    - `keysIgnored`: the well's arrow keys don't pan while focus is on a marker.
+  - Note: `image=` and `loupe=` have their own parsers (`parseMockupImage`, `parseMockupLoupe`), like `zoom` and `cluster`, so `MockupParams` keeps its M1 shape. `main.tsx` sets `viewSettings.mode` and the new `initialLoupe` signal from them. A row opened by `rows=` opens once per page load.
+  - Note: two moves with no behavior change. `useLayout` moved to `src/ui/layout.ts`, which `Shell.tsx` re-exports, so panels can use it without a cycle. `NumberField` moved to `src/ui/NumberField.tsx`, and `Slider` uses it for whole numbers and `DecimalField` for decimals. `Slider` has `onDragStart`/`onDragEnd` for history `begin`/`end`.
+  - Note: the desktop `rows=` shots are 1280 × 1280, like advanced-desktop, so an open row fits in column 2 without scrolling it.
+  - Note: rebased onto milestone/M2 with fixes F1 to F7.
+    - The Cluster map toggle now lives only in the Swatch row's content (13d). It shows in the phone layout and on any device without a fine pointer (13f, `useNoFinePointer` in `src/ui/layout.ts`), so on an iPad in landscape it is in the Swatch row, expanded in place in column 2. F5's separate column-2 copy is gone; `e2e/cluster-toggle-touch.spec.ts` opens the Swatch row first.
+    - On the phone Source tab, `StripMarks` sits inside F1's sticky `strip-dock` with the strip, so the marks pin with it.
+    - The chevron-row button keeps F4's padding and F7's 15 px touch text. `setting-rows`, `setting-row-padding` and `setting-row-text` now also cover the Palette tab's rows and the Swatch sheet.
 
 ### M3-T3: Color editor: L, C, H, HEX, gamut indicator, Lock
 - Files:
