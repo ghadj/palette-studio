@@ -296,7 +296,8 @@ Rules that hold for every task:
     - "the radius and Mean/Median are stored on the swatch"
     - "phone: the Cluster map toggle in the swatch sheet shows the overlay" (13d)
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+  - Note: the fields show the output (adjusted) color; an edit stores that exact color and locks the swatch (1a, 1b), like T3. Copy writes the same color. Only the Cluster map row uses `.setting-row`; the other controls use `.swatch-field`, so `setting-row-text.spec.ts` (which expects the sheet to hold one visible `.setting-row__label`) still passes unchanged. Edits commit on Enter or blur (D16). The desktop case in `cluster-toggle-touch.spec.ts` now expects the toggle (D21).
 
 ### M3-T5: Strip actions: add, drag to reorder, arrow keys
 - Files:

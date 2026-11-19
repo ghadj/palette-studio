@@ -1495,7 +1495,84 @@ fieldset {
 /* ---- end M3-T3 ---- */
 
 /* ---- M3-T4 swatch row and sheet (SwatchDetails.tsx) ---- */
-/* M3-T4 styles go here. */
+.swatch-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.swatch-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+}
+
+.swatch-field__label {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.swatch-field__control {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.swatch-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.swatch-fields .number-field,
+.swatch-name .number-field {
+  width: calc(var(--space-8) * 3);
+}
+
+.swatch-fields .swatch-hex-field,
+.swatch-name .swatch-name-field {
+  text-align: left;
+}
+
+.swatch-name {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.swatch-name__suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.swatch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch-note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.swatch-segmented {
+  flex-wrap: nowrap;
+}
+
+/* Touch: labels step up beside the 16 px fields (M2 decision 22). */
+@media (max-width: 1023.98px), (pointer: coarse) {
+  .swatch-field__label {
+    font-size: var(--text-row-touch);
+  }
+}
 
 /* ---- end M3-T4 ---- */
 
