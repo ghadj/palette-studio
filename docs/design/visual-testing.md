@@ -66,7 +66,7 @@ A failure names the element (a selector path) and the value that isn't a token. 
 | contrast-sheet-phone | `?demo=mockup&tab=palette&rows=contrast` | 390 × 844 | contract text (not drawn): the Contrast sheet |
 | cvd-sheet-phone | `?demo=mockup&tab=palette&rows=cvd` | 390 × 844 | contract text (not drawn): the CVD sheet |
 
-Each shot is taken in light and dark, by setting the browser's color scheme. A shot joins the list in the milestone that builds its screen: the image views and grid in M3 and M5, the library in M5, the Materials view and filters with Part 2. M3 registered all of its shots in its first UI task (M3-T2), so each shows a "Coming in a later version" stub until its task lands.
+Each shot is taken in light and dark, by setting the browser's color scheme. A shot joins the list in the milestone that builds its screen: the image views and grid in M3 and M5, the library in M5, the Materials view and filters with Part 2. M3 registered all of its shots in its first UI task (M3-T2); each now shows its built screen.
 
 ### Running it
 

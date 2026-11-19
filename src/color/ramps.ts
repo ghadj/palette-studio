@@ -26,7 +26,7 @@ export function ramp(source: Oklch): RampStep[] {
     if (Math.abs(targetL(i) - source.l) < Math.abs(targetL(nearest) - source.l)) nearest = i;
   }
   return RAMP_LABELS.map((label, i) => {
-    if (i === nearest) return { label, color: source, isSource: true };
+    if (i === nearest) return { label, color: clampChroma(source), isSource: true };
     const t = i / STEPS;
     const c = source.c * (0.3 + 0.7 * (1 - (2 * t - 1) ** 2));
     return { label, color: clampChroma({ l: targetL(i), c, h: source.h }), isSource: false };

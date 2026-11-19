@@ -45,6 +45,18 @@ describe("ramp (plan D4)", () => {
     }
   });
 
+  it("an out-of-gamut source is gamut-mapped too, so its own step is in gamut", () => {
+    const wild = { l: 0.66, c: 0.4, h: 140 };
+    expect(inGamut(wild)).toBe(false);
+    const steps = ramp(wild);
+    const own = steps.find((s) => s.isSource);
+    expect(own).toBeDefined();
+    expect(own?.color.l).toBeCloseTo(wild.l, 10);
+    expect(own?.color.h).toBeCloseTo(wild.h, 10);
+    expect(own?.color.c).toBeLessThan(wild.c);
+    for (const step of steps) expect(inGamut(step.color)).toBe(true);
+  });
+
   it("H is unchanged", () => {
     for (const step of ramp(source)) expect(step.color.h).toBeCloseTo(source.h, 10);
   });

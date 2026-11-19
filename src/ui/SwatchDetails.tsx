@@ -14,7 +14,8 @@
 import { batch, signal } from "@preact/signals";
 import type { ComponentChildren } from "preact";
 import { useId, useLayoutEffect, useState } from "preact/hooks";
-import { hexToOklch, type Oklch, oklabToRgb, oklchToOklab, rgbToOklab } from "../color/convert";
+import { bytesToOklch, hslIntsToOklch, oklchToBytes, oklchToHslInts } from "../color/bytes";
+import { hexToOklch, type Oklch, oklchToOklab } from "../color/convert";
 import { nearestCssName } from "../color/css-names";
 import { deltaE } from "../color/delta-e";
 import { parseHex } from "../color/hex";
@@ -69,51 +70,6 @@ const RADII: ReadonlyArray<{ value: SampleRadius; label: string }> = [
 
 export { FULL_MESSAGE };
 
-// sRGB helpers for the RGB and HSL fields
-
-const byte = (v: number): number => Math.round(Math.min(1, Math.max(0, v)) * 255);
-
-function rgbBytes(color: Oklch): [number, number, number] {
-  const c = oklabToRgb(oklchToOklab(color));
-  return [byte(c.r), byte(c.g), byte(c.b)];
-}
-
-function bytesToOklch([r, g, b]: readonly [number, number, number]): Oklch {
-  const lab = rgbToOklab({ r: r / 255, g: g / 255, b: b / 255 });
-  const c = Math.hypot(lab.a, lab.b);
-  const h = c < 1e-9 ? 0 : ((Math.atan2(lab.b, lab.a) * 180) / Math.PI + 360) % 360;
-  return { l: lab.l, c, h };
-}
-
-/** HSL as whole numbers: hue 0 to 360, saturation and lightness 0 to 100. */
-function toHsl(color: Oklch): [number, number, number] {
-  const [r, g, b] = rgbBytes(color).map((v) => v / 255) as [number, number, number];
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  const d = max - min;
-  if (d === 0) return [0, 0, Math.round(l * 100)];
-  const s = d / (1 - Math.abs(2 * l - 1));
-  let h: number;
-  if (max === r) h = ((g - b) / d) % 6;
-  else if (max === g) h = (b - r) / d + 2;
-  else h = (r - g) / d + 4;
-  h *= 60;
-  if (h < 0) h += 360;
-  return [Math.round(h) % 360, Math.round(s * 100), Math.round(l * 100)];
-}
-
-function fromHsl([h, s, l]: readonly [number, number, number]): Oklch {
-  const sat = s / 100;
-  const light = l / 100;
-  const a = sat * Math.min(light, 1 - light);
-  const f = (n: number) => {
-    const k = (n + h / 30) % 12;
-    return light - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-  };
-  return bytesToOklch([byte(f(0)), byte(f(8)), byte(f(4))]);
-}
-
 /** What each field of a format shows, how it is typed in and what it commits. */
 interface Channel {
   label: string;
@@ -138,7 +94,7 @@ const decimal = (raw: string, min: number, max: number): number | null => {
 
 function channels(format: SwatchFormat, color: Oklch): Channel[] {
   if (format === "rgb") {
-    const bytes = rgbBytes(color);
+    const bytes = oklchToBytes(color);
     return (["R", "G", "B"] as const).map((label, i) => ({
       label,
       text: String(bytes[i]),
@@ -152,7 +108,7 @@ function channels(format: SwatchFormat, color: Oklch): Channel[] {
     }));
   }
   if (format === "hsl") {
-    const hsl = toHsl(color);
+    const hsl = oklchToHslInts(color);
     const max = [360, 100, 100] as const;
     return (["H", "S", "L"] as const).map((label, i) => ({
       label,
@@ -162,7 +118,7 @@ function channels(format: SwatchFormat, color: Oklch): Channel[] {
         if (n === null) return null;
         const next: [number, number, number] = [...hsl];
         next[i] = n;
-        return fromHsl(next);
+        return hslIntsToOklch(next);
       },
     }));
   }

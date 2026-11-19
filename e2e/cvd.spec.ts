@@ -43,20 +43,19 @@ test.describe("CVD simulation (spec 3.5)", () => {
   });
 
   test("strips update after an adjustment", async ({ page }, info) => {
-    test.skip(isPhoneProject(info), "the sheet covers the editor");
-    await page.goto(url(info));
-    const first = strips(page).nth(1).locator("[data-cvd-swatch]").nth(2);
-    const before = await first.getAttribute("data-hex");
-    const hex = page
-      .locator("[data-testid=swatch-editor]:visible")
-      .getByLabel("HEX", { exact: true });
-    await hex.fill("#1E8A2E");
-    await hex.press("Enter");
-    await expect(strips(page).first().locator("[data-cvd-swatch]").nth(2)).toHaveAttribute(
-      "data-hex",
-      "#1E8A2E",
-    );
-    await expect(first).not.toHaveAttribute("data-hex", before ?? "");
+    test.skip(isPhoneProject(info), "the sheet covers the Adjustments row");
+    await page.goto(demo("rows=cvd,adjustments"));
+    const swatchAt = (strip: number) => strips(page).nth(strip).locator("[data-cvd-swatch]").nth(2);
+    const normalBefore = await swatchAt(0).getAttribute("data-hex");
+    const simulatedBefore = await swatchAt(1).getAttribute("data-hex");
+    const lightness = page
+      .locator("[data-testid=adjustments-panel]:visible")
+      .getByRole("spinbutton", { name: /^Lightness$/ })
+      .first();
+    await lightness.fill("0.2");
+    await lightness.press("Enter");
+    await expect(swatchAt(0)).not.toHaveAttribute("data-hex", normalBefore ?? "");
+    await expect(swatchAt(1)).not.toHaveAttribute("data-hex", simulatedBefore ?? "");
   });
 
   test("phone: opens as a sheet", async ({ page }, info) => {
