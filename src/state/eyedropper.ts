@@ -4,9 +4,8 @@
  * always adds a swatch, pinned like a dragged marker; dragging a marker updates a swatch (T15).
  */
 import type { Oklab } from "../color/convert";
-import { addSwatch, canAdd, createSwatch } from "../palette/model";
+import { addSwatch, createSwatch } from "../palette/model";
 import type { ImagePoint, Swatch } from "../types";
-import { eyedropperMode, palette as paletteSignal, viewSettings } from "./signals";
 
 interface WellView {
   x: number;
@@ -33,13 +32,4 @@ export function pointFromWell(
 /** Adds a picked, pinned swatch with its point at the end; unchanged at 12. */
 export function addPicked(palette: Swatch[], color: Oklab, point: ImagePoint): Swatch[] {
   return addSwatch(palette, createSwatch(color, { origin: "picked", pinned: true, point }));
-}
-
-/** Starts the eyedropper, from the "+" tile's "Pick from image" (decision 5b). Not at 12. */
-export function startEyedropper(): void {
-  if (!canAdd(paletteSignal.peek())) return;
-  if (viewSettings.peek().mode !== "image") {
-    viewSettings.value = { ...viewSettings.peek(), mode: "image" };
-  }
-  eyedropperMode.value = "add";
 }

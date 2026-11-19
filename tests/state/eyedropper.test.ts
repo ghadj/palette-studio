@@ -51,19 +51,7 @@ describe("addPicked (decision D11)", () => {
   });
 });
 
-describe("startEyedropper (decision 38)", () => {
-  it("turns the eyedropper on, and not at 12 colors", async () => {
-    const { startEyedropper } = await import("../../src/state/eyedropper");
-    const { eyedropperMode, palette } = await import("../../src/state/signals");
-    palette.value = base(MAX_SWATCHES);
-    eyedropperMode.value = "off";
-    startEyedropper();
-    expect(eyedropperMode.value).toBe("off");
-    palette.value = base(3);
-    startEyedropper();
-    expect(eyedropperMode.value).toBe("add");
-  });
-
+describe("a pick (decision 38)", () => {
   it("a pick always adds: the picked swatch is pinned, not locked, and nothing is replaced", () => {
     const list = base(3);
     const next = addPicked(list, lab, { x: 0.1, y: 0.2 });

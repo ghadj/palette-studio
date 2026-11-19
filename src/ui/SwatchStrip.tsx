@@ -10,17 +10,9 @@
  */
 import { Lock, Pin, Plus, X } from "lucide-preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import {
-  addSwatch,
-  canAdd,
-  createSwatch,
-  FULL_MESSAGE,
-  moveSwatch,
-  swatchHex,
-  swatchLabel,
-} from "../palette/model";
+import { canAdd, FULL_MESSAGE, moveSwatch, swatchHex, swatchLabel } from "../palette/model";
+import { addColor, adding } from "../state/add-color";
 import { clusterFocus, clusterHover, shareText, shownCluster } from "../state/cluster";
-import { startEyedropper } from "../state/eyedropper";
 import { commit } from "../state/history";
 import { removeSwatch } from "../state/remove-swatch";
 import {
@@ -38,6 +30,7 @@ import {
 } from "../state/signals";
 import { viewShares } from "../state/view-result";
 import { stripCells, stripColumns } from "./stripLayout";
+import { showToast } from "./Toast";
 
 /** Only a fine pointer hovers (spec 6.1 "No hover"); touch uses the Cluster map toggle. */
 const hovers = (event: PointerEvent): boolean =>
@@ -65,31 +58,6 @@ const HOLD_MS = 300;
 /** A touch that moves this far before the hold ends is a scroll, not a reorder. */
 const TOUCH_SLOP = 10;
 
-/**
- * Focuses the HEX field of the color editor, when one is on screen. M3-T3 gives it the class
- * `hex-field`. On phones the editor is in the Palette tab, so there is nothing to focus.
- */
-function focusHexField(): void {
-  const fields = document.querySelectorAll<HTMLElement>(".hex-field");
-  for (const field of fields) {
-    if (field.checkVisibility()) {
-      field.focus();
-      return;
-    }
-  }
-}
-
-/** A mid-gray manual swatch with no point, unlocked (plan D12). */
-export function addManualSwatch(): void {
-  const swatch = createSwatch({ l: 0.5, a: 0, b: 0 }, { origin: "manual" });
-  const next = addSwatch(palette.peek(), swatch);
-  if (next === palette.peek()) return;
-  palette.value = next;
-  selectSwatch(swatch.id);
-  commit("Add color");
-  requestAnimationFrame(() => requestAnimationFrame(focusHexField));
-}
-
 interface Press {
   id: string;
   pointerId: number;
@@ -103,106 +71,25 @@ interface Press {
   moved: boolean;
 }
 
-/** The "+" tile and its menu: "Pick from image" and "Type a color" (decision 5b). */
+/**
+ * The "+" tile (decision 40): one button that adds the next color at once, with no menu. At 12 it is
+ * disabled and the limit note under the strip says why.
+ */
 function AddTile({ alone, full }: { alone: boolean; full: boolean }) {
-  const [open, setOpen] = useState(false);
-  const [align, setAlign] = useState<"start" | "end">("end");
-  const root = useRef<HTMLDivElement>(null);
-  const tile = useRef<HTMLButtonElement>(null);
-  const first = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    first.current?.focus();
-    const away = (e: Event) => {
-      if (e.target instanceof Node && !root.current?.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener("pointerdown", away);
-    return () => document.removeEventListener("pointerdown", away);
-  }, [open]);
-  useEffect(() => {
-    if (full) setOpen(false);
-  }, [full]);
-  const toggle = () => {
-    if (!open) {
-      const el = root.current;
-      const bar = el?.closest("fieldset")?.getBoundingClientRect();
-      const me = el?.getBoundingClientRect();
-      if (bar && me) setAlign(me.left + me.width / 2 < bar.left + bar.width / 2 ? "start" : "end");
-    }
-    setOpen(!open);
-  };
-  const close = (refocus: boolean) => {
-    setOpen(false);
-    if (refocus) tile.current?.focus();
-  };
   return (
-    <div ref={root} class="strip-add" data-alone={alone ? "" : undefined}>
+    <div class="strip-add" data-alone={alone ? "" : undefined}>
       <button
-        ref={tile}
         type="button"
         class="strip-add__tile"
         data-testid="add-swatch"
-        aria-label="Add a color"
-        aria-haspopup="menu"
-        aria-expanded={open}
+        aria-label="Add color"
         aria-describedby={full ? "strip-full-note" : undefined}
+        aria-busy={adding.value || undefined}
         disabled={full}
-        onClick={toggle}
+        onClick={() => void addColor(null, showToast)}
       >
         <Plus aria-hidden="true" />
       </button>
-      {open && (
-        <div
-          class="strip-menu"
-          role="menu"
-          aria-label="Add a color"
-          data-align={align}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              e.preventDefault();
-              e.stopPropagation();
-              close(true);
-            } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-              e.preventDefault();
-              const items = [
-                ...(root.current?.querySelectorAll<HTMLElement>("[role=menuitem]") ?? []),
-              ];
-              const at = items.indexOf(document.activeElement as HTMLElement);
-              const step = e.key === "ArrowDown" ? 1 : -1;
-              items[(at + step + items.length) % items.length]?.focus();
-            } else if (e.key === "Tab") {
-              setOpen(false);
-            }
-          }}
-        >
-          <button
-            ref={first}
-            type="button"
-            role="menuitem"
-            class="strip-menu__item"
-            onClick={() => {
-              setOpen(false);
-              // The image is on the Source tab below 1024 px, where the "+" tile no longer is
-              // (M3 decision 32): go there to pick.
-              activeTab.value = "source";
-              startEyedropper();
-            }}
-          >
-            Pick from image
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            class="strip-menu__item"
-            onClick={() => {
-              setOpen(false);
-              addManualSwatch();
-            }}
-          >
-            Type a color
-          </button>
-        </div>
-      )}
     </div>
   );
 }

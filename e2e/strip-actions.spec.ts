@@ -180,55 +180,69 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
   });
 });
 
-test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
-  test("'+' then 'Type a color' adds swatch 7, origin manual, and focuses the HEX field", async ({
+test.describe('the "+" tile (decisions 4a, 40; D12)', () => {
+  test("one press adds a 7th swatch that is distinct from all six, has a marker, is selected and manual; Undo removes it", async ({
     page,
   }, info) => {
     await page.goto(demo("tab=palette"));
-    await addTile(page).click();
-    await expect(addTile(page)).toHaveAttribute("aria-expanded", "true");
-    await page.getByRole("menuitem", { name: "Pick from image" }).waitFor();
-    await page.getByRole("menuitem", { name: "Type a color" }).click();
+    const before = await order(page);
+    // A single button: no menu, no prompt.
+    await expect(addTile(page)).toHaveAccessibleName("Add color");
+    await expect(addTile(page)).not.toHaveAttribute("aria-haspopup", /.*/);
+    if (isPhoneProject(info)) await addTile(page).tap();
+    else await addTile(page).click();
     await expect(swatches(page)).toHaveCount(7);
+    await expect(page.getByRole("menuitem")).toHaveCount(0);
     const added = swatches(page).nth(6);
     await expect(added).toHaveAttribute("data-origin", "manual");
     await expect(added).toHaveAttribute("aria-pressed", "true");
-    await expect(added).toHaveAttribute("aria-label", /Swatch 7, #636363/);
-    // On phones the editor is in the Palette tab, so the field isn't on screen to focus.
-    if (!isPhoneProject(info)) {
-      await expect(page.getByRole("textbox", { name: "HEX" })).toBeFocused();
-      await expect(page.getByRole("textbox", { name: "HEX" })).toHaveValue("#636363");
-    }
-    await expect(page.getByRole("menuitem")).toHaveCount(0);
+    const hex = (await order(page))[6] ?? "";
+    expect(before).not.toContain(hex);
+    // More than the merge threshold (0.03 ΔE OK) from each of the six.
+    const far = await page.evaluate(
+      ({ others, mine }) => {
+        const toLab = (h: string) => {
+          const c = [1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16) / 255);
+          const lin = c.map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+          const [r, g, b] = lin as [number, number, number];
+          const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+          const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+          const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+          return [
+            0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+            1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+            0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+          ] as [number, number, number];
+        };
+        const a = toLab(mine);
+        return others.map((o) => {
+          const b = toLab(o);
+          return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+        });
+      },
+      { others: before, mine: hex },
+    );
+    for (const d of far) expect(d).toBeGreaterThan(0.03);
+    // The image is on the Source tab below 1024 px (decision 32): the new swatch has a marker there.
+    await showTab(page, "Source");
+    await expect(page.locator("[data-marker]:visible")).toHaveCount(7);
+    await expect(page.locator('[data-marker="7"]')).toHaveCount(1);
     await undoButton(page).click();
     await expect(swatches(page)).toHaveCount(6);
   });
 
-  test("'Pick from image' starts the eyedropper (M3-T16)", async ({ page }) => {
+  test("keyboard: Enter and Space on the focused tile each add a color", async ({ page }, info) => {
+    test.skip(isPhoneProject(info), "keyboard");
     await page.goto(demo("tab=palette"));
-    await addTile(page).click();
-    const item = page.getByRole("menuitem", { name: "Pick from image" });
-    await expect(item).not.toHaveAttribute("data-coming-soon");
-    await item.click();
-    await expect(page.getByRole("button", { name: "Eyedropper" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    await expect(swatches(page)).toHaveCount(6);
-  });
-
-  test("Escape closes the menu and returns focus to the tile", async ({ page }) => {
-    await page.goto(demo("tab=palette"));
-    await addTile(page).click();
-    await expect(page.getByRole("menuitem", { name: "Pick from image" })).toBeFocused();
-    await page.keyboard.press("ArrowDown");
-    await expect(page.getByRole("menuitem", { name: "Type a color" })).toBeFocused();
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("menuitem")).toHaveCount(0);
+    await addTile(page).focus();
+    await page.keyboard.press("Enter");
+    await expect(swatches(page)).toHaveCount(7);
     await expect(addTile(page)).toBeFocused();
+    await page.keyboard.press("Space");
+    await expect(swatches(page)).toHaveCount(8);
   });
 
-  test("the '+' tile is disabled at 12, with a note", async ({ page }) => {
+  test("the '+' tile is disabled at 12, with the live note", async ({ page }) => {
     await page.goto("./");
     await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
     await expect(swatches(page)).toHaveCount(6);
@@ -238,7 +252,22 @@ test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
     // The "+" tile and its note are on the Palette tab below 1024 px (M3 decision 32).
     await showTab(page, "Palette");
     await expect(addTile(page)).toBeDisabled();
-    await expect(page.getByTestId("strip-full-note")).toHaveText(/at most 12/i);
+    await expect(page.getByTestId("strip-full-note")).toHaveText(
+      "A palette holds at most 12 colors.",
+    );
+    await expect(
+      page.locator("[role=status]").filter({ has: page.getByTestId("strip-full-note") }),
+    ).toHaveCount(1);
+  });
+
+  test("six presses reach 12, then it is disabled", async ({ page }) => {
+    await page.goto(demo("tab=palette"));
+    for (let i = 0; i < 6; i += 1) {
+      await expect(addTile(page)).toBeEnabled();
+      await addTile(page).click();
+      await expect(swatches(page)).toHaveCount(7 + i);
+    }
+    await expect(addTile(page)).toBeDisabled();
   });
 
   test("the '+' tile is at least 44 × 44 at 320 px, and nothing overflows", async ({ page }) => {
@@ -249,14 +278,6 @@ test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
     expect(box.width).toBeGreaterThanOrEqual(44);
     expect(box.height).toBeGreaterThanOrEqual(44);
     expect(box.x + box.width).toBeLessThanOrEqual(320);
-    await addTile(page).click();
-    for (const item of await page.getByRole("menuitem").all()) {
-      const b = await item.boundingBox();
-      if (!b) throw new Error("no item");
-      expect(b.height).toBeGreaterThanOrEqual(44);
-      expect(b.x).toBeGreaterThanOrEqual(0);
-      expect(b.x + b.width).toBeLessThanOrEqual(320);
-    }
   });
 
   test("the '+' tile works in the sticky strip dock after scrolling (phone and tablet)", async ({
@@ -270,8 +291,7 @@ test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
         Math.abs(window.scrollY + window.innerHeight - document.documentElement.scrollHeight) <= 1,
     );
     await expect(addTile(page)).toBeInViewport();
-    await addTile(page).click();
-    await page.getByRole("menuitem", { name: "Type a color" }).click();
+    await addTile(page).tap();
     await expect(swatches(page)).toHaveCount(7);
   });
 });

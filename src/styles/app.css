@@ -1774,43 +1774,9 @@ fieldset {
   border-color: var(--color-divider);
 }
 
-.strip-add__tile:focus-visible,
-.strip-menu__item:focus-visible {
+.strip-add__tile:focus-visible {
   outline: var(--stroke-selected) solid var(--color-accent);
   outline-offset: var(--stroke-selected);
-}
-
-.strip-menu {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  min-width: calc(var(--touch-target) * 4);
-  padding: var(--space-1);
-  border: var(--stroke) solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-}
-
-.strip-menu[data-align="start"] {
-  left: 0;
-}
-
-.strip-menu[data-align="end"] {
-  right: 0;
-}
-
-.strip-menu__item {
-  display: flex;
-  align-items: center;
-  min-height: var(--touch-target);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-input);
-  color: var(--color-text);
-  font-size: var(--text-sm);
-  text-align: start;
-  white-space: nowrap;
 }
 
 /* ---- end M3-T5 ---- */

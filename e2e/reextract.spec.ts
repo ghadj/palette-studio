@@ -72,10 +72,11 @@ test.describe("re-extraction keeps locked swatches (spec 3.6)", () => {
   });
 });
 
-/** A manual swatch with no marker, from the "+" tile's "Type a color" (it is selected). */
+/** A copy of the first swatch, which has no marker: select it and press D (decision 39). */
 async function addTyped(page: Page) {
-  await page.locator("[data-testid=swatch-strip]:visible [data-testid=add-swatch]").click();
-  await page.getByRole("menuitem", { name: "Type a color" }).click();
+  await strip(page).nth(0).click();
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("d");
   await waitForPalette(page, 7);
 }
 
@@ -89,7 +90,7 @@ async function openSwatchRow(page: Page, info: TestInfo) {
 }
 
 test.describe("Place on image (spec 3.7)", () => {
-  test("a typed swatch has no marker; Place on image gives it one, and Undo takes it back", async ({
+  test("a duplicate has no marker; Place on image gives it one, and Undo takes it back", async ({
     page,
   }, info) => {
     await load(page, info);
