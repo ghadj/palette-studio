@@ -28,6 +28,14 @@ export function panIgnores(target: unknown, eyedropper: EyedropperMode): boolean
   return within(target, MARKER_SELECTOR) || within(target, WELL_CONTROLS_SELECTOR);
 }
 
+/**
+ * True when a pointerdown on `target` must never reach pan or pinch, markers aside: the eyedropper
+ * is on, or the target is a well control. A second finger on a marker still joins a pinch (D10).
+ */
+export function panIgnoresExceptMarkers(target: unknown, eyedropper: EyedropperMode): boolean {
+  return eyedropper !== "off" || within(target, WELL_CONTROLS_SELECTOR);
+}
+
 /** True when the well's arrow keys shouldn't pan, because `target` handles them. */
 export function keysIgnored(target: unknown): boolean {
   return within(target, MARKER_SELECTOR) || within(target, WELL_CONTROLS_SELECTOR);

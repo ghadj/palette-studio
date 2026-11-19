@@ -36,7 +36,8 @@ import { ClusterOverlay } from "./ClusterOverlay";
 import { DropZone } from "./DropZone";
 import { EyedropperLayer } from "./EyedropperLayer";
 import { MarkerLayer } from "./MarkerLayer";
-import { keysIgnored, panIgnores } from "./pointerRouting";
+import { takeMarkerPress } from "./markerPress";
+import { keysIgnored, panIgnores, panIgnoresExceptMarkers } from "./pointerRouting";
 import { ViewLayer } from "./ViewLayer";
 import { WellTools } from "./WellTools";
 import { UNIT_WELL, ZoomControls, zoomFit, zoomStep } from "./ZoomControls";
@@ -218,8 +219,23 @@ function ZoomableWell({
   const onPointerDown = (event: PointerEvent) => {
     const el = well.current;
     const g = gesture.current;
-    if (!el || panIgnores(event.target, eyedropperMode.peek()) || g.pointers.size >= 2) return;
+    if (!el || g.pointers.size >= 2) return;
+    const eyedropper = eyedropperMode.peek();
     if (event.pointerType === "mouse" && event.button !== 0) return;
+    // A second finger during a marker drag cancels the drag and pinches with the marker's finger
+    // (plan D10). The well never saw that finger, since it ignores a pointerdown on a marker.
+    if (g.pointers.size === 0 && !panIgnoresExceptMarkers(event.target, eyedropper)) {
+      const held = takeMarkerPress(event.pointerId);
+      if (held) {
+        g.pointers.set(held.pointerId, { x: held.x, y: held.y });
+        try {
+          el.setPointerCapture(held.pointerId);
+        } catch {
+          // The pinch still works without capture.
+        }
+      }
+    }
+    if (g.pointers.size === 0 && panIgnores(event.target, eyedropper)) return;
     g.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     try {
       el.setPointerCapture(event.pointerId);

@@ -635,7 +635,12 @@ Rules that hold for every task:
     - "pointercancel mid-drag restores"
     - "a locked, moved swatch survives re-extraction" (3.7 acceptance 3)
 - Done when: tests pass; small-device acceptance 3 holds in the automated profiles.
-- [ ] Done
+- [x] Done
+  - Note: the drag logic is `MarkerDrag` in `src/state/marker-drag.ts` (deps injected, so the unit test drives frames and samples by hand). A press becomes a drag after 4 px; a click or tap only selects, so it never samples, locks or makes a step. The marker keeps its grab offset. Live, the swatch takes each sample's color and the loupe its crop; release waits for the sample of the final point, then ends the history group ("Move marker", one step). Cancel puts back the exact start palette, so no step is recorded.
+  - Note: the hand-over (D10) goes through `src/ui/markerPress.ts`: the marker registers its pointer, and `Gesture` in `ImageWell.tsx` calls `takeMarkerPress` on a second pointerdown, which cancels the drag and adds the marker's pointer to the pinch. `pointerRouting.ts` got `panIgnoresExceptMarkers`.
+  - Note: keyboard nudges run in order, one sample and one undo step each; a live region (`data-testid="marker-status"`) says "Swatch 3 marker moved, #RRGGBB". Nudges count working-master pixels (`masterSize` of the image's size).
+  - Note: Esc and the real two-finger case have no phone-webkit e2e (no keyboard, and WebKit has no touch injection); the second-finger hand-over runs there with synthetic pointer events. The page-scroll checks run on phone-chromium only, as in zoom.spec.ts.
+  - Note: the re-extraction test picks a marker nothing covers, since twelve-colors.png is wide and short and its rings overlap.
 
 ### M3-T16: Eyedropper
 - Files:

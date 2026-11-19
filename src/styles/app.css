@@ -2231,7 +2231,20 @@ fieldset {
 /* ---- end M3-T14 ---- */
 
 /* ---- M3-T15 marker drag (MarkerLayer.tsx) ---- */
-/* M3-T15 styles go here. */
+/* The marker being dragged stays on top and shows it is held. */
+.marker[data-dragging] {
+  z-index: 4;
+  cursor: grabbing;
+}
+
+.marker[data-dragging] .marker__ring {
+  transform: scale(1.2);
+}
+
+.marker[data-dragging],
+.marker[data-dragging] * {
+  transition: none;
+}
 
 /* ---- end M3-T15 ---- */
 
