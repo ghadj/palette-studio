@@ -56,6 +56,15 @@ export const M1_SCREENS: readonly Screen[] = [
     device: "desktop",
   },
   { name: "filters-phone", path: "./?demo=mockup&rows=filters", viewport: PHONE, device: "phone" },
+  // M2-T14: swatch 3's cluster map over the image (mockup-state `cluster=3`). The Palette tab
+  // with the Cluster map toggle is palette-phone above.
+  {
+    name: "cluster-map-desktop",
+    path: "./?demo=mockup&cluster=3",
+    viewport: DESKTOP,
+    device: "desktop",
+  },
+  { name: "cluster-map-phone", path: "./?demo=mockup&cluster=3", viewport: PHONE, device: "phone" },
 ];
 
 export const THEMES = ["light", "dark"] as const;

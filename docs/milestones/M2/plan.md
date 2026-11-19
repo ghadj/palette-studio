@@ -446,6 +446,16 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
   - `e2e/tokens.spec.ts`, `e2e/a11y.spec.ts` › `cluster-map-desktop`, `cluster-map-phone` and the Palette tab with the toggle, in both themes.
 - Done when: tests pass; nothing depends on hover (phone acceptance 2); the review page has the new shots; `visual-testing.md` lists every new shot.
 - [ ] Done
+  - Note: e2e and review page pending: browsers unavailable. Lint, typecheck, unit tests and build pass; the e2e specs are written but not yet run.
+  - Note (orchestrator decision, provisional, pending the user): the "% of the image" share is the plain pixel share from the cluster map (kept pixels nearest the swatch over all kept pixels), not the swatch's weighted population.
+  - Note: the selection label names the swatch whose map is showing, with its share ("Swatch 2 · 83.2% of the image" while swatch 2 is hovered, even with swatch 3 selected), so hovering any swatch shows its own share as spec 2.6 asks. With no map showing it reads "Swatch 3" as before, so the mockup shots keep their label. Confirmed by the user on 2026-11-19 (decision 13e).
+  - Note (merge onto milestone/M2, 2026-11-19): the `overlay` request dims every label but the shown swatch's, so it follows the map's keep mask, which since the T13 merge is `keepPixels` (filters plus Ignore background). In "Tab focus on a swatch shows it", WebKit focuses the swatches directly instead of pressing Tab, as `zoom.spec.ts` and `presets.spec.ts` do. The computed demo shares vary by browser within `mockup-state.md`'s ±0.3 pp (chromium: 14.86%, 83.09%, 0.55%; phone-webkit: 14.69%, 83.26%, 0.56%), so exact labels for swatches 1, 2 and 4 failed in some projects. Swatch 3 is 0.49% ("0.5%") everywhere and keeps its exact check.
+  - Note (coordinator decision, 2026-11-19): the swatch 1, 2 and 4 label checks now expect the swatch's own `data-share` formatted by `shareText`, and separately check that share against `mockup-state.md` to ±0.3 pp.
+  - Note: the overlay pixels are built in the worker by a new `overlay` request (`overlayPixels` in `cluster-map.ts`) from a copy of the map's labels, then `putImageData` into a canvas at analysis size, scaled without smoothing (`image-rendering: pixelated`). They're cached per map and swatch. Mid-gray is sRGB 128 (#808080) at alpha 179 (70%).
+  - Note: hover counts only for a mouse with `(pointer: fine)`; focus counts only when it is `:focus-visible`, so a click or tap never leaves a map showing. Precedence: hover, then focus, then the demo's `cluster` pin, then the phone toggle. The toggle row sits under the selection label on the phone Palette tab. Turning the toggle on or off clears the demo pin.
+  - Note: while extracting, the overlay carries `data-busy` and the strip's 0.6 opacity. The test "overlay and the ROI outline" isn't in this plan's list, so there was nothing to remove (no region of interest, decision 15a).
+  - Note: "undimmed pixels lie within 0.05 of (0.769, 0.167)" measures both axes in image widths (the patch's 46 px radius is 0.0575 of the 800 px height), and also checks their centroid.
+  - Note: `e2e/visual/ready.ts` waits for the overlay on `cluster=` URLs and for no `[data-settling]` element. Two existing tests that click a swatch and then read the selection label (`e2e/mockup-state.spec.ts`, `e2e/extract.spec.ts`) now move the mouse off the strip first, since hovering shows the share.
 
 ## Screens affected (UI work only)
 
@@ -531,6 +541,7 @@ Decisions 1 to 14 and 16 to 18 accept the proposed option A. Decision 15 changes
    - A color within ΔE OK 0.04 that covers at least 50% of the band is the background.
    - Remove its pixels connected to the border (flood fill).
    - If no color qualifies, remove nothing and show "None found".
+4b. **Studio-backdrop test** (user decision, 2026-11-19, T9). The e2e test of Ignore background on `studio-backdrop.png` allows the enclosed patch's small swatch near #ECEAE6, as the test is written.
 5. **Balanced.**
    - a. Wu to N, then k-means seeded from Wu, then ranking; deterministic.
    - b. Iterations apply; Seed and Restarts don't. This settles M1 report note 4.
@@ -550,12 +561,14 @@ Decisions 1 to 14 and 16 to 18 accept the proposed option A. Decision 15 changes
     - A preset sets the fields it names and resets the other preset fields to their defaults.
     - It keeps Colors (Dominant and Balanced set 6), Working space, Sample size, Seed and the filters it doesn't name.
     - When no preset matches, the row reads "Custom".
+11b. **Presets and filter thresholds** (user decision, 2026-11-19, T12). A preset switches only the Ignore dark and Ignore light toggles and keeps their threshold values. Matching a preset ignores the thresholds.
 12. **Exact colors.** Exact 24-bit counts; leftover pixels count toward their nearest chosen color.
 13. **Cluster map.**
     - a. A swatch's pixels are those that pass the filters and are nearest to it in the working space.
     - b. Every other pixel is dimmed toward a neutral mid-gray at about 70%, the same in both themes.
     - c. The share shows in the selection label: "Swatch 3 · 0.5% of the image".
     - d. On phones, a temporary "Cluster map" toggle row sits on the Palette tab and moves into the swatch sheet in M3.
+13e. **Selection label** (user decision, 2026-11-19, T14). The selection label names the swatch whose map is showing (the hovered or focused one), with its share.
 14. **Mockup fixture.**
     - a. Populations become 0.832, 0.147 and 0.005 × 4, normalized.
     - b. The `rows` and `cluster` parameters and the new shots are approved. The `zoom` parameter is approved (15g).

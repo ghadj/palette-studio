@@ -110,6 +110,42 @@ for (const viewport of [
   });
 }
 
+test("overlay pixels are identical in light and dark (spec 2.6, M2 decision 13b)", async ({
+  page,
+}, info) => {
+  const viewport = isPhoneProject(info)
+    ? { width: 390, height: 844 }
+    : { width: 1280, height: 800 };
+  await page.setViewportSize(viewport);
+  const shots: Buffer[] = [];
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto(demo("cluster=3"));
+    await page.waitForLoadState("networkidle");
+    const well = page.locator("[data-testid=image-well]:visible").first();
+    await expect(
+      well.locator("[data-testid=cluster-overlay][data-index='2']:not([data-settling])"),
+    ).toHaveCount(1, { timeout: 15_000 });
+    await well.locator("img").evaluate((el) => (el as HTMLImageElement).decode?.());
+    const box = await well.boundingBox();
+    if (!box) throw new Error("no well");
+    const inset = 12;
+    await hideZoomControls(page);
+    shots.push(
+      await page.screenshot({
+        clip: {
+          x: box.x + inset,
+          y: box.y + inset,
+          width: box.width - 2 * inset,
+          height: box.height - 2 * inset,
+        },
+      }),
+    );
+  }
+  const [light, dark] = shots as [Buffer, Buffer];
+  expect(await maxDifference(page, light, dark)).toBe(0);
+});
+
 test("the zoomed image keeps its colors in light and dark (decision 15)", async ({
   page,
 }, info) => {

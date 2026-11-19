@@ -447,8 +447,28 @@ fieldset {
 }
 
 .image-well__layer {
+  position: relative;
   transform-origin: 0 0;
   touch-action: inherit;
+}
+
+/*
+ * The cluster-map overlay (spec 2.6, M2 decision 13b): user content over the image, in the same
+ * layer so it follows zoom and pan. The map is at analysis size, so it scales without smoothing.
+ * While a new palette is extracted, the old map is dimmed like the strip (spec 6.3).
+ */
+.image-well__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.image-well__overlay[data-busy] {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
 
 /* Zoom out, Zoom in and Fit in the well's bottom-right corner (decision 15e). */

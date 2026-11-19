@@ -95,3 +95,14 @@ export function parseMockupZoom(search: string): 1 | 2 | 4 | 8 {
   const zoom = new URLSearchParams(search).get("zoom");
   return zoom === "2" ? 2 : zoom === "4" ? 4 : zoom === "8" ? 8 : 1;
 }
+
+/**
+ * `cluster=<1 to 6>` shows that swatch's cluster map, as hovering or focusing it does (spec 2.6,
+ * decision 14b). Returns the swatch's palette index, or null for no map.
+ */
+export function parseMockupCluster(search: string): number | null {
+  const n = ["1", "2", "3", "4", "5", "6"].indexOf(
+    new URLSearchParams(search).get("cluster") ?? "",
+  );
+  return n < 0 ? null : n;
+}

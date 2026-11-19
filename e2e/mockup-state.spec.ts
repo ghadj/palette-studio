@@ -76,6 +76,8 @@ test.describe("mockup state (mockup-state.md)", () => {
     await expect(column.getByTestId("selection-label")).toHaveText("Swatch 3");
     await column.locator("[data-swatch]").nth(4).click();
     await expect(column.locator("[data-swatch]").nth(4)).toHaveAttribute("aria-pressed", "true");
+    // Off the strip, so the label names the selection rather than the hovered map (M2-T14).
+    await page.mouse.move(0, 0);
     await expect(column.getByTestId("selection-label")).toHaveText("Swatch 5");
   });
 

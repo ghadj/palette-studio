@@ -28,6 +28,18 @@ export type ToWorker =
       colors: Oklab[];
       settings: ExtractionSettings;
       pixels: PixelBuffer | null;
+    }
+  /**
+   * Build the overlay pixels of one swatch's cluster map (spec 2.6, decision 13b) from a copy of
+   * the map's labels, so the UI thread never loops over them (spec 7.4).
+   */
+  | {
+      type: "overlay";
+      jobId: number;
+      width: number;
+      height: number;
+      labels: ArrayBuffer;
+      index: number;
     };
 
 export type FromWorker =
@@ -53,4 +65,6 @@ export type FromWorker =
       ms: number;
     }
   | { type: "assigned"; jobId: number; map: ClusterMap }
+  /** RGBA overlay pixels, `width` × `height`; the buffer is transferred. */
+  | { type: "overlaid"; jobId: number; width: number; height: number; data: ArrayBuffer }
   | { type: "error"; jobId: number; message: string };

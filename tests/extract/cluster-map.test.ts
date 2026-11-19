@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { hexToOklab } from "../../src/color/convert";
-import { assignPixels, FILTERED } from "../../src/extract/cluster-map";
+import {
+  assignPixels,
+  FILTERED,
+  OVERLAY_ALPHA,
+  OVERLAY_GRAY,
+  overlayPixels,
+} from "../../src/extract/cluster-map";
 import { filterPixels } from "../../src/extract/filters";
 import { DEFAULT_SETTINGS } from "../../src/state/defaults";
 import type { WorkingSpace } from "../../src/types";
@@ -111,5 +117,25 @@ describe("cluster map (spec 2.6; M2 decision 13a)", () => {
     expect(label("srgb")).toBe(0);
     expect(label("linear-srgb")).toBe(0);
     expect(label("cielab")).toBe(0);
+  });
+});
+
+describe("cluster map overlay pixels (spec 2.6; M2 decision 13b)", () => {
+  it("the swatch's pixels are clear and every other pixel is neutral mid-gray at 70%", () => {
+    const labels = Uint8Array.from([0, 1, 2, FILTERED, 1]);
+    const rgba = overlayPixels(labels, 1);
+    expect(rgba).toBeInstanceOf(Uint8ClampedArray);
+    expect(rgba).toHaveLength(20);
+    const dim = [OVERLAY_GRAY, OVERLAY_GRAY, OVERLAY_GRAY, OVERLAY_ALPHA];
+    expect([...rgba]).toEqual([...dim, 0, 0, 0, 0, ...dim, ...dim, 0, 0, 0, 0]);
+    // Neutral mid-gray at about 70%, the same in both themes.
+    expect(OVERLAY_GRAY).toBe(128);
+    expect(OVERLAY_ALPHA / 255).toBeCloseTo(0.7, 2);
+  });
+
+  it("filtered pixels are always dimmed, and an index with no pixels dims everything", () => {
+    const labels = Uint8Array.from([FILTERED, FILTERED]);
+    const alphas = [...overlayPixels(labels, 0)].filter((_, i) => i % 4 === 3);
+    expect(alphas).toEqual([OVERLAY_ALPHA, OVERLAY_ALPHA]);
   });
 });

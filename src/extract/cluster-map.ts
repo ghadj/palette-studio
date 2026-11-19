@@ -102,3 +102,26 @@ export function assignPixels(
   const shares = Array.from(counts, (n) => (kept > 0 ? n / kept : 0));
   return { width: image.width, height: image.height, labels, shares };
 }
+
+/** The neutral mid-gray the overlay dims other pixels toward (M2 decision 13b), as sRGB 0 to 255. */
+export const OVERLAY_GRAY = 128;
+/** How far other pixels are dimmed toward OVERLAY_GRAY: about 70% (decision 13b), as alpha. */
+export const OVERLAY_ALPHA = Math.round(0.7 * 255);
+
+/**
+ * The overlay for one swatch's cluster map (spec 2.6), as RGBA pixels the size of the map: the
+ * swatch's pixels are clear, so the image shows through unchanged, and every other pixel, filtered
+ * ones included, is OVERLAY_GRAY at OVERLAY_ALPHA. It is the same in both themes. Runs in the worker.
+ */
+export function overlayPixels(labels: Uint8Array, index: number): Uint8ClampedArray {
+  const rgba = new Uint8ClampedArray(labels.length * 4);
+  for (let i = 0; i < labels.length; i += 1) {
+    if (labels[i] === index) continue;
+    const o = i * 4;
+    rgba[o] = OVERLAY_GRAY;
+    rgba[o + 1] = OVERLAY_GRAY;
+    rgba[o + 2] = OVERLAY_GRAY;
+    rgba[o + 3] = OVERLAY_ALPHA;
+  }
+  return rgba;
+}

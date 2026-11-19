@@ -1,10 +1,12 @@
 /**
  * The swatch strip (ui-contract column 2 item 1): the swatches in one row, the selection outlined.
  * With more than 6 swatches it breaks into two even rows when one row would make them smaller than
- * 44 px (decision 13). Swatches are user content and are never themed (spec 6.2).
+ * 44 px (decision 13). Swatches are user content and are never themed (spec 6.2). Hovering a
+ * swatch with a fine pointer, or focusing it from the keyboard, shows its cluster map (spec 2.6).
  */
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { swatchHex, swatchLabel } from "../palette/model";
+import { clusterFocus, clusterHover, shareText, shownCluster } from "../state/cluster";
 import {
   clusterMap,
   emptyRoles,
@@ -15,6 +17,23 @@ import {
   selectSwatch,
 } from "../state/signals";
 import { stripColumns } from "./stripLayout";
+
+/** Only a fine pointer hovers (spec 6.1 "No hover"); touch uses the Cluster map toggle. */
+const hovers = (event: PointerEvent): boolean =>
+  event.pointerType === "mouse" && window.matchMedia("(pointer: fine)").matches;
+
+/** Keyboard focus only: a click that focuses a swatch doesn't leave its map showing. */
+const keyboardFocus = (el: Element): boolean => {
+  try {
+    return el.matches(":focus-visible");
+  } catch {
+    return false;
+  }
+};
+
+const clear = (target: typeof clusterHover, id: string): void => {
+  if (target.peek() === id) target.value = null;
+};
 
 export function SwatchStrip() {
   const swatches = palette.value;
@@ -62,6 +81,14 @@ export function SwatchStrip() {
             aria-pressed={swatch.id === selected}
             style={{ backgroundColor: hex }}
             onClick={() => selectSwatch(swatch.id)}
+            onPointerEnter={(e) => {
+              if (hovers(e)) clusterHover.value = swatch.id;
+            }}
+            onPointerLeave={() => clear(clusterHover, swatch.id)}
+            onFocus={(e) => {
+              if (keyboardFocus(e.currentTarget)) clusterFocus.value = swatch.id;
+            }}
+            onBlur={() => clear(clusterFocus, swatch.id)}
           />
         );
       })}
@@ -69,13 +96,18 @@ export function SwatchStrip() {
   );
 }
 
-/** A muted label naming the selection, such as "Swatch 3" (ui-contract column 2 item 2). */
+/**
+ * A muted label naming the selection, such as "Swatch 3" (ui-contract column 2 item 2). While a
+ * cluster map shows, it names that swatch with its share: "Swatch 3 · 0.5% of the image" (spec 2.6,
+ * M2 decision 13c).
+ */
 export function SelectionLabel() {
-  const label = swatchLabel(palette.value, selectedSwatchId.value);
+  const shown = shownCluster.value;
+  const label = swatchLabel(palette.value, shown?.id ?? selectedSwatchId.value);
   if (!label) return null;
   return (
     <p class="selection-label" data-testid="selection-label">
-      {label}
+      {shown ? `${label} · ${shareText(shown.share)} of the image` : label}
     </p>
   );
 }

@@ -109,6 +109,23 @@ export const M1_SHOTS: readonly Shot[] = [
     mockup: null,
     frame: "M2 decision 2b: the Filters chevron row on the Source tab, open.",
   },
+  // M2-T14: the cluster overlay and the share label are not drawn; they go to design review.
+  {
+    name: "cluster-map-desktop",
+    path: "./?demo=mockup&cluster=3",
+    viewport: DESKTOP,
+    mockup: null,
+    frame:
+      "M2 decision 13: swatch 3's cluster map over the image (other pixels dimmed toward mid-gray, about 70%) and 'Swatch 3 · 0.5% of the image' in the selection label (not drawn).",
+  },
+  {
+    name: "cluster-map-phone",
+    path: "./?demo=mockup&cluster=3",
+    viewport: PHONE,
+    mockup: null,
+    frame:
+      "M2 decision 13: the Source tab with swatch 3's cluster map over the image (not drawn). The Cluster map toggle is in palette-phone.",
+  },
 ];
 
 export const SHOT_THEMES = ["light", "dark"] as const;

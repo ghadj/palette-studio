@@ -58,6 +58,14 @@ class FakeWorker {
           jobId: message.jobId,
           map: this.sent(fakeMap(message.colors.length)),
         });
+      if (message.type === "overlay")
+        this.emit("message", {
+          type: "overlaid",
+          jobId: message.jobId,
+          width: message.width,
+          height: message.height,
+          data: new ArrayBuffer(message.width * message.height * 4),
+        });
     });
   }
   sent(map: ClusterMap): ClusterMap {
@@ -165,6 +173,24 @@ describe("image worker client (spec 7.4; evaluator note 6)", () => {
     expect(extracted.map).toBe(worker.maps.at(-1));
   });
 
+  it("overlay sends a copy of the map's labels, so the map stays usable, and needs no master", async () => {
+    const { client, workers, restores } = setup();
+    const map = fakeMap(2);
+    const pixels = await client.overlay(map, 1);
+    const worker = workers[0] as FakeWorker;
+    const sent = worker.received.at(-1);
+    if (sent?.type !== "overlay") throw new Error(`unexpected ${sent?.type}`);
+    expect(sent).toMatchObject({ width: 2, height: 1, index: 1 });
+    expect([...new Uint8Array(sent.labels)]).toEqual([0, 1]);
+    expect(sent.labels).not.toBe(map.labels.buffer);
+    expect([...map.labels]).toEqual([0, 1]);
+    expect(pixels).toBeInstanceOf(Uint8ClampedArray);
+    expect(pixels).toHaveLength(8);
+    // No image was prepared and none is rebuilt: the labels are all the worker needs.
+    expect(restores()).toBe(0);
+    expect(worker.received.map((m) => m.type)).toEqual(["hello", "overlay"]);
+  });
+
   it("assign after the worker stopped rebuilds the master first, like extract", async () => {
     const { client, workers, restores } = setup();
     await client.prepare(bitmap());
@@ -220,5 +246,30 @@ describe("image worker: assign (spec 2.6, 7.4)", () => {
     expect(message.map.shares).toEqual([0.5, 0.5]);
     expect([message.map.width, message.map.height]).toEqual([3, 1]);
     expect(transfer).toEqual([message.map.labels.buffer]);
+  });
+
+  it("overlay builds the dimmed RGBA pixels in the worker and transfers them (decision 13b)", async () => {
+    const posted: Array<{ message: FromWorker; transfer: Transferable[] }> = [];
+    const listeners: Array<(event: { data: ToWorker }) => void> = [];
+    vi.stubGlobal("self", {
+      postMessage: (message: FromWorker, transfer: Transferable[] = []) =>
+        posted.push({ message, transfer }),
+      addEventListener: (_type: string, l: (event: { data: ToWorker }) => void) => {
+        listeners.push(l);
+      },
+    });
+    await import("../../src/extract/worker");
+    const labels = Uint8Array.from([1, 0, 255]).buffer;
+    for (const l of listeners) {
+      l({ data: { type: "overlay", jobId: 9, width: 3, height: 1, labels, index: 0 } });
+    }
+    expect(posted).toHaveLength(1);
+    const { message, transfer } = posted[0] as (typeof posted)[number];
+    if (message.type !== "overlaid") throw new Error(`unexpected ${message.type}`);
+    expect([message.jobId, message.width, message.height]).toEqual([9, 3, 1]);
+    expect([...new Uint8ClampedArray(message.data)]).toEqual([
+      128, 128, 128, 179, 0, 0, 0, 0, 128, 128, 128, 179,
+    ]);
+    expect(transfer).toEqual([message.data]);
   });
 });

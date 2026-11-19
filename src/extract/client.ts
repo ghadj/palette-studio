@@ -264,6 +264,22 @@ export class ImageClient {
     if (reply.type === "assigned") return reply.map;
     throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
   }
+
+  /**
+   * The RGBA overlay pixels for one swatch of a cluster map (spec 2.6, decision 13b), built in the
+   * worker from a copy of the labels, so the map itself stays usable here. No master is needed.
+   */
+  async overlay(map: ClusterMap, index: number): Promise<Uint8ClampedArray<ArrayBuffer>> {
+    await this.connect();
+    const labels = map.labels.slice().buffer as ArrayBuffer;
+    const jobId = this.nextJob++;
+    const reply = await this.request(
+      { type: "overlay", jobId, width: map.width, height: map.height, labels, index },
+      [labels],
+    );
+    if (reply.type === "overlaid") return new Uint8ClampedArray(reply.data);
+    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
+  }
 }
 
 let client: ImageClient | null = null;

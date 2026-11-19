@@ -91,6 +91,8 @@ test.describe("swatch roles (spec 2.2, 3.1; M2 decision 10)", () => {
     const vibrant = strip(page).and(page.locator('[aria-label^="Vibrant, "]'));
     await vibrant.click();
     await expect(vibrant).toHaveAttribute("aria-pressed", "true");
+    // Off the strip, so the label names the selection rather than the hovered map (M2-T14).
+    await page.mouse.move(0, 0);
     // On phones the label sits on the Palette tab (ui-contract "Phone").
     if (isPhoneProject(info))
       await page.getByTestId("tabbar").getByRole("tab", { name: "Palette" }).click();

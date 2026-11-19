@@ -14,7 +14,7 @@ import {
   resample,
 } from "../image/tiers";
 import type { ExtractionSettings } from "../types";
-import { assignPixels } from "./cluster-map";
+import { assignPixels, overlayPixels } from "./cluster-map";
 import type { FromWorker, PixelBuffer, ToWorker } from "./messages";
 import { type AnalysisImage, keepPixels, runExtraction } from "./pipeline";
 
@@ -115,6 +115,18 @@ function assign(
   scope.postMessage({ type: "assigned", jobId, map }, [map.labels.buffer]);
 }
 
+/** The overlay pixels of one swatch's cluster map (spec 2.6, decision 13b). */
+function overlay(
+  jobId: number,
+  width: number,
+  height: number,
+  labels: ArrayBuffer,
+  index: number,
+): void {
+  const data = overlayPixels(new Uint8Array(labels), index).buffer as ArrayBuffer;
+  scope.postMessage({ type: "overlaid", jobId, width, height, data }, [data]);
+}
+
 scope.addEventListener("message", (event) => {
   const message = event.data;
   try {
@@ -132,6 +144,9 @@ scope.addEventListener("message", (event) => {
         return;
       case "assign":
         assign(message.jobId, message.colors, message.settings, message.pixels);
+        return;
+      case "overlay":
+        overlay(message.jobId, message.width, message.height, message.labels, message.index);
         return;
     }
   } catch (error) {
