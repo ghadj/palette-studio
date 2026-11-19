@@ -43,11 +43,9 @@ for (const width of WIDTHS) {
           .map((el) => el.textContent),
       );
       expect(clipped).toEqual([]);
+      // The value wraps below only as a fallback (M2 decision 23), and then it is right-aligned.
       for (const r of rows) {
-        if (!r.value || r.value.top < r.group.bottom - 0.5) continue; // one line, checked above
-        expect(r.value.top, `${r.name}: wrapped value`).toBeGreaterThanOrEqual(
-          r.group.bottom - 0.5,
-        );
+        if (!r.value || r.value.top < r.group.bottom - 0.5) continue;
         expect(r.value.right, `${r.name}: wrapped value is right-aligned`).toBeGreaterThanOrEqual(
           r.row.right - 1,
         );
@@ -86,4 +84,44 @@ for (const width of [820, 390, 320] as const) {
     }
     expect(await hasHorizontalScroll(page)).toBe(false);
   });
+}
+
+// M2 decision 23: label group and value share one line, vertically centered, at every width.
+const ONE_LINE_WIDTHS = [320, 360, 375, 390, 820, 1024, 1280] as const;
+const SLIDER_MIN = 64; // calc(var(--space-8) * 2)
+
+for (const width of ONE_LINE_WIDTHS) {
+  for (const algorithm of ALGORITHMS) {
+    test(`label group and value share one line: ${algorithm} at ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(demo("rows=filters,advanced"));
+      await openRows(page);
+      await page.locator("#setting-algorithm:visible").selectOption(algorithm);
+      if (algorithm === "exact" || algorithm === "swatch-roles") {
+        await expect(page.locator("#setting-seed-note:visible")).not.toBeEmpty();
+      }
+      const rows = await measure(page);
+      expect(rows.length).toBeGreaterThan(8);
+      for (const r of rows) {
+        if (!r.value) continue;
+        const overlap =
+          Math.min(r.group.bottom, r.value.bottom) - Math.max(r.group.top, r.value.top);
+        expect(overlap, `${r.name}: ranges overlap`).toBeGreaterThan(0);
+        const gc = (r.group.top + r.group.bottom) / 2;
+        const vc = (r.value.top + r.value.bottom) / 2;
+        expect(Math.abs(gc - vc), `${r.name}: centers`).toBeLessThanOrEqual(2);
+        expect(r.group.right, `${r.name}: group left of value`).toBeLessThanOrEqual(
+          r.value.left + 0.5,
+        );
+      }
+      expect(await hasHorizontalScroll(page)).toBe(false);
+      const sliders = await page.evaluate(() =>
+        [...document.querySelectorAll(".setting-row .slider")]
+          .filter((el) => (el as HTMLElement).getClientRects().length > 0)
+          .map((el) => el.getBoundingClientRect().width),
+      );
+      expect(sliders.length).toBeGreaterThan(3);
+      for (const w of sliders) expect(w).toBeGreaterThanOrEqual(SLIDER_MIN - 0.5);
+    });
+  }
 }

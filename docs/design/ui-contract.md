@@ -195,7 +195,7 @@ Not drawn. Follow spec 6.1: the phone layout, wider. The phone header, one panel
 | Pill button | pill, control border, `--text-sm` | default, hover, pressed, disabled, focus |
 | Primary button | pill, accent-soft fill, 2 px accent outline, strong | default, pressed, disabled, focus |
 | Select button | `--radius-input`, control border, chevron on the right | default, filtered (accent-soft fill, accent outline, strong), focus |
-| Setting row | muted label left, value right, divider below. Below 1024 px: `--space-2` padding above and below (decision 21). Under `(max-width: 1023.98px), (pointer: coarse)`: label and plain-text value at `--text-row-touch`, 15 px; fields stay at `--text-input-touch`, 16 px (decision 22). Desktop with a fine pointer is unchanged at 13 px | default, focus |
+| Setting row | muted label left, value right, divider below. Below 1024 px: `--space-2` padding above and below (decision 21). Under `(max-width: 1023.98px), (pointer: coarse)`: label and plain-text value at `--text-row-touch`, 15 px; fields stay at `--text-input-touch`, 16 px (decision 22). Desktop with a fine pointer is unchanged at 13 px. Label (or label group with its note) and value stay on one line, vertically centered: the label wraps first (minimum 96 px), then a slider shrinks (to 64 px), and only if that fails does the value wrap below, right-aligned (decision 23) | default, focus |
 | Chevron row | label left, chevron right, divider below | collapsed, expanded |
 | Slider | divider-colored track, accent thumb, number field beside it on phones | default, dragging, focus |
 | Stop handle | stop color, light ring | default, selected (accent ring), dragging |
