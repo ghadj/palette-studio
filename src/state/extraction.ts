@@ -10,7 +10,7 @@ import type { ClusterMap } from "../extract/cluster-map";
 import type { ExtractedColor } from "../extract/postprocess";
 import { missingRoles } from "../extract/swatches";
 import { createSwatch, swatchOklab } from "../palette/model";
-import { mergeLocked } from "../palette/reextract";
+import { mergeKept } from "../palette/reextract";
 import type { Algorithm, ExtractionSettings, ImagePoint, Swatch } from "../types";
 import * as history from "./history";
 import { createJobScheduler, DEBOUNCE_MS, PROGRESS_DELAY_MS } from "./jobs";
@@ -93,7 +93,7 @@ function applyColors(
   });
   // Locked swatches survive a re-extraction of the same image, keeping id, point and origin; the
   // others get fresh points (spec 3.6, 3.7; decisions 2a to 2c).
-  const next = keepLocked ? mergeLocked(previous, fresh, settings.peek().distanceMetric) : fresh;
+  const next = keepLocked ? mergeKept(previous, fresh, settings.peek().distanceMetric) : fresh;
   // The map labels the extracted colors, so it no longer matches once a locked swatch is mixed in.
   const shownMap = next.every((s) => fresh.includes(s)) ? map : null;
   if (shownMap)

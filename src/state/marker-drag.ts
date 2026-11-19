@@ -43,10 +43,10 @@ export function withPoint(palette: Swatch[], id: string, point: ImagePoint): Swa
   return palette.map((s) => (s.id === id ? { ...s, point } : s));
 }
 
-/** The swatch set to the sampled color, picked and locked (spec 3.7; plan decisions 1a, 1b). */
+/** The swatch set to the sampled color, picked and pinned (spec 3.7; decision 24). */
 export function withSample(palette: Swatch[], id: string, color: Oklab): Swatch[] {
   return palette.map((s) =>
-    s.id === id ? { ...s, color: oklabToOklch(color), origin: "picked", locked: true } : s,
+    s.id === id ? { ...s, color: oklabToOklch(color), origin: "picked", pinned: true } : s,
   );
 }
 

@@ -34,7 +34,7 @@ describe("pointFromWell (spec 3.7)", () => {
 });
 
 describe("addPicked (decision D11)", () => {
-  it("adds a picked, locked swatch with the point at the end", () => {
+  it("adds a picked, pinned swatch with the point at the end", () => {
     const point = { x: 0.38, y: 0.796 };
     const next = addPicked(base(6), lab, point);
     expect(next).toHaveLength(7);
@@ -42,7 +42,7 @@ describe("addPicked (decision D11)", () => {
     expect(added && oklchToHex(added.color)).toBe("#D4527F");
     expect(added?.point).toEqual(point);
     expect(added?.origin).toBe("picked");
-    expect(added?.locked).toBe(true);
+    expect(added?.pinned).toBe(true);
   });
 
   it("refuses at 12", () => {
@@ -52,7 +52,7 @@ describe("addPicked (decision D11)", () => {
 });
 
 describe("replaceWithPick (decision D11)", () => {
-  it("sets color and point, picks and locks, and keeps what it can reset to", () => {
+  it("sets color and point, picks and pins, and keeps what it can reset to", () => {
     const extracted = { color: { l: 0.5, c: 0.1, h: 10 }, point: { x: 0.1, y: 0.1 } };
     const list = base(3).map((s, i) => (i === 1 ? { ...s, extracted } : s));
     const point = { x: 0.102, y: 0.185 };
@@ -61,7 +61,7 @@ describe("replaceWithPick (decision D11)", () => {
     expect(swatch && oklchToHex(swatch.color)).toBe("#D4527F");
     expect(swatch?.point).toEqual(point);
     expect(swatch?.origin).toBe("picked");
-    expect(swatch?.locked).toBe(true);
+    expect(swatch?.pinned).toBe(true);
     expect(swatch?.extracted).toBe(extracted);
     expect(next[0]).toBe(list[0]);
     expect(next[2]).toBe(list[2]);

@@ -96,14 +96,23 @@ test.describe("color editor (spec 3.2)", () => {
     await expect(lock(page)).toHaveAttribute("aria-pressed", "false");
   });
 
-  test("an edit locks the swatch", async ({ page }, info) => {
+  test("an edit pins the swatch, not locks it; Pinned unpins; Undo restores", async ({
+    page,
+  }, info) => {
     await open(page, info);
-    await expect(lock(page)).toHaveAttribute("aria-pressed", "false");
+    const pin = editor(page).getByTestId("pin-button");
+    await expect(pin).toHaveCount(0);
     await hexField(page).fill("#1E8A2E");
     await hexField(page).press("Enter");
-    await expect(lock(page)).toHaveAttribute("aria-pressed", "true");
-    await undoButton(page).click();
+    await expect(pin).toBeVisible();
+    await expect(pin).toHaveAttribute("aria-pressed", "true");
     await expect(lock(page)).toHaveAttribute("aria-pressed", "false");
+    await pin.click();
+    await expect(pin).toHaveCount(0);
+    await undoButton(page).click();
+    await expect(pin).toBeVisible();
+    await undoButton(page).click();
+    await expect(pin).toHaveCount(0);
   });
 
   test("number fields show '0.345' with the locale forced to de-DE", async ({ browser }, info) => {

@@ -132,7 +132,7 @@ async function dragMarker(page: Page, project: string, n: number, to: Pt) {
 }
 
 test.describe("dragging a marker (spec 3.7)", () => {
-  test("dragging marker 3 onto patch 5 makes swatch 3 #1E8A2E, picked and locked; Undo restores it all", async ({
+  test("dragging marker 3 onto patch 5 makes swatch 3 #1E8A2E, picked and pinned; Undo restores it all", async ({
     page,
   }, info) => {
     await page.goto(demo());
@@ -155,10 +155,11 @@ test.describe("dragging a marker (spec 3.7)", () => {
     await expect(marker(page, 3)).toHaveAttribute("aria-label", /^Swatch 3 marker, 89%, (77|78)%$/);
     await expect(page.getByTestId("loupe")).toHaveCount(0);
     if (!isPhoneProject(info)) {
-      // Locked: the Lock pill of the selected swatch (swatch 3 is selected, and stays so).
+      // Pinned (decision 24): the Pinned button of the selected swatch (swatch 3 is selected).
+      await expect(page.getByTestId("pin-button")).toBeVisible();
       await expect(page.getByRole("button", { name: "Lock", exact: true })).toHaveAttribute(
         "aria-pressed",
-        "true",
+        "false",
       );
     }
 
@@ -170,10 +171,7 @@ test.describe("dragging a marker (spec 3.7)", () => {
     expect(back.x).toBeCloseTo(before.point.x, 5);
     expect(back.y).toBeCloseTo(before.point.y, 5);
     if (!isPhoneProject(info)) {
-      await expect(page.getByRole("button", { name: "Lock", exact: true })).toHaveAttribute(
-        "aria-pressed",
-        "false",
-      );
+      await expect(page.getByTestId("pin-button")).toHaveCount(0);
     }
     await expect(headerButton(page, /^Undo/).first()).toBeDisabled();
     await headerButton(page, "Redo Move marker").click();
@@ -497,7 +495,7 @@ test.describe("touch (spec 6.1 'Gestures', M2 decision 15h)", () => {
   });
 });
 
-test.describe("a locked, moved swatch survives re-extraction (spec 3.7 acceptance 3)", () => {
+test.describe("a pinned, moved swatch survives re-extraction (spec 3.7 acceptance 3)", () => {
   test("drag a marker, then change Colors 6 → 5: that swatch keeps its color and marker", async ({
     page,
   }, info) => {

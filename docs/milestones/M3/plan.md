@@ -944,6 +944,16 @@ The user left before these questions could be put to them. Their instruction on 
 Confirmed by the user earlier in M2, and applying here: a "Used by" or "Not used by" note shows only while its control is disabled (M2 decision 14b). The plan builds on M2's decisions (no region of interest, zoom and pan in M2 with page scroll at Fit, the cluster-map toggle moving into the swatch sheet).
 
 
+Decisions made by the user on 2026-11-20, after the M3 evaluation (24 replaces provisional 1a and 1b):
+- 24. Two flags: pin and lock. Edits (editor, Swatch row fields), marker drags and eyedropper picks pin a swatch: kept on re-extraction but still adjusted (spec 3.7). The Lock button locks it: kept and not adjusted (spec 3.3). A pin badge shows on the strip tile and a "Pinned" button (which unpins) in the editor row. The editor shows and edits the base color, with a muted "After adjustments #HEX" line when the displayed color differs. "Reset to extracted" clears both. `mergeLocked` is now `mergeKept`.
+- 25. Unlocked, unpinned manual swatches are replaced on re-extraction (as built, 2c). Pinned ones are kept.
+- 26. The zoom controls move to the image well's top-right corner; markers can rise above them when selected. Marker 5 of the fixture must be fully visible at Fit at 320, 390 and 1280 px.
+- 27. The loupe sits beside the finger on phones when there is no room above (as built; the evaluator's V7).
+- 28. Column 2 keeps four rows: Swatch, Adjustments, Contrast, CVD (as built). This is an intended deviation from the mockup's "Contrast and CVD" (V2).
+- 29. The "+" tile shares the swatches' row; swatches shrink to make room and wrap only when 44 px no longer fits (up to 12), so the Values bracket sits under its swatches.
+- 30. The Palette and Values views use the user's alpha cutoff (spec 2.4), not a fixed 128 (worker `view` request and cache key).
+- 31. "Place on image" is enabled in `?demo=mockup` (still no storage access). Changing a swatch's sample radius or statistic resamples it at once through the worker `sample`, as one undo step.
+
 Confirmed by the user on 2026-11-19, from choices M3-T1 made:
 - 3c. Undo step labels use the setting's name ("Colors", "Dark threshold"). Applying a preset reads "Preset: <name>"; several settings changed at once read "Settings"; no step is recorded when nothing changed.
 - 3d. After undo, if the selected swatch no longer exists, the swatch at the same position is selected.

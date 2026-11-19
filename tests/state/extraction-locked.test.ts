@@ -14,7 +14,7 @@ const { extractNewImage, placeOnImage, startLiveExtraction } = await import(
 const history = await import("../../src/state/history");
 const { DEBOUNCE_MS } = await import("../../src/state/jobs");
 const { displayImage, palette, settings } = await import("../../src/state/signals");
-const { setLocked } = await import("../../src/palette/model");
+const { setLocked, setPinned } = await import("../../src/palette/model");
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS + 50));
 const color = (l: number) => ({ lab: { l, a: 0, b: 0 }, population: 0.2 });
@@ -75,6 +75,17 @@ describe("re-extraction with locked swatches", () => {
     palette.value.forEach((s, i) => {
       expect(s).toBe(kept[i]);
     });
+  });
+
+  it("a pinned swatch is kept like a locked one (decision 24)", async () => {
+    const id = palette.value[2]?.id ?? "";
+    palette.value = setPinned(palette.value, id, true);
+    const kept = palette.value[2];
+    extract.mockResolvedValueOnce(six(0.15, 0.35, 0.55, 0.75, 0.95));
+    settings.value = { ...settings.peek(), colors: 5 };
+    await settle();
+    expect(palette.value[2]).toBe(kept);
+    expect(lightnesses()).toEqual([15, 55, 40, 75, 95]);
   });
 
   it("a new image keeps no locked swatch", async () => {

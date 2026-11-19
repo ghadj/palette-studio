@@ -735,6 +735,7 @@ fieldset {
 }
 
 .swatch {
+  position: relative;
   height: calc(var(--space-4) * 5);
   border-radius: var(--radius-swatch);
 }
@@ -1595,6 +1596,32 @@ fieldset {
   .hex-field {
     font-size: var(--text-input-touch);
   }
+}
+
+/* Pin state (decision 24): the editor's Pinned button and the badge on a strip swatch. */
+.pin-icon {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+
+.swatch__badge {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-4);
+  height: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  pointer-events: none;
+}
+
+.swatch__badge svg {
+  width: var(--space-3);
+  height: var(--space-3);
 }
 
 /* ---- end M3-T3 ---- */

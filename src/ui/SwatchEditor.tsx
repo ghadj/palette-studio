@@ -4,19 +4,21 @@
  * The Ramp pill opens `RampPanel`: in place on desktop, a bottom sheet on phones (spec 6.1;
  * `rows=ramp` opens it).
  *
- * An edit sets the swatch to exactly that color and locks it (M3 decision 1b), like a marker
- * drag; its origin and `extracted` are unchanged. The editor shows the displayed (output) color
- * and the sliders edit one component of it. The color is kept as typed, even beyond sRGB: the
- * HEX shows the clipped value and the indicator says so (spec 3.5).
+ * An edit sets the swatch's base color and pins it (M3 decision 24), like a marker drag; its
+ * origin and `extracted` are unchanged. A pinned swatch is kept on re-extraction but still adjusted
+ * (spec 3.7), so the editor shows and edits the base color, with a muted "After adjustments" line
+ * when the displayed color differs. The color is kept as typed, even beyond sRGB: the HEX shows
+ * the clipped value and the indicator says so (spec 3.5).
  *
  * Undo (plan D16): a slider drag is one step (begin on press, end on release); a keyboard step
  * is one step; a text entry in a number field or HEX is one step, committed on Enter or blur.
  */
+import { Pin } from "lucide-preact";
 import { useEffect, useId, useRef, useState } from "preact/hooks";
 import { hexToOklch, oklchToHex } from "../color/convert";
 import { inGamut } from "../color/gamut";
 import { parseHex } from "../color/hex";
-import { setLocked, setSwatchColor } from "../palette/model";
+import { setLocked, setPinned, setSwatchColor } from "../palette/model";
 import { begin, commit, end } from "../state/history";
 import { outputPalette, palette, selectedSwatchId } from "../state/signals";
 import type { Oklch } from "../types";
@@ -49,9 +51,11 @@ export function SwatchEditor() {
   const [hexDraft, setHexDraft] = useState<string | null>(null);
 
   const id = selectedSwatchId.value;
-  const swatch = outputPalette.value.find((s) => s.id === id) ?? null;
+  const swatch = palette.value.find((s) => s.id === id) ?? null;
   const color = swatch?.color ?? null;
   const hex = color ? oklchToHex(color) : "";
+  const shownHex = outputPalette.value.find((s) => s.id === id)?.color;
+  const adjustedHex = shownHex ? oklchToHex(shownHex) : hex;
 
   /** Records the pending step, now or (for a text entry) when the entry ends. */
   const record = (label: string) => {
@@ -64,10 +68,10 @@ export function SwatchEditor() {
     if (label !== null) commit(label);
   };
 
-  /** Sets the exact color and locks the swatch (decision 1b). */
+  /** Sets the base color and pins the swatch (decision 24). */
   const setColor = (next: Oklch, label: string) => {
     if (id === null) return;
-    palette.value = setLocked(setSwatchColor(palette.peek(), id, next), id, true);
+    palette.value = setPinned(setSwatchColor(palette.peek(), id, next), id, true);
     record(label);
   };
 
@@ -157,6 +161,24 @@ export function SwatchEditor() {
         >
           Lock
         </button>
+        {swatch?.pinned && (
+          <button
+            type="button"
+            class="pill-button pin-button"
+            data-testid="pin-button"
+            aria-pressed="true"
+            aria-label="Pinned"
+            title="Pinned: kept on re-extraction. Press to unpin."
+            onClick={() => {
+              if (id === null) return;
+              palette.value = setPinned(palette.peek(), id, false);
+              commit("Unpin");
+            }}
+          >
+            <Pin aria-hidden="true" class="pin-icon" />
+            Pinned
+          </button>
+        )}
         <button
           id={rampButton}
           type="button"
@@ -169,6 +191,11 @@ export function SwatchEditor() {
           Ramp
         </button>
       </div>
+      {swatch && adjustedHex !== hex && (
+        <p class="hint" data-testid="after-adjustments">
+          After adjustments {adjustedHex}
+        </p>
+      )}
       <RowContent
         id="ramp"
         title={RAMP_TITLE}

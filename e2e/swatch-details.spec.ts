@@ -171,15 +171,13 @@ test.describe("reset to extracted", () => {
     await hex.press("Enter");
     await expect(hex).toHaveValue("#14386F");
     await expect(reset).toBeEnabled();
-    // Like the color editor, an edit locks the swatch (decision 1b); Reset unlocks it.
-    const lock = page
-      .locator("[data-testid=swatch-editor]:visible")
-      .getByRole("button", { name: "Lock" });
-    await expect(lock).toHaveAttribute("aria-pressed", "true");
+    // Like the color editor, an edit pins the swatch (decision 24); Reset clears the pin.
+    const pin = page.locator("[data-testid=swatch-editor]:visible").getByTestId("pin-button");
+    await expect(pin).toBeVisible();
     await expect(details(page).getByTestId("reset-delta")).toHaveText(/^ΔE OK 0\.\d{3}$/);
     await reset.click();
     await expect(hex).toHaveValue("#14386B");
-    await expect(lock).toHaveAttribute("aria-pressed", "false");
+    await expect(pin).toHaveCount(0);
     await expect(reset).toBeDisabled();
   });
 });

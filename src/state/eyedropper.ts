@@ -1,7 +1,7 @@
 /**
  * The eyedropper's pure parts (spec 3.2 "Eyedropper", 3.7; M3 decisions 5c and D11): mapping a
  * position in the image well to a point on the image, and the two palette changes a pick makes.
- * A picked swatch is locked, like a dragged marker.
+ * A picked swatch is pinned, like a dragged marker.
  */
 import { type Oklab, oklabToOklch } from "../color/convert";
 import { addSwatch, createSwatch } from "../palette/model";
@@ -32,7 +32,7 @@ export function pointFromWell(
 
 /** Adds a picked, locked swatch with its point at the end; unchanged at 12. */
 export function addPicked(palette: Swatch[], color: Oklab, point: ImagePoint): Swatch[] {
-  return addSwatch(palette, createSwatch(color, { origin: "picked", locked: true, point }));
+  return addSwatch(palette, createSwatch(color, { origin: "picked", pinned: true, point }));
 }
 
 /** Retargets a swatch to a picked color and point, and locks it. `extracted` is kept for reset. */
@@ -45,7 +45,7 @@ export function replaceWithPick(
   if (!palette.some((s) => s.id === id)) return palette;
   return palette.map((s) =>
     s.id === id
-      ? { ...s, color: oklabToOklch(color), point, origin: "picked" as const, locked: true }
+      ? { ...s, color: oklabToOklch(color), point, origin: "picked" as const, pinned: true }
       : s,
   );
 }

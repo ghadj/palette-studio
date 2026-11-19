@@ -8,7 +8,7 @@
  * focusing it from the keyboard sets `hoveredSwatchId`, and the swatch it names carries
  * `data-linked`, whether a swatch or its marker (M3-T12) set it.
  */
-import { Plus } from "lucide-preact";
+import { Lock, Pin, Plus } from "lucide-preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import {
   addSwatch,
@@ -416,6 +416,9 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
               data-dragging={swatch.id === dragging ? "" : undefined}
               data-share={shares?.[i]}
               aria-label={`${swatchLabel(swatches, swatch.id)}, ${hex}`}
+              aria-description={swatch.locked ? "Locked" : swatch.pinned ? "Pinned" : undefined}
+              data-locked={swatch.locked ? "" : undefined}
+              data-pinned={swatch.pinned ? "" : undefined}
               aria-pressed={swatch.id === selected}
               data-linked={swatch.id === linked ? "" : undefined}
               style={{ backgroundColor: hex }}
@@ -445,7 +448,13 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
                 clear(clusterFocus, swatch.id);
                 clear(hoveredSwatchId, swatch.id);
               }}
-            />
+            >
+              {(swatch.locked || swatch.pinned) && (
+                <span class="swatch__badge" aria-hidden="true">
+                  {swatch.locked ? <Lock /> : <Pin />}
+                </span>
+              )}
+            </button>
           );
         })}
         {showAdd && <AddTile alone={aloneRow} full={full} />}

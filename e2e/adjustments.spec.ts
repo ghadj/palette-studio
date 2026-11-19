@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demo, isPhoneProject } from "./helpers/app";
 
-/** Global adjustments and Compare (M3-T6; spec 3.3, 3.6; plan decision 1a, D16). Swatch 3 is selected. */
+/** Global adjustments and Compare (M3-T6; spec 3.3, 3.6; plan decisions 24, D16). Swatch 3 is selected. */
 
 async function open(page: Page, info: { project: { name: string } }) {
   const phone = info.project.name.startsWith("phone");
@@ -28,15 +28,41 @@ async function enter(page: Page, name: string, value: string) {
 }
 
 test.describe("adjustments (spec 3.3)", () => {
-  test("Lightness +0.1 moves swatch 3 from L 0.345 to 0.445 in the editor and changes the strip hex", async ({
+  test("Lightness +0.1 changes the strip hex; the editor keeps the base L 0.345 and names the adjusted color (decision 24)", async ({
     page,
   }, info) => {
     await open(page, info);
     const before = await labelOf(page, 3);
     await expect(editorL(page)).toHaveValue("0.345");
+    await expect(page.getByTestId("after-adjustments")).toHaveCount(0);
     await enter(page, "^Lightness$", "0.1");
-    await expect(editorL(page)).toHaveValue("0.445");
+    await expect(editorL(page)).toHaveValue("0.345");
+    await expect(page.locator("[data-testid=after-adjustments]:visible")).toHaveText(
+      /^After adjustments #[0-9A-F]{6}$/,
+    );
     expect(await labelOf(page, 3)).not.toBe(before);
+  });
+
+  test("a pinned swatch is still adjusted; a locked one is not (decision 24)", async ({
+    page,
+  }, info) => {
+    const phone = isPhoneProject(info);
+    test.skip(phone, "the editor is under the sheet on a phone; covered by the unit tests");
+    await page.goto(demo("rows=adjustments"));
+    const hex = page.locator("[data-testid=swatch-editor]:visible").getByLabel("HEX");
+    await hex.fill("#14386F");
+    await hex.press("Enter");
+    await expect(page.getByTestId("pin-button")).toBeVisible();
+    const pinned = await labelOf(page, 3);
+    await enter(page, "^Lightness$", "0.2");
+    expect(await labelOf(page, 3)).not.toBe(pinned);
+    await page
+      .locator("[data-testid=swatch-editor]:visible")
+      .getByRole("button", { name: "Lock", exact: true })
+      .click();
+    const locked = await labelOf(page, 3);
+    await enter(page, "^Lightness$", "0.3");
+    expect(await labelOf(page, 3)).toBe(locked);
   });
 
   test("a locked swatch stays the same", async ({ page }, info) => {

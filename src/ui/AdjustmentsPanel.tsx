@@ -6,7 +6,7 @@
  *
  * Undo (plan D16): a slider drag is one step (begin on press, end on release); a keyboard step,
  * field entry, toggle or button is one step each. Compare is view state and isn't recorded (3.6).
- * Locked swatches aren't adjusted (plan decision 1a), which the note under the title says.
+ * Locked swatches aren't adjusted (spec 3.3); pinned ones are (decision 24), which the note under the title says.
  */
 import { inGamut } from "../color/gamut";
 import { isIdentity, resetAdjustments } from "../palette/adjust";

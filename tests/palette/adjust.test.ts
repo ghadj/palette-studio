@@ -11,6 +11,7 @@ const sw = (l: number, c: number, h: number, locked = false, id = `s${l}-${c}-${
   alpha: 1,
   name: "",
   locked,
+  pinned: false,
   origin: "extracted",
   population: 0.1,
   point: null,
@@ -99,7 +100,7 @@ describe("global adjustments (spec 3.3; plan D1, D2)", () => {
     expect(first(s, { gamut: "off" }).c).toBe(0.3);
   });
 
-  it("locked swatches are unchanged and skipped by Even out (plan decision 1a)", () => {
+  it("locked swatches are unchanged and skipped by Even out (spec 3.3)", () => {
     const locked = sw(0.4, 0.3, 150, true, "locked");
     const out = applyAdjustments(
       [locked, sw(0.2, 0.05, 10), sw(0.9, 0.05, 20)],
@@ -107,6 +108,13 @@ describe("global adjustments (spec 3.3; plan D1, D2)", () => {
     );
     expect(out[0]).toBe(locked);
     expect(out[1]?.color.l).not.toBe(0.2);
+  });
+
+  it("pinned swatches are adjusted like any other (spec 3.7, decision 24)", () => {
+    const pinned = { ...sw(0.4, 0.1, 150, false, "pinned"), pinned: true };
+    const out = applyAdjustments([pinned], adj({ lightness: 0.1 }));
+    expect(out[0]?.color.l).toBeCloseTo(0.5, 9);
+    expect(out[0]?.pinned).toBe(true);
   });
 
   it("applies in table order: Lightness before Gamma", () => {

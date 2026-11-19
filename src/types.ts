@@ -103,7 +103,10 @@ export interface Swatch {
   alpha: number;
   /** Empty when unnamed; the UI then shows "Swatch N". */
   name: string;
+  /** Kept on re-extraction and not adjusted (spec 3.3; the Lock button). */
   locked: boolean;
+  /** Kept on re-extraction but still adjusted: set by edits, drags and picks (spec 3.7; decision 24). */
+  pinned: boolean;
   origin: SwatchOrigin;
   /** Share of the image, 0 to 1. */
   population: number;

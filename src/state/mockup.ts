@@ -89,6 +89,7 @@ export function buildMockupState(
       id: `mockup-${i + 1}`,
       origin: "extracted",
       locked: false,
+      pinned: false,
       sampleRadius: "auto",
       point: { ...point },
       population: MOCKUP_POPULATIONS[i] ?? 0,

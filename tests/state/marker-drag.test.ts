@@ -107,10 +107,10 @@ describe("MarkerDrag (spec 3.7)", () => {
     t.runFrame();
     t.requests[0]?.resolve("#1E8A2E");
     await t.flush();
-    expect(t.palette[0]?.locked).toBe(true);
+    expect(t.palette[0]?.pinned).toBe(true);
     t.drag.cancel();
     expect(t.palette).toBe(t.initial);
-    expect(t.palette[0]?.locked).toBe(false);
+    expect(t.palette[0]?.pinned).toBe(false);
     expect(t.log).toEqual(["begin", "end:"]);
     expect(t.drag.active).toBe(false);
     // A move after the cancel belongs to no drag.
@@ -118,7 +118,7 @@ describe("MarkerDrag (spec 3.7)", () => {
     expect(t.frames).toHaveLength(0);
   });
 
-  it("release commits exactly one step, with the sample of the final point, picked and locked", async () => {
+  it("release commits exactly one step, with the sample of the final point, picked and pinned", async () => {
     const t = setup();
     t.drag.start(t.a.id);
     t.drag.move({ x: 0.5, y: 0.5 });
@@ -136,7 +136,8 @@ describe("MarkerDrag (spec 3.7)", () => {
     expect(s.point).toEqual({ x: 0.889, y: 0.778 });
     expect(oklchToHex(s.color)).toBe("#1E8A2E");
     expect(s.origin).toBe("picked");
-    expect(s.locked).toBe(true);
+    expect(s.pinned).toBe(true);
+    expect(s.locked).toBe(false);
     expect(t.log).toEqual(["begin", `end:${MOVE_LABEL}`]);
     expect(t.palette[1]).toBe(t.initial[1]);
   });

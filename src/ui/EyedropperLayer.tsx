@@ -3,7 +3,7 @@
  * D11). While `eyedropperMode` is on, the well's pan and pinch ignore every pointerdown (see
  * `pointerRouting.ts`), so this layer takes them: a press shows the loupe, a move updates it and
  * release samples the working master through the worker's `sample` (spec 7.4). In Add mode the
- * pick becomes a new picked, locked swatch with its point; in Replace mode it retargets the
+ * pick becomes a new picked, pinned swatch with its point; in Replace mode it retargets the
  * selected swatch. Each pick is one undo step. Esc cancels a press in progress, or else turns the
  * eyedropper off. Nothing here uses the browser's EyeDropper API (spec 6.1).
  *

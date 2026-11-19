@@ -1,8 +1,8 @@
 /**
  * Global adjustments (spec 3.3, 7.5): parameters applied on top of the base swatches, so they stay
  * non-destructive and resettable. Work is in OKLab and OKLCH (spec 2.3). Adjustments run in the
- * table order of 3.3, with Gamut last (plan D2). Locked swatches are never adjusted (plan
- * decision 1a: spec 3.3 wins over 3.7), and don't take part in Even out.
+ * table order of 3.3, with Gamut last (plan D2). Locked swatches are never adjusted (spec 3.3)
+ * and don't take part in Even out. Pinned swatches are adjusted like any other (spec 3.7, decision 24).
  */
 import { type Oklch, oklabToOklch, oklchToOklab } from "../color/convert";
 import { clampChroma } from "../color/gamut";

@@ -81,7 +81,7 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
     if (!m) throw new Error("no marker box");
     expect(Math.abs(m.x + m.width / 2 - at.x)).toBeLessThanOrEqual(2);
     expect(Math.abs(m.y + m.height / 2 - at.y)).toBeLessThanOrEqual(2);
-    // The new swatch is picked and locked, and stays selected.
+    // The new swatch is picked and pinned, and stays selected.
     await expect(swatches(page).nth(6)).toHaveAttribute("aria-pressed", "true");
   });
 

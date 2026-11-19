@@ -38,6 +38,7 @@ describe("mockup state (mockup-state.md)", () => {
     for (const swatch of state.project.palette) {
       expect(swatch.origin).toBe("extracted");
       expect(swatch.locked).toBe(false);
+      expect(swatch.pinned).toBe(false);
       expect(swatch.sampleRadius).toBe("auto");
       expect(swatch.alpha).toBe(1);
     }

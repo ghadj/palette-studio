@@ -12,6 +12,7 @@ import {
   resetToExtracted,
   selectedSwatch,
   setLocked,
+  setPinned,
   setSwatchColor,
   setSwatchPoint,
   swatchHex,
@@ -84,6 +85,7 @@ describe("palette operations (spec 3.2, 3.7; plan D12, Q4a)", () => {
   it("duplicate inserts after the source with a new id, origin manual, unlocked, point null (D12)", () => {
     const source = make("#E8693A", {
       locked: true,
+      pinned: true,
       origin: "picked",
       point: { x: 0.2, y: 0.5 },
       name: "Rust",
@@ -101,6 +103,7 @@ describe("palette operations (spec 3.2, 3.7; plan D12, Q4a)", () => {
     expect(copy).toMatchObject({
       origin: "manual",
       locked: false,
+      pinned: false,
       point: null,
       extracted: null,
       name: "Rust",
@@ -131,6 +134,8 @@ describe("palette operations (spec 3.2, 3.7; plan D12, Q4a)", () => {
   it("lock, rename, color and point change only their swatch", () => {
     const [a, b] = [make("#E8693A"), make("#1DB07A")];
     const list = [a, b];
+    expect(setPinned(list, b.id, true)[1]?.pinned).toBe(true);
+    expect(setPinned(list, b.id, true)[0]).toBe(a);
     const locked = setLocked(list, b.id, true);
     expect(locked[0]).toBe(a);
     expect(locked[1]?.locked).toBe(true);
@@ -139,11 +144,12 @@ describe("palette operations (spec 3.2, 3.7; plan D12, Q4a)", () => {
     expect(setSwatchPoint(list, a.id, { x: 0.3, y: 0.4 })[1]).toBe(b);
   });
 
-  it("resetToExtracted restores color and point, sets origin extracted and unlocks", () => {
+  it("resetToExtracted restores color and point, sets origin extracted and clears lock and pin", () => {
     const extracted = { color: hexToOklch("#E8693A"), point: { x: 0.204, y: 0.519 } };
     const moved = make("#1DB07A", {
       origin: "picked",
       locked: true,
+      pinned: true,
       point: { x: 0.5, y: 0.5 },
       extracted,
     });
@@ -156,6 +162,7 @@ describe("palette operations (spec 3.2, 3.7; plan D12, Q4a)", () => {
       point: extracted.point,
       origin: "extracted",
       locked: false,
+      pinned: false,
       extracted,
     });
     // A swatch that was never extracted has nothing to go back to.

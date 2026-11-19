@@ -29,6 +29,7 @@ export function createSwatch(lab: Oklab, init: Partial<Omit<Swatch, "color">> = 
     alpha: init.alpha ?? 1,
     name: init.name ?? "",
     locked: init.locked ?? false,
+    pinned: init.pinned ?? false,
     origin: init.origin ?? "extracted",
     population: init.population ?? 0,
     point: init.point ?? null,
@@ -87,6 +88,7 @@ export function duplicateSwatch(palette: Swatch[], id: string): Swatch[] {
     id: newSwatchId(),
     origin: "manual",
     locked: false,
+    pinned: false,
     point: null,
     extracted: null,
   };
@@ -116,6 +118,16 @@ export function setLocked(palette: Swatch[], id: string, locked: boolean): Swatc
   return patchSwatch(palette, id, { locked });
 }
 
+/** Pins or unpins: kept on re-extraction, still adjusted (decision 24). */
+export function setPinned(palette: Swatch[], id: string, pinned: boolean): Swatch[] {
+  return patchSwatch(palette, id, { pinned });
+}
+
+/** True when re-extraction keeps the swatch: locked or pinned (decisions 24, 25). */
+export function isKept(swatch: Swatch): boolean {
+  return swatch.locked || swatch.pinned;
+}
+
 export function renameSwatch(palette: Swatch[], id: string, name: string): Swatch[] {
   return patchSwatch(palette, id, { name });
 }
@@ -130,7 +142,7 @@ export function setSwatchPoint(palette: Swatch[], id: string, point: ImagePoint 
 }
 
 /**
- * Restores the extracted color and point, sets origin extracted and unlocks (spec 3.7 "Reset to
+ * Restores the extracted color and point, sets origin extracted and clears lock and pin (spec 3.7 "Reset to
  * extracted"). A swatch extraction didn't make has nothing to restore.
  */
 export function resetToExtracted(palette: Swatch[], id: string): Swatch[] {
@@ -141,5 +153,6 @@ export function resetToExtracted(palette: Swatch[], id: string): Swatch[] {
     point: extracted.point,
     origin: "extracted",
     locked: false,
+    pinned: false,
   });
 }

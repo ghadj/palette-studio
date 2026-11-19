@@ -28,7 +28,7 @@ import {
   renameSwatch,
   resetToExtracted,
   selectedSwatch,
-  setLocked,
+  setPinned,
   setSwatchColor,
   swatchHex,
 } from "../palette/model";
@@ -300,9 +300,9 @@ export async function copySelectedHex(): Promise<void> {
   if (swatch) await copySelected(swatch.color, "hex");
 }
 
-/** Sets the exact color and locks the swatch, as the color editor does (decision 1b). */
+/** Sets the base color and pins the swatch, as the color editor does (decision 24). */
 export function setExact(p: Swatch[], id: string, color: Oklch): Swatch[] {
-  return setLocked(setSwatchColor(p, id, color), id, true);
+  return setPinned(setSwatchColor(p, id, color), id, true);
 }
 
 /** `swatch` is the output (displayed) swatch: the fields show what the strip shows. */
