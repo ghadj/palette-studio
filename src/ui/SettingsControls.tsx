@@ -259,6 +259,7 @@ export function SettingsControls() {
         htmlFor="setting-colors"
         note={colorsNote}
         noteId="setting-colors-note"
+        disabled={!colorsApplies}
       >
         <span class="slider-group">
           <input
@@ -328,7 +329,13 @@ export function SettingsControls() {
             onChange={(v) => update("resampling", v)}
           />
         </SettingRow>
-        <SettingRow label="Seed" htmlFor="setting-seed" note={seedNote} noteId="setting-seed-note">
+        <SettingRow
+          label="Seed"
+          htmlFor="setting-seed"
+          note={seedNote}
+          noteId="setting-seed-note"
+          disabled={!seedApplies}
+        >
           <span class="slider-group">
             <NumberField
               id="setting-seed"
@@ -448,7 +455,11 @@ function FiltersRow({ s }: { s: ExtractionSettings }) {
           onChange={(on) => update("ignoreDark", { ...s.ignoreDark, on })}
         />
       </SettingRow>
-      <SettingRow label="Dark threshold" htmlFor="setting-dark-threshold">
+      <SettingRow
+        label="Dark threshold"
+        htmlFor="setting-dark-threshold"
+        disabled={!s.ignoreDark.on}
+      >
         <DecimalSlider
           id="setting-dark-threshold"
           label="Dark threshold"
@@ -467,7 +478,11 @@ function FiltersRow({ s }: { s: ExtractionSettings }) {
           onChange={(on) => update("ignoreLight", { ...s.ignoreLight, on })}
         />
       </SettingRow>
-      <SettingRow label="Light threshold" htmlFor="setting-light-threshold">
+      <SettingRow
+        label="Light threshold"
+        htmlFor="setting-light-threshold"
+        disabled={!s.ignoreLight.on}
+      >
         <DecimalSlider
           id="setting-light-threshold"
           label="Light threshold"
@@ -556,6 +571,7 @@ function AdvancedRows({ s }: { s: ExtractionSettings }) {
         htmlFor="setting-iterations"
         note={iterations.note}
         noteId={iterations.noteId}
+        disabled={!iterations.enabled}
       >
         <NumberField
           id="setting-iterations"
@@ -572,6 +588,7 @@ function AdvancedRows({ s }: { s: ExtractionSettings }) {
         htmlFor="setting-restarts"
         note={restarts.note}
         noteId={restarts.noteId}
+        disabled={!restarts.enabled}
       >
         <NumberField
           id="setting-restarts"
@@ -596,6 +613,7 @@ function AdvancedRows({ s }: { s: ExtractionSettings }) {
         htmlFor="setting-merge"
         note={merge.note}
         noteId={merge.noteId}
+        disabled={!merge.enabled}
       >
         <DecimalSlider
           id="setting-merge"
@@ -626,6 +644,7 @@ function AdvancedRows({ s }: { s: ExtractionSettings }) {
         htmlFor="setting-vividness"
         note={vividness.note}
         noteId={vividness.noteId}
+        disabled={!vividness.enabled}
       >
         <DecimalSlider
           id="setting-vividness"
@@ -655,6 +674,7 @@ function AdvancedRows({ s }: { s: ExtractionSettings }) {
         htmlFor="setting-outlier"
         note={outlier.note}
         noteId={outlier.noteId}
+        disabled={!outlier.enabled}
       >
         <Toggle
           id="setting-outlier"

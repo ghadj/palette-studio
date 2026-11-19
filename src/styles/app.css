@@ -741,6 +741,17 @@ fieldset {
   min-width: 0;
 }
 
+/*
+ * A row whose control doesn't apply (M1 decision 14: disabled, not hidden) is clearly dimmed
+ * (M2 decision 20): the muted label and the value, with the controls' own disabled styles, drop to
+ * reduced emphasis. The "Used by" note keeps its style so it stays readable. tokens.css has no
+ * disabled color, so the emphasis comes from opacity.
+ */
+.setting-row[data-disabled] .setting-row__label,
+.setting-row[data-disabled] .setting-row__value {
+  opacity: 0.5;
+}
+
 /* Select styled as a setting value: text color, right aligned, chevron after it. */
 .select {
   position: relative;
