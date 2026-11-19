@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { oklabToHex } from "../../src/color/convert";
+import { hexToOklab, oklabToHex } from "../../src/color/convert";
+import { deltaE } from "../../src/color/delta-e";
 import { workingToOklab } from "../../src/color/working-space";
 import { exactColors } from "../../src/extract/exact";
 import { extractPalette } from "../../src/extract/pipeline";
@@ -94,5 +95,90 @@ describe("Exact colors (spec 2.2; M2 decision 12)", () => {
       expect(two.map((c) => c.population)).toEqual([0.75, 0.25]);
       expect(extractPalette(row(pixels([["#FFFFFF", 50, 0]])), s)).toEqual([]);
     }
+  });
+});
+
+describe("Exact colors, Keep one outlier edge cases (M2 decision 8b)", () => {
+  const near = (out: ReturnType<typeof exactColors>, hex: string) => hexes(out).includes(hex);
+
+  it("no remaining color reaches 0.1%, so N - 1 colors come back", () => {
+    // Two big colors, then five colors of one pixel each (0.05% of 2005): none qualifies.
+    const data = pixels([
+      ["#14386B", 1000],
+      ["#E8693A", 1000],
+      ["#FF00AA", 1],
+      ["#1DB07A", 1],
+      ["#5039B0", 1],
+      ["#010203", 1],
+      ["#F0F0F0", 1],
+    ]);
+    const direct = exactColors(data, { n: 2, outlier: "ok" });
+    expect(hexes(direct)).toEqual(["#14386B", "#E8693A"]);
+    const out = extractPalette(
+      row(data),
+      settings({ colors: 3, keepOutlier: true, mergeThreshold: 0 }),
+    );
+    expect(out).toHaveLength(2);
+  });
+
+  it("the CIEDE2000 metric picks the farthest qualifying color by CIEDE2000", () => {
+    const kept = ["#14386B", "#E8693A"];
+    const candidates = ["#FF00AA", "#1DB07A", "#5039B0", "#9A9A9A"];
+    const data = pixels([
+      [kept[0] as string, 1000],
+      [kept[1] as string, 900],
+      ...candidates.map((hex) => [hex, 20] as [string, number]),
+    ]);
+    const farthest = (metric: "ok" | "ciede2000") =>
+      candidates.reduce((a, b) => {
+        const d = (hex: string) =>
+          Math.min(...kept.map((k) => deltaE(metric, hexToOklab(hex), hexToOklab(k))));
+        return d(b) > d(a) ? b : a;
+      });
+    const out = exactColors(data, { n: 2, outlier: "ciede2000" });
+    expect(out).toHaveLength(3);
+    expect(near(out, farthest("ciede2000"))).toBe(true);
+    const ok = exactColors(data, { n: 2, outlier: "ok" });
+    expect(near(ok, farthest("ok"))).toBe(true);
+  });
+
+  it("spatial weights decide which colors reach 0.1%", () => {
+    // #FF00AA is the farthest color, but its 200 pixels weigh 0.001 each (0.2 of about 1805):
+    // under 0.1%, so the nearer #1A3C70 (5 pixels at weight 1) is the outlier.
+    const runs: Array<[string, number]> = [
+      ["#14386B", 1000],
+      ["#E8693A", 800],
+      ["#FF00AA", 200],
+      ["#1A3C70", 5],
+    ];
+    const data = pixels(runs);
+    const weights = new Float32Array(data.length / 4).fill(1);
+    weights.fill(0.001, 1800, 2000);
+    const out = exactColors(data, { n: 2, weights, outlier: "ok" });
+    expect(out).toHaveLength(3);
+    expect(near(out, "#1A3C70")).toBe(true);
+    expect(near(out, "#FF00AA")).toBe(false);
+    // Without the weights both qualify, and the farther of the two wins.
+    const dist = (hex: string) =>
+      Math.min(...["#14386B", "#E8693A"].map((k) => deltaE("ok", hexToOklab(hex), hexToOklab(k))));
+    const far = dist("#FF00AA") > dist("#1A3C70") ? "#FF00AA" : "#1A3C70";
+    expect(far).toBe("#FF00AA");
+    expect(near(exactColors(data, { n: 2, outlier: "ok" }), far)).toBe(true);
+  });
+
+  it("fewer distinct colors than N returns them all, with no outlier added", () => {
+    const data = pixels([
+      ["#14386B", 60],
+      ["#E8693A", 40],
+    ]);
+    for (const outlier of [undefined, "ok", "ciede2000"] as const) {
+      const out = exactColors(data, outlier ? { n: 5, outlier } : { n: 5 });
+      expect(hexes(out)).toEqual(["#14386B", "#E8693A"]);
+    }
+    const piped = extractPalette(
+      row(data),
+      settings({ colors: 5, keepOutlier: true, mergeThreshold: 0 }),
+    );
+    expect(piped).toHaveLength(2);
   });
 });

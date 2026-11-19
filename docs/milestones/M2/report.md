@@ -122,3 +122,100 @@ User sign-off: not yet (deferred by the user).
 
 - M2-F1, sticky swatch strip on phone and tablet (user request, decision 19)
 - M2-F2, clearly dimmed disabled setting rows (user request, decision 20)
+
+---
+
+# M2 re-evaluation (after fix round 1)
+
+Verdict: **FAIL**. Failure 1 of the first evaluation is fixed: no setting row overlaps at any width, in any engine, under any algorithm. The full e2e suite (1617 passed, 103 skipped, 0 failed), axe (200 of 200), token checks (625 of 625), unit tests (268) and the build all pass. Two new failures block the milestone.
+Commit evaluated: milestone/M2 at 9d77b64 (27 commits, main..HEAD). Date: 2026-11-19.
+Evaluator shots for this round: `artifacts/eval/M2-r2/`.
+
+## Changes since the previous evaluation
+
+| Commit | Change | Checked against | Result |
+| --- | --- | --- | --- |
+| c22b870 M2-F1 | Sticky swatch strip below 1024 px | decision 19, D4 | Matches. Side effect: Failure 2 |
+| 7854083 M2-F2 | Dimmed disabled rows | decision 20 | Matches |
+| 2261235 M2-F3 | Rows wrap instead of overlapping | Failure 1 | Fixed. No overlaps, clipped labels or horizontal scroll in 3 engines, 11 widths and all 7 algorithms |
+| 16d2648 M2-F4 | Row padding below 1024 px | decision 21 | Matches |
+| dd72c1d M2-F7 | 15 px row text on touch | decision 22 | Matches |
+| 3fceee6 M2-F6 | Exact colors outlier is a real color | decision 8b | Matches |
+| ada37fd, 9d77b64 M2-F5 | Cluster map toggle without a fine pointer | decision 13f | Matches |
+| c21f9ec | Shot rename, plan ticks, test rename | previous notes 1, 3, 6 | Done. Introduces Failure 1 (lint) |
+
+## Failures
+
+1. **Lint fails** (CLAUDE.md definition of done). `e2e/helpers/screens.ts:58` is too long after the `pixel-filters-phone` rename (c21f9ec). **Fixed after this evaluation in 9b3580c.**
+2. **Keyboard focus lands fully hidden behind the pinned swatch strip on phone and tablet** (spec 8 v1 acceptance 10, "visible focus"; WCAG 2.2 SC 2.4.11).
+   - The sticky `.strip-dock` (`src/styles/app.css:663-675`) adds an 80 px band under the 48 px header, and nothing sets `scroll-padding`, so focused controls scroll under it.
+   - Example: at 320 × 568 on `?demo=mockup&rows=filters,advanced`, scroll to the bottom, focus Sort, then Shift+Tab: Distance metric sits at y 72 to 116, entirely under the strip.
+   - Stops fully hidden only because of the strip, per engine:
+
+     | Engine | 320 × 568 | 390 × 844 | 820 × 1180 |
+     | --- | --- | --- | --- |
+     | Chromium | 6 | 1 | 1 |
+     | Firefox | 10 | 1 | 1 |
+     | WebKit | 10 | 0 | 2 |
+
+   - The M1 sticky header and fixed tab bar also hide some stops; for example, forward Tab at 390 × 844 puts controls under the tab bar.
+   - Evidence: `artifacts/eval/M2-r2/focus-obscured.txt`.
+   - Suggested fix: below 1024 px, `scroll-padding-top` (header plus strip) and `scroll-padding-bottom` (tab bar), plus an e2e test that tabs both ways.
+
+## Visual findings (minor; for design review)
+
+- V1: taller phone and tablet rows with 15 px text (decisions 21 and 22); the contract doesn't record them yet.
+- V2: the `pixel-filters-phone` shot now shows only the Filters summary and half a row.
+- V3: rows wrap unevenly at 320 px and 1024 px (correct per F3).
+- V4: on tablet, the pinned strip container extends 16 px past the row column on each side.
+- V5: dimmed disabled labels are very faint in dark mode.
+- V6: the zoom pill covers patch and marker 5 (carried over).
+- V7 to V10: carried over (Preset and Filters rows, the 48 to 49 px header, no indent for Advanced rows, the overlay look).
+
+Diff ratios against the M1 baselines (local, for information only): studio-desktop 0.01/0.02, source-phone 0.03/0.04, palette-phone 0.02/0.01, studio-tablet 0.01/0.02, empty-desktop 0.02/0.02, empty-phone 0.07/0.06, gradient-phone 0.01 (fonts only). 14 new shots have no baseline yet.
+
+## Notes
+
+1. Two commits are labelled M2-F5, and "report cleanups" carries code changes.
+2. `docs/milestones/M2/plan.md` Screens affected still names `filters-desktop`.
+3. "D1 to D3" is still written in `docs/design/visual-testing.md:75`, `CLAUDE.md:41` and `.claude/agents/evaluator.md:25`. `ui-contract.md:225`, under the new D4, contradicts itself.
+4. Decisions 21 and 22 aren't recorded in `ui-contract.md`.
+5. Decision 8b's unit tests miss these edge cases: no color reaches 0.1%, the CIEDE2000 metric, spatial weights, and fewer distinct colors than N.
+6. Still open: the "% of the image" share definition (provisional), and the approved spec departures.
+
+User sign-off: not yet (deferred by the user).
+
+---
+
+# M2 final evaluation (after fix round 2)
+
+Verdict: **FAIL**, on one regression from M2-F8. Both failures of round 2 are fixed: lint passes, and the evaluator's own probe found 0 hidden or partly covered focus stops at 320, 390 and 820 px in Chromium, Firefox, WebKit, and emulated iPhone 13 and Pixel 7. Every check passes: e2e 1632 passed, 103 skipped, 0 failed, 0 flaky; axe 200/200; tokens 625/625; unit 272; build 52.9 kB JS gzip; review page 28 shots.
+Commit evaluated: milestone/M2 at 146113c. Date: 2026-11-19. Evidence: `artifacts/eval/M2-r3/`.
+
+## Failure
+
+1. **The F8 focus nudge scrolls the page when focus lands inside the header, the pinned strip or the tab bar, including on tap or click** (regression of decision 19 / D4, spec 6.1).
+   - Where: `src/ui/focusClearance.ts:10-22`. `nudgeFocusClear` never checks whether the focused element is inside the chrome.
+   - Measured from scrollY 600: a tap on strip swatch 3 goes to 520 on Pixel 7, Chromium 390 and Firefox 390; the header project button goes to 466; the Theme button goes to 0 and unpins the strip. WebKit doesn't focus on click, so it doesn't move. The build before F8 (39a1250) stays at 600 in every case.
+   - Shift+Tab into the pinned strip also scrolls up by up to 148 px.
+   - The e2e test misses it: it skips elements the chrome contains and never checks scroll position.
+   - Suggested fix: return early when `el.closest("header, [data-testid=strip-dock], .tabbar, [role=menu]")` matches, and add an e2e test that taps a pinned swatch and a header button and asserts `scrollY` doesn't change.
+
+## Notes
+
+1. The `@media (max-width: 640px)` strip-dock rule repeats the shell's maximum width as a literal.
+2. Native `scroll-padding` also makes Chromium scroll when keyboard focus enters the pinned strip.
+3. Two commits are labelled M2-F5; history only.
+4. Still open for the user: the "% of the image" share definition, and the approved spec departures.
+5. Rule checks found nothing.
+
+The fix rounds are used up (two), so this failure goes to the user. Visual sign-off is still deferred.
+
+## Fix after the final evaluation (approved by the user)
+
+- **852e0c8 M2-F9:** focus clearance now ignores the sticky chrome itself. The `focusin` nudge skips elements inside the header, the strip-dock, the tab bar, menus and dialogs, and it acts only on `:focus-visible`. Chromium's native scroll into the pinned strip is undone on keyboard focus.
+- **New test:** `e2e/focus-no-scroll-on-chrome.spec.ts`. Before the fix it failed 24 of 32 runs; after the fix 32 of 32 pass, also with `--repeat-each=2`.
+- **Targeted run:** the new spec plus focus-visible-under-sticky, sticky-strip, layout, zoom and cluster-map, on all 5 projects: 177 passed, 58 skipped (the specs' own project skips), 0 failed.
+- **Not run:** a full re-evaluation; the user chose the targeted check.
+
+**M2 status:** implementation complete; visual sign-off pending with the user.

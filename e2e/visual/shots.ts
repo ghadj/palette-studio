@@ -109,7 +109,8 @@ export const M1_SHOTS: readonly Shot[] = [
   {
     name: "pixel-filters-phone",
     path: "./?demo=mockup&rows=filters",
-    viewport: PHONE,
+    // Tall enough to show the Filters rows below the pinned strip.
+    viewport: { width: PHONE.width, height: 1100 },
     mockup: null,
     frame: "M2 decision 2b: the Filters chevron row on the Source tab, open.",
   },
