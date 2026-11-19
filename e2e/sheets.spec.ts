@@ -58,7 +58,7 @@ test.describe("chevron rows and bottom sheets (M3-T2)", () => {
     const ramp = page.getByRole("button", { name: "Ramp", exact: true });
     await ramp.click();
     await expect(ramp).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByTestId("row-ramp")).toContainText("Coming in a later version");
+    await expect(page.getByTestId("row-ramp").getByTestId("ramp-panel")).toBeVisible();
     await expect(page.getByRole("button", { name: "Lock", exact: true })).toHaveAttribute(
       "data-coming-soon",
       "",

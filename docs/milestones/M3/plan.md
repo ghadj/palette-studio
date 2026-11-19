@@ -391,7 +391,8 @@ Rules that hold for every task:
     - "phone: opens as a sheet"
     - "tiles are data-user-content and at least 44 px on phones"
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+  - Note: the panel uses the selected swatch's output color and adds tiles as manual swatches at the end without changing the selection. `e2e/sheets.spec.ts` now expects the real panel instead of the stub text. That spec's desktop Adjustments test still fails on the `Lock` coming-soon check, which T4 made stale (not caused by T7).
 
 ### M3-T8: Contrast matrix and close-pair warnings
 - Files:

@@ -1663,6 +1663,80 @@ fieldset {
 
 /* ---- M3-T7 ramps and harmonies (RampPanel.tsx) ---- */
 /* M3-T7 styles go here. */
+.ramp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+
+.ramp-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ramp-section > .section-label {
+  margin: 0;
+}
+
+.ramp-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ramp-group__label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.ramp-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ramp-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.ramp-tile__chip {
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-swatch);
+  cursor: pointer;
+}
+
+.ramp-tile[data-source] .ramp-tile__chip {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.ramp-tile__chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ramp-tile__caption,
+.ramp-tile__hex {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.ramp-tile__hex {
+  font-family: var(--font-mono);
+}
 
 /* ---- end M3-T7 ---- */
 
