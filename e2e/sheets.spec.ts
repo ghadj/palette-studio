@@ -55,15 +55,14 @@ test.describe("chevron rows and bottom sheets (M3-T2)", () => {
     await trigger.click();
     await expect(trigger).toHaveAttribute("aria-expanded", "false");
     await expect(region).toHaveCount(0);
-    // The Ramp pill opens its panel in place too; Lock is still to come.
+    // The Ramp pill opens its panel in place too; Lock is a real toggle since M3-T3.
     const ramp = page.getByRole("button", { name: "Ramp", exact: true });
     await ramp.click();
     await expect(ramp).toHaveAttribute("aria-expanded", "true");
     await expect(page.getByTestId("row-ramp").getByTestId("ramp-panel")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Lock", exact: true })).toHaveAttribute(
-      "data-coming-soon",
-      "",
-    );
+    const lock = page.getByRole("button", { name: "Lock", exact: true });
+    await expect(lock).not.toHaveAttribute("data-coming-soon");
+    await expect(lock).toHaveAttribute("aria-pressed", /^(true|false)$/);
   });
 
   test("desktop: rows=adjustments and rows=ramp open in place at load", async ({ page }, info) => {
