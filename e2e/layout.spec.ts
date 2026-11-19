@@ -63,15 +63,15 @@ test.describe("responsive shell (spec 6.1)", () => {
     }
   });
 
-  test("desktop: when the columns are taller than the window they scroll between the header and the drawer", async ({
+  test("desktop: a column taller than the window scrolls on its own between the header and the drawer (M3 decision 37)", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "desktop viewport");
     await page.setViewportSize({ width: 1280, height: 680 });
     await page.goto("./");
     await page.locator('details.chevron-row summary:has-text("Advanced")').click();
-    const columns = page.locator(".columns");
-    const sizes = await columns.evaluate((el) => ({
+    const source = page.locator("[data-column=source] .column__scroll");
+    const sizes = await source.evaluate((el) => ({
       scroll: el.scrollHeight,
       client: el.clientHeight,
       overflow: getComputedStyle(el).overflowY,
@@ -85,12 +85,34 @@ test.describe("responsive shell (spec 6.1)", () => {
     expect(area.y).toBeCloseTo(header.y + header.height, 0);
     expect(area.y + area.height).toBeCloseTo(drawer.y, 0);
     expect(footer.y + footer.height).toBeCloseTo(680, 0);
-    // The page itself doesn't scroll; the columns do.
+    // The page itself doesn't scroll; the column does, and the others stay where they are.
     expect(
       await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight),
     ).toBe(true);
-    await columns.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    const others = await page.evaluate(() =>
+      ["palette", "gradient"].map((name) => {
+        const el = document.querySelector(`[data-column=${name}] .column__scroll`) as HTMLElement;
+        return el.scrollTop;
+      }),
+    );
+    await source.evaluate((el) => el.scrollTo(0, el.scrollHeight));
     await expect(page.locator("#setting-seed")).toBeInViewport();
+    expect(await source.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    expect(
+      await page.evaluate(() =>
+        ["palette", "gradient"].map(
+          (name) =>
+            (document.querySelector(`[data-column=${name}] .column__scroll`) as HTMLElement)
+              .scrollTop,
+        ),
+      ),
+    ).toEqual(others);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // Each column's box fills the area, so a long column leaves no white gap beside the others.
+    const heights = await page
+      .locator("[data-column]")
+      .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+    expect(new Set(heights).size).toBe(1);
   });
 
   test("below 320 px wide the page stops shrinking and scrolls sideways", async ({ page }) => {

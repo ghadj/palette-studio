@@ -370,11 +370,33 @@ fieldset {
 .shell--desktop .columns {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
+  /* One row as tall as the area; each column scrolls on its own (M3 decision 37). */
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .column {
   min-width: 0;
+}
+
+.shell--desktop .column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/*
+ * The scrolling part of a desktop column (M3 decision 37). Its padding and equal negative margin
+ * leave room for the 2 px focus ring plus offset at the column's edges, which a scroll container
+ * would otherwise clip, without moving the content.
+ */
+.column__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--space-1);
+  margin: calc(-1 * var(--space-1));
+  overflow-y: auto;
 }
 
 .panel {

@@ -40,13 +40,19 @@ export function Shell({ layout }: { layout: Layout }) {
       <main class="shell shell--desktop">
         <div class="columns columns--three">
           <section class="column" data-column="source" aria-label="Source">
-            <SourcePanel variant="desktop" />
+            <div class="column__scroll" data-testid="column-scroll">
+              <SourcePanel variant="desktop" />
+            </div>
           </section>
           <section class="column" data-column="palette" aria-label="Palette">
-            <PalettePanel variant="desktop" />
+            <div class="column__scroll" data-testid="column-scroll">
+              <PalettePanel variant="desktop" />
+            </div>
           </section>
           <section class="column" data-column="gradient" aria-label="Gradient">
-            <GradientPanel variant="desktop" />
+            <div class="column__scroll" data-testid="column-scroll">
+              <GradientPanel variant="desktop" />
+            </div>
           </section>
         </div>
         <ExportDrawer />
