@@ -10,7 +10,7 @@ import type { ClusterMap } from "../extract/cluster-map";
 import type { ExtractedColor } from "../extract/postprocess";
 import { missingRoles } from "../extract/swatches";
 import { createSwatch } from "../palette/model";
-import type { Algorithm, ExtractionSettings, Swatch } from "../types";
+import type { Algorithm, ExtractionSettings, ImagePoint, Swatch } from "../types";
 import * as history from "./history";
 import { createJobScheduler, DEBOUNCE_MS, PROGRESS_DELAY_MS } from "./jobs";
 import { onImageLoaded } from "./load-image";
@@ -43,15 +43,18 @@ function applyColors(
   colors: ExtractedColor[],
   algorithm: Algorithm | undefined,
   map: ClusterMap | null,
+  points: readonly ImagePoint[] | undefined,
 ): void {
   const previous = palette.peek();
   const selectedIndex = previous.findIndex((s) => s.id === selectedSwatchId.peek());
   // Swatch roles name each swatch by its role (spec 3.1); the swatch label then shows it.
-  const next = colors.map((c) => {
+  const next = colors.map((c, i) => {
     const s = createSwatch(c.lab, {
       population: c.population,
       origin: "extracted",
       name: c.name ?? "",
+      // Where the color lives in the image: its marker (spec 3.7).
+      point: points?.[i] ?? null,
     });
     // Kept for "Reset to extracted" (spec 3.7).
     return { ...s, extracted: { color: s.color, point: s.point } };
@@ -116,14 +119,14 @@ const scheduler = createJobScheduler<Extraction>({
     jobSettings.set(jobId, current);
     return imageClient().extract(current);
   },
-  apply: ({ colors, reason, map, background }, jobId) => {
+  apply: ({ colors, reason, map, background, points }, jobId) => {
     paletteVersion = jobVersions.get(jobId) ?? imageVersion;
     const algorithm = jobAlgorithms.get(jobId);
     const ranWith = jobSettings.get(jobId);
     jobVersions.clear();
     jobAlgorithms.clear();
     jobSettings.clear();
-    applyColors(colors, algorithm, map);
+    applyColors(colors, algorithm, map, points);
     backgroundNotFound.value = background === "none";
     if (reason === "all-filtered") {
       // No pixel was left to fill any role, so only the filter message shows.

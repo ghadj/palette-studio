@@ -117,9 +117,11 @@ function extract(jobId: number, settings: ExtractionSettings, pixels: PixelBuffe
     colors.map((c) => c.lab),
     settings.workingSpace,
   );
-  scope.postMessage({ type: "extracted", jobId, ...result, map, ms: performance.now() - start }, [
-    map.labels.buffer,
-  ]);
+  // One marker per color, from the cluster map, before its labels are transferred (spec 3.7).
+  const lab = colors.map((c) => c.lab);
+  const points = placeMarkers(map.labels, image.width, image.height, lab, image);
+  const ms = performance.now() - start;
+  scope.postMessage({ type: "extracted", jobId, ...result, map, points, ms }, [map.labels.buffer]);
 }
 
 /** Rebuilds the cluster map for a palette, without extracting (spec 2.6). */

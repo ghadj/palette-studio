@@ -82,13 +82,15 @@ describe("reserved worker requests (plan M3-T2)", () => {
     vi.resetModules();
   });
 
-  it("sample, place and view round-trip through the worker and the fallback and reject with 'not built'", async () => {
+  it("sample, place and view round-trip through the worker and the fallback; view rejects with 'not built'", async () => {
     for (const mainThread of [false, true]) {
       const { client, received, prepared } = await connect(mainThread);
       expect(prepared.thread).toBe(mainThread ? "main" : "worker");
 
-      await expect(client.sample({ x: 0.5, y: 0.25 }, "auto", "mean")).rejects.toThrow(/not built/);
-      await expect(client.place(COLORS, [1], DEFAULT_SETTINGS)).rejects.toThrow(/not built/);
+      // M3-T10 built sample and place: they resolve on both paths.
+      const sampled = await client.sample({ x: 0.5, y: 0.25 }, "auto", "mean");
+      expect(sampled.crop).toMatchObject({ width: 15, height: 15 });
+      await expect(client.place(COLORS, [1], DEFAULT_SETTINGS)).resolves.toHaveLength(1);
       const view = { mode: "palette", colors: COLORS, bands: 5, dither: false } as const;
       await expect(client.view(view)).rejects.toThrow(/not built/);
       await expect(client.view({ ...view, mode: "values" })).rejects.toThrow(/not built/);
@@ -132,7 +134,7 @@ describe("reserved worker requests (plan M3-T2)", () => {
 
   it("a sample window near a corner is clamped to the master", async () => {
     const { client, received } = await connect(true);
-    await expect(client.sample({ x: 0, y: 1 }, 11, "median")).rejects.toThrow(/not built/);
+    await expect(client.sample({ x: 0, y: 1 }, 11, "median")).resolves.toBeDefined();
     const sample = received.find((m) => m.type === "sample");
     if (sample?.type !== "sample") throw new Error("not sent");
     const half = SAMPLE_WINDOW_HALF;

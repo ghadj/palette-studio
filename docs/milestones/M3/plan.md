@@ -472,7 +472,16 @@ Rules that hold for every task:
   - Tests pass.
   - No UI-thread code loops over pixels.
   - Re-extraction at 256 px with Balanced stays near M2's logged time (informational).
-- [ ] Done
+- [x] Done
+  - Note: one tie-break added. After ΔE, ties go to the tied pixel nearest the tied pixels' centroid, and only then to the lowest y and x. With a 3% box blur, every pixel of a flat patch wider than the box has the same density, so "lowest y, then x" alone puts the marker at the plateau's top-left corner: 7.5 px off the 20 × 20 block's center in the plan's own test. The ΔE, y and x order is otherwise as planned. Needs the user's confirmation, since it goes beyond the plan.
+  - Note: in Node, placement takes about 7 ms at 256 × 128 (mockup-scene: every point within 0.003 of the fixture) and about 70 ms at 1600 × 800.
+  - Note: other choices the plan leaves open:
+    - Samples use the disc of the radius around the point's pixel.
+    - Transparent pixels count only when the whole patch is transparent.
+    - The median is the lower middle value, so it is always a sampled value.
+    - The crop repeats edge pixels past the image edge, so the point stays at its center, where the loupe's crosshair is.
+    - A swatch with no pixels takes the nearest kept pixel, or the nearest pixel of all when the filters keep none.
+  - Note: `tests/extract/client-reserved.test.ts` (T2) now expects `sample` and `place` to resolve; only `view` still rejects with "not built".
 
 ### M3-T11: Palette and Values views (engine)
 - Files:
