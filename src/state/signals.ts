@@ -47,6 +47,12 @@ export const extracting = signal(false);
  */
 export const emptyRoles = signal<readonly string[]>([]);
 
+/**
+ * True when the last extraction ran Ignore background on Auto and found no background, so the row
+ * shows "None found" (M2 decisions 4 and 18). Not part of the project.
+ */
+export const backgroundNotFound = signal(false);
+
 /** True once loading or extraction has taken longer than about 300 ms (spec 7.4, 6.3). */
 export const progressVisible = signal(false);
 

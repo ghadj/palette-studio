@@ -10,6 +10,8 @@ import { chromium } from "@playwright/test";
 import {
   GRAYSCALE_RED,
   SINGLE_COLOR,
+  STUDIO_BACKDROP,
+  studioBackdropColor,
   TWELVE_COLORS,
   TWO_COLOR,
   WHITE_BACKGROUND,
@@ -113,6 +115,26 @@ async function main() {
       solid(240, 60, (x, y) => {
         const v = Math.round((x * 255) / 239);
         return [...(y >= 24 && y < 36 ? red : [v, v, v]), 255];
+      }),
+    ),
+  );
+
+  // 400 × 300: a #ECEAE6 backdrop with a centered two-color subject and a backdrop-colored patch
+  // enclosed in it (M2-T9, decision 4).
+  const studioCache = new Map<string, number[]>();
+  writeFileSync(
+    resolve(dir, "studio-backdrop.png"),
+    encodePng(
+      STUDIO_BACKDROP.width,
+      STUDIO_BACKDROP.height,
+      solid(STUDIO_BACKDROP.width, STUDIO_BACKDROP.height, (x, y) => {
+        const hex = studioBackdropColor(x, y);
+        let rgb = studioCache.get(hex);
+        if (!rgb) {
+          rgb = [...hexBytes(hex)];
+          studioCache.set(hex, rgb);
+        }
+        return [...rgb, 255];
       }),
     ),
   );

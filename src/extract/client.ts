@@ -225,7 +225,10 @@ export class ImageClient {
     }
     const jobId = this.nextJob++;
     const reply = await this.request({ type: "extract", jobId, settings, pixels }, transfer);
-    if (reply.type === "extracted") return { colors: reply.colors, reason: reply.reason };
+    if (reply.type === "extracted") {
+      const { colors, reason, background } = reply;
+      return background ? { colors, reason, background } : { colors, reason };
+    }
     throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
   }
 }

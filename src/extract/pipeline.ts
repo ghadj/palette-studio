@@ -1,12 +1,15 @@
 /**
  * The extraction pipeline (spec 2.1 steps 3 to 7) on an analysis copy: histogram in the working
  * space, quantize with the chosen algorithm, convert to OKLab, then post-process. Pure; the worker
- * runs it. The whole image is always used: there is no region of interest (M2 decision 15a).
+ * runs it. The whole image is always used: there is no region of interest (M2 decision 15a). Ignore
+ * background removes the border-connected backdrop with the filters (decision 4), and spatial
+ * weighting weighs each pixel (decision 9).
  */
 import { thresholdFor } from "../color/delta-e";
 import { workingToOklab } from "../color/working-space";
 import { clampColors } from "../state/defaults";
 import type { Algorithm, ExtractionSettings } from "../types";
+import { detectBackground } from "./background";
 import { balanced } from "./balanced";
 import { evenSpread } from "./even-spread";
 import { exactColors } from "./exact";
@@ -17,6 +20,7 @@ import { type Cluster, medianCut } from "./median-cut";
 import { addOutlier } from "./outlier";
 import { type ExtractedColor, postprocess } from "./postprocess";
 import { swatchRoles } from "./swatches";
+import { spatialWeights } from "./weighting";
 import { wu } from "./wu";
 
 export type { ExtractedColor } from "./postprocess";
@@ -44,19 +48,61 @@ export interface ExtractionResult {
   colors: ExtractedColor[];
   /** "all-filtered": the filters dropped every pixel (M2 decision 18). */
   reason: "all-filtered" | null;
+  /**
+   * Ignore background (decision 4): "found" when a background was removed, "none" when Auto found
+   * none. Absent while Ignore background is off.
+   */
+  background?: BackgroundStatus;
+}
+
+export type BackgroundStatus = "found" | "none";
+
+/** The pixels extraction keeps, and Ignore background's outcome. */
+export interface KeptPixels {
+  /** One entry per pixel: 1 keeps the pixel, 0 drops it. */
+  mask: Uint8Array;
+  /** Number of pixels kept. */
+  kept: number;
+  /** Absent while Ignore background is off. */
+  background?: BackgroundStatus;
 }
 
 /**
- * Filters the pixels (spec 2.1 step 3), then extracts. When the filters drop every pixel, the
- * result is empty with the reason "all-filtered", so the app can ask the user to loosen a filter.
+ * The keep mask (spec 2.1 step 3): the pixel filters (alpha cutoff, ignore dark and light, minimum
+ * chroma), then, with Ignore background on Auto, the background pixels connected to the border
+ * (decision 4).
+ */
+export function keepMask(image: AnalysisImage, settings: ExtractionSettings): KeptPixels {
+  const { mask, kept: filtered } = filterPixels(image.data, settings);
+  if (settings.ignoreBackground !== "auto") return { mask, kept: filtered };
+  const background = detectBackground(image, { alphaCutoff: settings.alphaCutoff });
+  let kept = filtered;
+  if (background.found) {
+    for (let p = 0; p < mask.length; p += 1) {
+      if (background.removed[p] === 1 && mask[p] === 1) {
+        mask[p] = 0;
+        kept -= 1;
+      }
+    }
+  }
+  return { mask, kept, background: background.found ? "found" : "none" };
+}
+
+/**
+ * Keeps the pixels (spec 2.1 step 3), then extracts with the spatial weights (decision 9). When
+ * nothing is kept, the result is empty with the reason "all-filtered", so the app can ask the user
+ * to loosen a filter.
  */
 export function runExtraction(
   image: AnalysisImage,
   settings: ExtractionSettings,
 ): ExtractionResult {
-  const { mask, kept } = filterPixels(image.data, settings);
-  if (kept === 0 && image.data.length >= 4) return { colors: [], reason: "all-filtered" };
-  return { colors: paletteFrom(image, settings, mask), reason: null };
+  const { mask, kept, ...status } = keepMask(image, settings);
+  if (kept === 0 && image.data.length >= 4) {
+    return { colors: [], reason: "all-filtered", ...status };
+  }
+  const weights = spatialWeights(image, settings.spatialWeighting);
+  return { colors: paletteFrom(image, settings, mask, weights), reason: null, ...status };
 }
 
 export function extractPalette(
@@ -70,6 +116,7 @@ function paletteFrom(
   image: AnalysisImage,
   settings: ExtractionSettings,
   mask: Uint8Array,
+  weights: Float64Array | null,
 ): ExtractedColor[] {
   const count = clampColors(settings.colors);
   const algorithm = settings.algorithm;
@@ -81,6 +128,8 @@ function paletteFrom(
     alphaCutoff: settings.alphaCutoff,
     bits: settings.histogramBits,
     mask,
+    // Spatial weighting: populations become weighted shares (decision 9b).
+    ...(weights ? { weights } : {}),
   });
   const h = weightByVividness(histogram, vividness, settings.workingSpace);
   // Keep one outlier: extract N − 1 colors, then add the most distinct small cluster (decision 8).
@@ -111,6 +160,7 @@ function paletteFrom(
         space: settings.workingSpace,
         alphaCutoff: settings.alphaCutoff,
         mask,
+        ...(weights ? { weights } : {}),
       });
       break;
     case "even-spread":

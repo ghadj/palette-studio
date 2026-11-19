@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { hexToOklab } from "../src/color/convert";
-import { GRAYSCALE_RED } from "../tools/fixture-colors";
+import { deltaEOK } from "../src/color/delta-e";
+import { GRAYSCALE_RED, STUDIO_BACKDROP } from "../tools/fixture-colors";
 import { fixture } from "./helpers/files";
 
 // Pixel filters (spec 2.1 step 3, 2.4; M2 decisions 2b, 3 and 18).
@@ -27,6 +28,10 @@ async function openFilters(page: Page) {
 }
 
 const lightness = (hex: string) => hexToOklab(hex).l;
+
+/** The Ignore background status note; it is empty, so it has no size, while there is no note. */
+const backgroundNote = (page: Page) =>
+  page.locator("[data-testid=filters-row]:visible #setting-ignore-background-note");
 
 test.describe("pixel filters (spec 2.1, 2.4)", () => {
   test.beforeEach(async ({ page }) => {
@@ -95,6 +100,78 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
     await settled(page);
     expect(await hexes(page)).toEqual(["#1DB07A", "#5039B0"]);
     await expect(region).toHaveText("");
+  });
+
+  // The plan's "leaves no swatch within ΔE OK 0.04 of #ECEAE6" can't hold on this fixture: the
+  // enclosed #ECEAE6 patch is kept (decision 4), so it forms its own small swatch. This test checks
+  // the backdrop is removed (user decision 4b).
+  test("Ignore background Auto on studio-backdrop.png removes the backdrop: the subject's colors lead and only the enclosed patch's swatch stays near #ECEAE6", async ({
+    page,
+  }) => {
+    const backdrop = hexToOklab(STUDIO_BACKDROP.backdrop);
+    const near = (hex: string) => deltaEOK(hexToOklab(hex), backdrop) <= 0.04;
+    const { left, right } = STUDIO_BACKDROP.subject;
+    await page.getByTestId("file-input").setInputFiles(fixture("studio-backdrop.png"));
+    await expect(strip(page).first()).toBeVisible();
+    await settled(page);
+    // Off: the backdrop, 75% of the image, is the first swatch by population.
+    expect(near((await hexes(page))[0] ?? "")).toBe(true);
+    await openFilters(page);
+    const select = page.locator("#setting-ignore-background:visible");
+    await expect(select).toHaveValue("off");
+    await select.selectOption({ label: "Auto" });
+    await expect
+      .poll(async () => (await hexes(page)).slice(0, 2).sort())
+      .toEqual([left, right].sort());
+    await settled(page);
+    const after = await hexes(page);
+    expect(after.slice(0, 2).sort()).toEqual([left, right].sort());
+    // At most one swatch stays near the backdrop color, and it is the enclosed patch: no larger
+    // than the patch's area. Its rank isn't checked: the resampled edges between the subject and
+    // the patch can form a swatch of their own, larger than the patch in Chromium and smaller in
+    // Firefox, depending on the browser's downscale.
+    const nearIndexes = after.flatMap((h, i) => (near(h) ? [i] : []));
+    expect(nearIndexes.length).toBeLessThanOrEqual(1);
+    if (nearIndexes.length === 1) {
+      const shares = await strip(page).evaluateAll((els) =>
+        els.map((e) => Number(e.getAttribute("data-share"))),
+      );
+      const { subject, patch } = STUDIO_BACKDROP;
+      // The patch's share of the kept pixels (the subject), allowing up to twice that for its
+      // blended edge at analysis size. A backdrop that was left in would be far larger.
+      const patchShare = (patch.width * patch.height) / (subject.width * subject.height);
+      const nearShare = shares[nearIndexes[0] ?? 0] ?? Number.NaN;
+      expect(nearShare).toBeGreaterThan(0);
+      expect(nearShare).toBeLessThanOrEqual(2 * patchShare);
+    }
+    // A background was found, so no note shows.
+    await expect(backgroundNote(page)).toHaveText("");
+  });
+
+  test("a busy border shows 'None found'", async ({ page }) => {
+    // twelve-colors.png: twelve stripes, so no color covers half the border band.
+    await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
+    await expect(strip(page).first()).toBeVisible();
+    await settled(page);
+    const before = await hexes(page);
+    await openFilters(page);
+    const select = page.locator("#setting-ignore-background:visible");
+    const note = backgroundNote(page);
+    // The note is a live region, empty until Auto finds nothing (spec 6.3; decision 18).
+    await expect(note).toHaveAttribute("role", "status");
+    await expect(note).toHaveAttribute("aria-live", "polite");
+    await expect(note).toHaveText("");
+    await expect(select).not.toHaveAttribute("aria-describedby");
+    await select.selectOption({ label: "Auto" });
+    await expect(note).toHaveText("None found");
+    await expect(select).toHaveAttribute("aria-describedby", "setting-ignore-background-note");
+    await settled(page);
+    // Nothing is removed.
+    expect(await hexes(page)).toEqual(before);
+    // Off again: the note goes.
+    await select.selectOption({ label: "Off" });
+    await expect(note).toHaveText("");
+    await expect(select).not.toHaveAttribute("aria-describedby");
   });
 
   test("the threshold slider is disabled while its toggle is off", async ({ page }) => {
@@ -168,6 +245,7 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
       "#setting-dark-threshold",
       "#setting-ignore-light",
       "#setting-light-threshold",
+      "#setting-ignore-background",
       "#setting-min-chroma",
       "#setting-alpha-cutoff",
     ];

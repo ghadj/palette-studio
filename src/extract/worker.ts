@@ -81,8 +81,8 @@ function extract(jobId: number, settings: ExtractionSettings, pixels: PixelBuffe
   const image: AnalysisImage = pixels
     ? { width: pixels.width, height: pixels.height, data: new Uint8ClampedArray(pixels.data) }
     : analysisImage(settings);
-  const { colors, reason } = runExtraction(image, settings);
-  scope.postMessage({ type: "extracted", jobId, colors, reason, ms: performance.now() - start });
+  const result = runExtraction(image, settings);
+  scope.postMessage({ type: "extracted", jobId, ...result, ms: performance.now() - start });
 }
 
 scope.addEventListener("message", (event) => {

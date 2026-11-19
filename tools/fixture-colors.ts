@@ -19,3 +19,26 @@ export const TWELVE_COLORS = [
   "#9A6324",
   "#000075",
 ];
+
+/**
+ * studio-backdrop.png (spec 8; M2-T9): a 400 × 300 #ECEAE6 backdrop with a centered 200 × 150
+ * subject, its left half #14386B and its right half #E8693A, and a 10 × 10 #ECEAE6 patch enclosed
+ * in the #14386B half. Ignore background removes the backdrop but keeps the patch (decision 4).
+ */
+export const STUDIO_BACKDROP = {
+  width: 400,
+  height: 300,
+  backdrop: "#ECEAE6",
+  subject: { x: 100, y: 75, width: 200, height: 150, left: "#14386B", right: "#E8693A" },
+  patch: { x: 145, y: 145, width: 10, height: 10 },
+} as const;
+
+const inside = (x: number, y: number, r: { x: number; y: number; width: number; height: number }) =>
+  x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height;
+
+/** The color of studio-backdrop.png at pixel (x, y). */
+export function studioBackdropColor(x: number, y: number): string {
+  const { subject, patch, backdrop } = STUDIO_BACKDROP;
+  if (inside(x, y, patch) || !inside(x, y, subject)) return backdrop;
+  return x < subject.x + subject.width / 2 ? subject.left : subject.right;
+}

@@ -14,6 +14,7 @@ import type { Algorithm } from "../types";
 import { createJobScheduler, PROGRESS_DELAY_MS } from "./jobs";
 import { onImageLoaded } from "./load-image";
 import {
+  backgroundNotFound,
   displayImage,
   emptyRoles,
   extracting,
@@ -71,12 +72,13 @@ const scheduler = createJobScheduler<ExtractionResult>({
     jobAlgorithms.set(jobId, current.algorithm);
     return imageClient().extract(current);
   },
-  apply: ({ colors, reason }, jobId) => {
+  apply: ({ colors, reason, background }, jobId) => {
     paletteVersion = jobVersions.get(jobId) ?? imageVersion;
     const algorithm = jobAlgorithms.get(jobId);
     jobVersions.clear();
     jobAlgorithms.clear();
     applyColors(colors, algorithm);
+    backgroundNotFound.value = background === "none";
     if (reason === "all-filtered") {
       // No pixel was left to fill any role, so only the filter message shows.
       batch(() => {

@@ -2,23 +2,25 @@
  * The extraction settings under the image (spec 2.4; M1 decision 5): Algorithm, Colors (slider and
  * number field) and Working space, then the collapsed Filters row (M2-T8) and the collapsed
  * Advanced row (spec 6.6 rule 2) with Sample size, Resampling, Seed with Randomize, Iterations,
- * Restarts, Histogram bits, Merge threshold, Distance metric, Population vs. vividness, Keep one
- * outlier and Sort (M2-T7). Every change re-extracts live (spec 1, 7.4).
+ * Restarts, Histogram bits, Merge threshold, Distance metric, Population vs. vividness, Spatial
+ * weighting (M2-T9), Keep one outlier and Sort (M2-T7). Every change re-extracts live (spec 1, 7.4).
  */
 import { ChevronDown, ChevronRight } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { type SettingKey, settingApplies, settingNote } from "../extract/applicability";
 import { AVAILABLE_ALGORITHMS } from "../extract/pipeline";
 import { clampColors, MAX_COLORS, MIN_COLORS } from "../state/defaults";
-import { initialOpenRows, settings } from "../state/signals";
+import { backgroundNotFound, initialOpenRows, settings } from "../state/signals";
 import type {
   Algorithm,
   DistanceMetric,
   ExtractionSettings,
   HistogramBits,
+  IgnoreBackground,
   Resampling,
   SampleSize,
   SortOrder,
+  SpatialWeighting,
   WorkingSpace,
 } from "../types";
 import { DecimalField } from "./DecimalField";
@@ -46,6 +48,15 @@ const SAMPLE_SIZES: SampleSize[] = [64, 128, 256, 512, "full"];
 const RESAMPLING_LABELS: Record<Resampling, string> = { smooth: "Smooth", nearest: "Nearest" };
 const HISTOGRAM_BITS: HistogramBits[] = [4, 5, 6];
 const METRIC_LABELS: Record<DistanceMetric, string> = { ok: "ΔE OK", ciede2000: "CIEDE2000" };
+const BACKGROUND_LABELS: Record<IgnoreBackground, string> = { off: "Off", auto: "Auto" };
+/** Spec 2.4: uniform, center-weighted, edge/contrast-weighted. */
+const WEIGHTING_LABELS: Record<SpatialWeighting, string> = {
+  uniform: "Uniform",
+  center: "Center-weighted",
+  contrast: "Edge/contrast-weighted",
+};
+/** Shown when Ignore background is on Auto and the border has no background (M2 decision 18). */
+export const NO_BACKGROUND_NOTE = "None found";
 const SORT_LABELS: Record<SortOrder, string> = {
   population: "Population",
   lightness: "Lightness",
@@ -76,11 +87,13 @@ function Select<T extends string | number>({
   id,
   value,
   options,
+  describedBy,
   onChange,
 }: {
   id: string;
   value: T;
   options: ReadonlyArray<Option<T>>;
+  describedBy?: string | undefined;
   onChange: (value: T) => void;
 }) {
   return (
@@ -88,6 +101,7 @@ function Select<T extends string | number>({
       <select
         id={id}
         class="select__control"
+        aria-describedby={describedBy}
         value={String(value)}
         onChange={(event) => {
           const raw = event.currentTarget.value;
@@ -375,11 +389,14 @@ function DecimalSlider({
 
 /**
  * The collapsed Filters row after Working space (M2 decision 2b; spec 2.1 step 3, 2.4): ignore
- * dark and light, each a toggle with its OKLab L threshold, then minimum chroma and the alpha
- * cutoff. A threshold stays visible but disabled while its toggle is off, and keeps its value
- * (M1 decision 14). Filters apply to every algorithm.
+ * dark and light, each a toggle with its OKLab L threshold, ignore background (Off or Auto,
+ * M2-T9), then minimum chroma and the alpha cutoff. A threshold stays visible but disabled while
+ * its toggle is off, and keeps its value (M1 decision 14). Filters apply to every algorithm.
  */
 function FiltersRow({ s }: { s: ExtractionSettings }) {
+  // A status, not an applicability note: Auto ran and the border has no background (decision 18).
+  const backgroundNote =
+    s.ignoreBackground === "auto" && backgroundNotFound.value ? NO_BACKGROUND_NOTE : null;
   return (
     <details
       class="chevron-row"
@@ -428,6 +445,24 @@ function FiltersRow({ s }: { s: ExtractionSettings }) {
           onCommit={(threshold) => update("ignoreLight", { ...s.ignoreLight, threshold })}
         />
       </SettingRow>
+      <SettingRow
+        label="Ignore background"
+        htmlFor="setting-ignore-background"
+        note={backgroundNote}
+        noteId="setting-ignore-background-note"
+        live
+      >
+        <Select
+          id="setting-ignore-background"
+          value={s.ignoreBackground}
+          options={(Object.keys(BACKGROUND_LABELS) as IgnoreBackground[]).map((b) => ({
+            value: b,
+            label: BACKGROUND_LABELS[b],
+          }))}
+          describedBy={backgroundNote ? "setting-ignore-background-note" : undefined}
+          onChange={(v) => update("ignoreBackground", v)}
+        />
+      </SettingRow>
       <SettingRow label="Minimum chroma" htmlFor="setting-min-chroma">
         <DecimalSlider
           id="setting-min-chroma"
@@ -465,9 +500,9 @@ function FiltersRow({ s }: { s: ExtractionSettings }) {
 }
 
 /**
- * The Advanced rows after Seed (M2-T7). Spatial weighting joins them in M2-T9. Histogram bits,
- * Distance metric and Sort apply to every algorithm built so far, so only the other rows read the
- * applicability tables.
+ * The Advanced rows after Seed (M2-T7), with Spatial weighting after Population vs. vividness
+ * (M2-T9). Histogram bits, Distance metric, Spatial weighting and Sort apply to every algorithm
+ * built so far, so only the other rows read the applicability tables.
  */
 function AdvancedRows({ s }: { s: ExtractionSettings }) {
   const iterations = applicability("iterations", s.algorithm, "setting-iterations-note");
@@ -568,6 +603,17 @@ function AdvancedRows({ s }: { s: ExtractionSettings }) {
           disabled={!vividness.enabled}
           describedBy={vividness.describedBy}
           onCommit={(value) => update("vividness", value)}
+        />
+      </SettingRow>
+      <SettingRow label="Spatial weighting" htmlFor="setting-spatial-weighting">
+        <Select
+          id="setting-spatial-weighting"
+          value={s.spatialWeighting}
+          options={(Object.keys(WEIGHTING_LABELS) as SpatialWeighting[]).map((w) => ({
+            value: w,
+            label: WEIGHTING_LABELS[w],
+          }))}
+          onChange={(v) => update("spatialWeighting", v)}
         />
       </SettingRow>
       <SettingRow

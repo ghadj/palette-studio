@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { fixture } from "./helpers/files";
 import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
 import { M1_SCREENS, THEMES } from "./helpers/screens";
 import { checkTokens, describeFailures } from "./helpers/tokens";
@@ -204,6 +205,31 @@ test.describe("token conformance @tokens", () => {
         await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
         await expect(page.locator("#setting-colors:visible")).toBeDisabled();
         await expect(page.locator("[data-testid=empty-roles]:visible")).toBeVisible();
+        await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
+        const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
+        expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
+      }
+    }
+  });
+
+  test("Ignore background on Auto with its 'None found' note uses tokens, with 44 px targets on phones", async ({
+    page,
+  }) => {
+    // M2 decisions 4 and 18: twelve-colors.png has a busy border.
+    for (const theme of THEMES) {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.emulateMedia({ colorScheme: theme });
+        await page.setViewportSize(viewport);
+        await page.goto("./");
+        await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
+        await page.locator("[data-testid=filters-row]:visible summary").click();
+        await page.locator("#setting-ignore-background:visible").selectOption({ label: "Auto" });
+        await expect(
+          page.locator("[data-testid=filters-row]:visible #setting-ignore-background-note"),
+        ).toHaveText("None found");
         await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
         const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
         expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);

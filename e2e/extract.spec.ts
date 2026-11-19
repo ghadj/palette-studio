@@ -497,6 +497,15 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
         "ciede2000",
       ],
       ["vividness", () => page.locator("#setting-vividness:visible").fill("0.5"), 0.5],
+      // M2-T9: after Population vs. vividness.
+      [
+        "spatialWeighting",
+        () =>
+          page
+            .locator("#setting-spatial-weighting:visible")
+            .selectOption({ label: "Center-weighted" }),
+        "center",
+      ],
       ["keepOutlier", () => page.locator("#setting-outlier:visible").click(), true],
       [
         "sort",
@@ -687,6 +696,14 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
     for (const box of await boxes("input, select, button")) {
       expect(box.height, box.id).toBeGreaterThanOrEqual(44);
       expect(box.width, box.id).toBeGreaterThanOrEqual(44);
+      expect(box.right, box.id).toBeLessThanOrEqual(320);
+    }
+    expect(await hasHorizontalScroll(page)).toBe(false);
+    // The longest Spatial weighting option still fits (M2-T9).
+    await page
+      .locator("#setting-spatial-weighting:visible")
+      .selectOption({ label: "Edge/contrast-weighted" });
+    for (const box of await boxes("#setting-spatial-weighting")) {
       expect(box.right, box.id).toBeLessThanOrEqual(320);
     }
     expect(await hasHorizontalScroll(page)).toBe(false);

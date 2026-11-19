@@ -4,9 +4,15 @@ const extract = vi.fn();
 vi.mock("../../src/extract/client", () => ({ imageClient: () => ({ extract }) }));
 
 const { extractNewImage, extractNow } = await import("../../src/state/extraction");
-const { emptyRoles, extracting, imageMessage, palette, selectedSwatchId, settings } = await import(
-  "../../src/state/signals"
-);
+const {
+  backgroundNotFound,
+  emptyRoles,
+  extracting,
+  imageMessage,
+  palette,
+  selectedSwatchId,
+  settings,
+} = await import("../../src/state/signals");
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const color = (l: number, population: number) => ({ lab: { l, a: 0, b: 0 }, population });
@@ -166,5 +172,26 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
     await flush();
     expect(emptyRoles.value).toEqual([]);
     expect(imageMessage.value?.text).toBe("Every pixel is filtered out. Loosen a filter.");
+  });
+
+  it("Ignore background on Auto with no background found sets backgroundNotFound; a found one or Off clears it (M2 decisions 4, 18)", async () => {
+    extract.mockResolvedValueOnce({ ...result(color(0.5, 1)), background: "none" });
+    extractNow();
+    await flush();
+    expect(backgroundNotFound.value).toBe(true);
+
+    extract.mockResolvedValueOnce({ ...result(color(0.5, 1)), background: "found" });
+    extractNow();
+    await flush();
+    expect(backgroundNotFound.value).toBe(false);
+
+    extract.mockResolvedValueOnce({ ...result(color(0.5, 1)), background: "none" });
+    extractNow();
+    await flush();
+    expect(backgroundNotFound.value).toBe(true);
+    extract.mockResolvedValueOnce(result(color(0.5, 1)));
+    extractNow();
+    await flush();
+    expect(backgroundNotFound.value).toBe(false);
   });
 });

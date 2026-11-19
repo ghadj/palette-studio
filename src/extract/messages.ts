@@ -1,5 +1,6 @@
 /** Messages between the UI thread and the image worker (spec 7.1 "Workers", 7.4). */
 import type { ExtractionSettings } from "../types";
+import type { BackgroundStatus } from "./pipeline";
 import type { ExtractedColor } from "./postprocess";
 
 /** RGBA pixels of an analysis copy, sent when the main-thread fallback made it. */
@@ -32,6 +33,8 @@ export type FromWorker =
       colors: ExtractedColor[];
       /** "all-filtered" when the filters dropped every pixel (M2 decision 18). */
       reason: "all-filtered" | null;
+      /** Ignore background's outcome (M2 decision 4); absent while it is off. */
+      background?: BackgroundStatus;
       ms: number;
     }
   | { type: "error"; jobId: number; message: string };

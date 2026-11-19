@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
+import { fixture } from "./helpers/files";
 import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
 import { M1_SCREENS, THEMES } from "./helpers/screens";
 
@@ -66,6 +67,33 @@ test.describe("accessibility @a11y", () => {
       await settled(page);
       const results = await new AxeBuilder({ page }).analyze();
       expect(results.violations.map((v) => `${theme} ${v.id}: ${v.help}`)).toEqual([]);
+    }
+  });
+
+  test("no axe violations with Ignore background on Auto and its 'None found' note", async ({
+    page,
+  }) => {
+    for (const theme of THEMES) {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.emulateMedia({ colorScheme: theme });
+        await page.setViewportSize(viewport);
+        await page.goto("./");
+        await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
+        await page.locator("[data-testid=filters-row]:visible summary").click();
+        await page.locator("#setting-ignore-background:visible").selectOption({ label: "Auto" });
+        await expect(
+          page.locator("[data-testid=filters-row]:visible #setting-ignore-background-note"),
+        ).toHaveText("None found");
+        await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
+        await settled(page);
+        const results = await new AxeBuilder({ page }).analyze();
+        expect(
+          results.violations.map((v) => `${theme} ${viewport.width} ${v.id}: ${v.help}`),
+        ).toEqual([]);
+      }
     }
   });
 
