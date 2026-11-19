@@ -15,6 +15,7 @@ import {
   analysisSize,
   displaySize,
   type MasterWindow,
+  mapSize,
   masterSize,
   readPixels,
   readWindow,
@@ -44,6 +45,8 @@ const create = (width: number, height: number): AnyCanvas => new OffscreenCanvas
 
 let master: AnyCanvas | null = null;
 let analysis: { key: string; image: AnalysisImage } | null = null;
+/** The master at the cluster map's size (M3 decision 36), cached until the image changes. */
+let mapCopy: AnalysisImage | null = null;
 /** The master at display size, for the image views (spec 3.8), by image version. */
 let viewSource: { version: number; image: AnalysisImage } | null = null;
 /** The last drawn Palette and Values views, one each, by their `viewKey` (spec 3.8, M3-T11). */
@@ -68,6 +71,7 @@ async function prepare(jobId: number, bitmap: ImageBitmap): Promise<void> {
   }
   master = next;
   analysis = null;
+  mapCopy = null;
   viewSource = null;
   viewCache.clear();
   const display = resample(master, displaySize(master.width, master.height), "smooth", create);
@@ -101,6 +105,32 @@ function analysisImage(settings: ExtractionSettings): AnalysisImage {
   return analysis.image;
 }
 
+/**
+ * The pixels the cluster map is made from: the master at the display copy's resolution, at most
+ * 1024 px on the long side, so edges follow the image (M3 decision 36). Without a master (the
+ * fallback, where the main thread sends the analysis pixels) the analysis copy stands in.
+ */
+function mapImage(fallback: AnalysisImage): AnalysisImage {
+  if (!master) return fallback;
+  if (!mapCopy) {
+    const canvas = resample(master, mapSize(master.width, master.height), "smooth", create);
+    const read = readPixels(canvas);
+    canvas.width = 0;
+    canvas.height = 0;
+    mapCopy = { width: read.width, height: read.height, data: read.data };
+  }
+  return mapCopy;
+}
+
+/**
+ * The cluster map for `colors`: every pixel of the map image goes to its nearest swatch, with the
+ * same filters and keep mask as the extraction (spec 2.6, 2.4; M3 decision 36).
+ */
+function clusterMapFor(image: AnalysisImage, colors: Oklab[], settings: ExtractionSettings) {
+  const source = mapImage(image);
+  return assignPixels(source, keepPixels(source, settings).mask, colors, settings.workingSpace);
+}
+
 /** The pixels the main thread sent (fallback), or the master's analysis copy. */
 function pixelsOrAnalysis(settings: ExtractionSettings, pixels: PixelBuffer | null): AnalysisImage {
   return pixels
@@ -114,15 +144,11 @@ function extract(jobId: number, settings: ExtractionSettings, pixels: PixelBuffe
   const keep = keepPixels(image, settings);
   const result = runExtraction(image, settings, keep);
   const { colors } = result;
-  const map = assignPixels(
-    image,
-    keep.mask,
-    colors.map((c) => c.lab),
-    settings.workingSpace,
-  );
-  // One marker per color, from the cluster map, before its labels are transferred (spec 3.7).
   const lab = colors.map((c) => c.lab);
-  const points = placeMarkers(map.labels, image.width, image.height, lab, image);
+  // Markers come from the analysis-size map (spec 3.7); the map shown is at display resolution.
+  const analysisMap = assignPixels(image, keep.mask, lab, settings.workingSpace);
+  const points = placeMarkers(analysisMap.labels, image.width, image.height, lab, image);
+  const map = clusterMapFor(image, lab, settings);
   const ms = performance.now() - start;
   scope.postMessage({ type: "extracted", jobId, ...result, map, points, ms }, [map.labels.buffer]);
 }
@@ -135,7 +161,7 @@ function assign(
   pixels: PixelBuffer | null,
 ): void {
   const image = pixelsOrAnalysis(settings, pixels);
-  const map = assignPixels(image, keepPixels(image, settings).mask, colors, settings.workingSpace);
+  const map = clusterMapFor(image, colors, settings);
   scope.postMessage({ type: "assigned", jobId, map }, [map.labels.buffer]);
 }
 

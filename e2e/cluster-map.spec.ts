@@ -139,6 +139,29 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
     await expect(overlay(page)).toHaveCount(0);
   });
 
+  test("the overlay canvas is at least as large as the display copy's long side, capped at 1024 (M3 decision 36)", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "hover needs a fine pointer; phones use the toggle");
+    await page.goto(demo());
+    await demoMapReady(page);
+    await swatches(page).nth(2).hover();
+    await overlayShows(page, 2);
+    const sizes = await overlay(page).evaluate((el) => {
+      const c = el as HTMLCanvasElement;
+      const img = document.querySelector<HTMLImageElement>("[data-testid=image-well] img");
+      return {
+        long: Math.max(c.width, c.height),
+        display: Math.max(img?.naturalWidth ?? 0, img?.naturalHeight ?? 0),
+        smooth: getComputedStyle(c).imageRendering,
+      };
+    });
+    expect(sizes.display).toBeGreaterThan(0);
+    expect(sizes.long).toBeGreaterThanOrEqual(Math.min(sizes.display, 1024));
+    // Smooth edges: the overlay isn't drawn pixelated.
+    expect(sizes.smooth).not.toBe("pixelated");
+  });
+
   test("the label reads 'Swatch 3 · 0.5% of the image'", async ({ page }, info) => {
     if (isPhoneProject(info)) {
       // No hover on phones (spec 6.1): the toggle shows the selected swatch, which is swatch 3.

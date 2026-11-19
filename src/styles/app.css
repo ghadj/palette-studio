@@ -461,7 +461,7 @@ fieldset {
 
 /*
  * The cluster-map overlay (spec 2.6, M2 decision 13b): user content over the image, in the same
- * layer so it follows zoom and pan. The map is at analysis size, so it scales without smoothing.
+ * layer so it follows zoom and pan. The map is at display resolution (at most 1024 px), so it scales smoothly (M3 decision 36).
  * While a new palette is extracted, the old map is dimmed like the strip (spec 6.3).
  */
 .image-well__overlay {
@@ -470,7 +470,6 @@ fieldset {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  image-rendering: pixelated;
 }
 
 .image-well__overlay[data-busy] {
