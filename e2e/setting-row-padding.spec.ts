@@ -56,7 +56,14 @@ for (const width of [320, 820] as const) {
     await page.getByTestId("palette-rows").getByRole("button", { name: "Swatch" }).click();
     await sheetSettled(page);
     const rows = await measure(page);
-    expect(rows.map((r) => r.name)).toContain("Cluster map");
+    // The swatch fields are setting rows too, so they get the same padding.
+    expect(rows.map((r) => r.name)).toEqual(expect.arrayContaining(["Cluster map", "HEX", "Name"]));
+    // Rows that stay on one line are vertically centered (user request, M2 F4).
+    for (const r of rows) {
+      if (!r.value || r.value.top >= r.group.bottom - 0.5) continue;
+      const mid = (b: DOMRect) => b.top + b.height / 2;
+      expect(Math.abs(mid(r.row) - mid(r.value)), `${r.name}: centered`).toBeLessThanOrEqual(1.5);
+    }
     for (const r of rows) {
       if (!r.tallest) continue;
       expect(r.tallest.top - r.row.top, `${r.name}: space above`).toBeGreaterThanOrEqual(pad - 0.5);

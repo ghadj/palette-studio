@@ -31,6 +31,7 @@ import {
 import { initTheme } from "./state/theme";
 import { App } from "./ui/App";
 import { installFocusClearance } from "./ui/focusClearance";
+import { copySelectedHex } from "./ui/SwatchDetails";
 import { registerShortcut } from "./ui/shortcuts";
 
 initTheme();
@@ -64,6 +65,8 @@ startLiveExtraction();
 // Undo and redo (spec 3.6, 6 "Keyboard"). In the mockup state history lives in memory only.
 registerShortcut("mod+z", undo);
 registerShortcut("mod+shift+z", redo);
+// C copies the selected swatch's HEX (M3 plan D17).
+registerShortcut("c", () => void copySelectedHex());
 
 const root = document.getElementById("app");
 if (root) render(<App />, root);

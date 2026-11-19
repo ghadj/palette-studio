@@ -162,6 +162,26 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
     await expect(swatches(page)).toHaveCount(12);
   });
 
+  test("a press on a marker samples; it doesn't drag the marker", async ({ page }, info) => {
+    await page.goto(demo());
+    await tool(page).click();
+    // Marker 6 is at patch 6; press on it and drag a little.
+    const at = await screenPoint(page, PATCH[6]);
+    if (isPhoneProject(info)) {
+      await touch(page, "pointerdown", at);
+      await touch(page, "pointermove", { x: at.x + 20, y: at.y + 10 });
+      await touch(page, "pointerup", { x: at.x + 20, y: at.y + 10 });
+    } else {
+      await page.mouse.move(at.x, at.y);
+      await page.mouse.down();
+      await page.mouse.move(at.x + 20, at.y + 10, { steps: 4 });
+      await page.mouse.up();
+    }
+    await expect(swatches(page)).toHaveCount(7);
+    await expectHex(page, 6, "#5039B0");
+    await expect(swatches(page).nth(5)).toHaveAttribute("data-origin", "extracted");
+  });
+
   test("the + tile's Pick from image starts the eyedropper in Add mode", async ({ page }) => {
     await page.goto(demo());
     await addTile(page).click();

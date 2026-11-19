@@ -65,7 +65,16 @@ for (const width of [820, 390, 320] as const) {
     await page.goto(demo("tab=palette&rows=swatch"));
     await sheetSettled(page);
     const rows = await measure(page);
-    expect(rows.map((r) => r.name)).toEqual(["Cluster map"]);
+    // The swatch fields are setting rows now, so they are measured too (M3-T17).
+    expect(rows.map((r) => r.name)).toEqual([
+      "Format",
+      "HEX",
+      "Name",
+      "Suggested",
+      "Sample radius (px)",
+      "Sample statistic",
+      "Cluster map",
+    ]);
     for (const r of rows) {
       if (!r.value) continue;
       const apart =

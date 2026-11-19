@@ -132,7 +132,7 @@ test.describe("presets (spec 2.5)", () => {
     } else {
       // Reach it with Tab from the image well, which comes before it in the page.
       await page.locator("[data-testid=image-well]:visible").focus();
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 40; i++) {
         if (await select.evaluate((el) => el === document.activeElement)) break;
         await page.keyboard.press("Tab");
       }

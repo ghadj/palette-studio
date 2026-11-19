@@ -718,6 +718,13 @@ fieldset {
   border-radius: var(--radius-swatch);
 }
 
+/* M3-T5: no text selection when a swatch is pressed or dragged. */
+.swatch {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .app--phone .swatch {
   height: calc(var(--space-4) * 4);
 }
@@ -1536,29 +1543,9 @@ fieldset {
   padding: var(--space-2) 0;
 }
 
-.swatch-field {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-4);
-}
-
-.swatch-field__label {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-}
-
-.swatch-field__control {
-  display: inline-flex;
-  align-items: center;
-  margin-left: auto;
-}
-
 .swatch-fields {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
 }
 
 .swatch-fields .number-field,
@@ -1574,14 +1561,6 @@ fieldset {
 .swatch-name {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-}
-
-.swatch-name__suggestion {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
 }
 
 .swatch-actions {
@@ -1601,22 +1580,9 @@ fieldset {
   flex-wrap: nowrap;
 }
 
-/* Touch: labels step up beside the 16 px fields (M2 decision 22). */
-@media (max-width: 1023.98px), (pointer: coarse) {
-  .swatch-field__label {
-    font-size: var(--text-row-touch);
-  }
-}
-
 /* ---- end M3-T4 ---- */
 
 /* ---- M3-T5 strip actions: "+" tile, reorder (SwatchStrip.tsx) ---- */
-.swatch {
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-}
-
 .swatch[data-dragging] {
   opacity: 0.6;
   outline: var(--stroke-selected) dashed var(--color-accent);
@@ -2312,3 +2278,8 @@ fieldset {
 }
 
 /* ---- end M3-T16 ---- */
+
+/* The Cluster map row follows other rows, whose divider already closes them. */
+.swatch-details .setting-rows {
+  border-top: none;
+}

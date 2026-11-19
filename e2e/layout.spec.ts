@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 import { box, demo, hasHorizontalScroll, isPhoneProject, PHONE_SIZES } from "./helpers/app";
+import { sheetSettled } from "./helpers/sheet";
+import { checkTokens, describeFailures } from "./helpers/tokens";
 
 test.describe("responsive shell (spec 6.1)", () => {
   test("1280×800: three equal columns (widths within 1 px) with a 16 px gutter and the export drawer below", async ({
@@ -233,6 +235,26 @@ test.describe("responsive shell (spec 6.1)", () => {
             await hasHorizontalScroll(page),
             `${viewport.width}×${viewport.height} ${tab}`,
           ).toBe(false);
+        }
+      }
+    }
+  });
+
+  test("320, 375, 390, 430 px, light and dark: with every M3 sheet open there is no horizontal scroll, every control is at least 44 px and the colors, type and radii are tokens", async ({
+    page,
+  }) => {
+    for (const theme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: theme });
+      for (const size of PHONE_SIZES) {
+        await page.setViewportSize(size);
+        for (const row of ["swatch", "adjustments", "ramp", "contrast", "cvd"]) {
+          const at = `${theme} ${size.width} ${row}`;
+          await page.goto(demo(`tab=palette&rows=${row}`));
+          await expect(page.getByRole("dialog")).toBeVisible();
+          await sheetSettled(page);
+          expect(await hasHorizontalScroll(page), `${at}: scroll`).toBe(false);
+          const failures = await checkTokens(page, { touchTargets: true });
+          expect(failures, `${at}: ${describeFailures(failures)}`).toEqual([]);
         }
       }
     }

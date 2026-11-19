@@ -677,7 +677,8 @@ Rules that hold for every task:
   - The bundle stays within 150 kB gzip.
   - `npm run visual:review` writes every shot.
   - No reader of displayed colors uses `palette` where `outputPalette` is meant (checked by grep, listed in the commit).
-- [ ] Done
+- [x] Done
+  - Note: integration sweep. Full suite before: 9 failed of 3170 (3 stale tests against M3 UI: the swatch link now also links its marker, the Preset Tab walk needs more Tabs with the Eyedropper button in the order, and two rounding cases in Firefox and WebKit). Fixes: those test updates; the Swatch row's `.swatch-field` rows became `SettingRow`s (so the M2 setting-row specs now measure them: padding, 15 px labels, centering); the cluster map is dropped whenever the palette no longer fits it (`mapFits` in `extraction.ts`: same swatches, same order, each at its extracted color), so an edit, a marker drag, a Replace pick, a reorder, an add or a delete all drop it, and undo restores it (the demo's map is registered with `adoptClusterMap`); markers wear the adjusted color; the C shortcut (D17) was missing and is now built (`copySelectedHex`); the `.swatch` lint warning is fixed by moving the rule above `.app--phone .swatch`. Adjustments don't change swatch colors, so they keep the map. New specs: `undo-all.spec.ts` (desktop only), `palette-sync.spec.ts` (Reset restores the marker, stale map, demo touches no storage, marker color), `c-copy.spec.ts`, the eyedropper "a press on a marker samples" test, and a `layout.spec.ts` test with every M3 sheet open at 320, 375, 390 and 430 px in both themes. The bundle size check is below in the commit.
 
 ## Screens affected (UI work only)
 

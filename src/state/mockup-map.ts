@@ -7,12 +7,13 @@
 import { oklchToOklab } from "../color/convert";
 import { imageClient } from "../extract/client";
 import { decodeImageFile } from "../image/load";
+import { adoptClusterMap } from "./extraction";
 import {
-  clusterMap,
   displayImage,
   imageLoading,
   masterThread,
   outputPalette,
+  palette,
   settings,
 } from "./signals";
 
@@ -52,7 +53,7 @@ export async function loadMockupClusterMap(url: string, name: string): Promise<v
       fixture.map((s) => oklchToOklab(s.color)),
       settings.peek(),
     );
-    if (outputPalette.peek() === fixture && fixtureShown()) clusterMap.value = map;
+    if (outputPalette.peek() === fixture && fixtureShown()) adoptClusterMap(palette.peek(), map);
   } catch {
     // The map is an aid: without it the demo still shows its fixture.
   }

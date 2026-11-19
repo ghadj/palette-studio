@@ -128,8 +128,9 @@ test.describe("markers on the image (spec 3.7)", () => {
     await page.goto(demo());
     for (let n = 1; n <= 6; n += 1) {
       const b = await marker(page, n).boundingBox();
-      expect(b?.width, `marker ${n}`).toBeGreaterThanOrEqual(44);
-      expect(b?.height, `marker ${n}`).toBeGreaterThanOrEqual(44);
+      // Firefox reports a 44 px box as 43.99999 once the layer's percentages are resolved.
+      expect(b?.width, `marker ${n}`).toBeGreaterThanOrEqual(43.99);
+      expect(b?.height, `marker ${n}`).toBeGreaterThanOrEqual(43.99);
     }
     const style = await marker(page, 1).evaluate((el) => {
       const s = getComputedStyle(el);

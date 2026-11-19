@@ -39,6 +39,35 @@ const updateProgress = () => {
 
 /** The cluster map each extracted palette came with, so undo and redo bring it back (spec 2.6). */
 const extractedMaps = new WeakMap<Swatch[], ClusterMap | null>();
+/** The swatch ids a cluster map labels, in order: the palette it was made for (spec 2.6). */
+const mapOwners = new WeakMap<ClusterMap, readonly string[]>();
+
+/** Shows a map made for this palette, and lets undo and redo bring it back (the demo's map). */
+export function adoptClusterMap(list: Swatch[], map: ClusterMap): void {
+  mapOwners.set(
+    map,
+    list.map((s) => s.id),
+  );
+  extractedMaps.set(list, map);
+  clusterMap.value = map;
+}
+
+/**
+ * Whether the map still labels this palette: the same swatches in the same order, each still its
+ * extracted color. An edit, a marker drag, a Replace pick, a reorder, an add or a delete breaks it.
+ */
+export function mapFits(map: ClusterMap, list: readonly Swatch[]): boolean {
+  const ids = mapOwners.get(map);
+  if (!ids || ids.length !== list.length) return false;
+  return list.every(
+    (s, i) =>
+      s.id === ids[i] &&
+      s.extracted !== null &&
+      s.extracted.color.l === s.color.l &&
+      s.extracted.color.c === s.color.c &&
+      s.extracted.color.h === s.color.h,
+  );
+}
 
 function applyColors(
   colors: ExtractedColor[],
@@ -67,6 +96,11 @@ function applyColors(
   const next = keepLocked ? mergeLocked(previous, fresh, settings.peek().distanceMetric) : fresh;
   // The map labels the extracted colors, so it no longer matches once a locked swatch is mixed in.
   const shownMap = next.every((s) => fresh.includes(s)) ? map : null;
+  if (shownMap)
+    mapOwners.set(
+      shownMap,
+      next.map((s) => s.id),
+    );
   extractedMaps.set(next, shownMap);
   batch(() => {
     palette.value = next;
@@ -233,12 +267,16 @@ export function startLiveExtraction(): void {
     scheduler.cancel();
     clearTimeout(settingsCommit);
   });
-  // A restored extracted palette gets its own cluster map back, not the one on screen.
+  // A restored extracted palette gets its own cluster map back, not the one on screen. Any other
+  // palette keeps the map only while it still fits it (spec 2.6): an edit, a drag, a Replace pick or
+  // a reorder makes it stale.
   effect(() => {
-    const restored = palette.value;
-    if (history.isRestoring() && extractedMaps.has(restored)) {
-      clusterMap.value = extractedMaps.get(restored) ?? null;
-    }
+    const list = palette.value;
+    const shown = clusterMap.peek();
+    let map = shown;
+    if (history.isRestoring() && extractedMaps.has(list)) map = extractedMaps.get(list) ?? null;
+    if (map && !mapFits(map, list)) map = null;
+    if (map !== shown) clusterMap.value = map;
   });
   let first = true;
   effect(() => {

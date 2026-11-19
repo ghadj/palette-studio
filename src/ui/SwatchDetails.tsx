@@ -305,16 +305,9 @@ function Field({
   children: ComponentChildren;
 }) {
   return (
-    <div class="swatch-field">
-      {htmlFor ? (
-        <label class="swatch-field__label" for={htmlFor}>
-          {label}
-        </label>
-      ) : (
-        <span class="swatch-field__label">{label}</span>
-      )}
-      <div class="swatch-field__control">{children}</div>
-    </div>
+    <SettingRow label={label} {...(htmlFor ? { htmlFor } : {})}>
+      {children}
+    </SettingRow>
   );
 }
 
@@ -341,6 +334,13 @@ function ClusterMapRow() {
       </SettingRow>
     </div>
   );
+}
+
+/** The C shortcut (plan D17): copies the selected swatch's HEX, as the displayed color. */
+export async function copySelectedHex(): Promise<void> {
+  const id = selectedSwatchId.peek();
+  const swatch = outputPalette.peek().find((s) => s.id === id);
+  if (swatch) await copySelected(swatch.color, "hex");
 }
 
 /** Sets the exact color and locks the swatch, as the color editor does (decision 1b). */
@@ -417,8 +417,7 @@ function NameField({ swatch, index }: { swatch: Swatch; index: number }) {
         />
       </Field>
       {swatch.name !== suggestion && (
-        <div class="swatch-name__suggestion">
-          <span class="swatch-field__label">Suggested</span>
+        <SettingRow label="Suggested">
           <button
             type="button"
             class="chip"
@@ -428,7 +427,7 @@ function NameField({ swatch, index }: { swatch: Swatch; index: number }) {
           >
             {suggestion}
           </button>
-        </div>
+        </SettingRow>
       )}
     </div>
   );

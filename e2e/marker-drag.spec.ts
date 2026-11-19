@@ -151,7 +151,8 @@ test.describe("dragging a marker (spec 3.7)", () => {
     const point = await pointOf(page, 3);
     expect(point.x).toBeCloseTo(0.889, 2);
     expect(point.y).toBeCloseTo(0.778, 2);
-    await expect(marker(page, 3)).toHaveAttribute("aria-label", "Swatch 3 marker, 89%, 78%");
+    // The point is where the pointer ended, so a browser's pixel rounding may give 77% or 78%.
+    await expect(marker(page, 3)).toHaveAttribute("aria-label", /^Swatch 3 marker, 89%, (77|78)%$/);
     await expect(page.getByTestId("loupe")).toHaveCount(0);
     if (!isPhoneProject(info)) {
       // Locked: the Lock pill of the selected swatch (swatch 3 is selected, and stays so).

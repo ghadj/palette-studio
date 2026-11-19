@@ -204,7 +204,9 @@ test.describe("chevron rows and bottom sheets (M3-T2)", () => {
     const swatches = page.locator("[data-testid=swatch-strip]:visible [data-swatch]");
     await swatches.nth(1).hover();
     await expect(swatches.nth(1)).toHaveAttribute("data-linked", "");
-    await expect(page.locator("[data-linked]")).toHaveCount(1);
+    // The swatch and its marker (M3-T12) are linked together.
+    await expect(page.locator("[data-linked]")).toHaveCount(2);
+    await expect(page.locator('[data-marker="2"]')).toHaveAttribute("data-linked", "");
     await page.mouse.move(0, 0);
     await expect(page.locator("[data-linked]")).toHaveCount(0);
   });
