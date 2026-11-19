@@ -1304,7 +1304,8 @@ fieldset {
   max-height: none;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  /* clip, not hidden: focus during the slide-in must not scroll the sheet's own box */
+  overflow: clip;
   border: 0;
   background: transparent;
   color: var(--color-text);
@@ -1657,7 +1658,21 @@ fieldset {
 /* ---- end M3-T5 ---- */
 
 /* ---- M3-T6 adjustments and compare (AdjustmentsPanel.tsx) ---- */
-/* M3-T6 styles go here. */
+.adjustments-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.adjustments-panel__note {
+  margin: 0;
+}
+
+.adjustments-panel__actions {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: var(--space-2);
+}
 
 /* ---- end M3-T6 ---- */
 

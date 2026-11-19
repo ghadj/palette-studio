@@ -28,11 +28,16 @@ import {
 // Project fields (7.5)
 export const schemaVersion = signal<number>(SCHEMA_VERSION);
 export const settings = signal<ExtractionSettings>({ ...DEFAULT_SETTINGS });
+/** Before/after compare (3.6): shows the base colors while on. View state, never in undo. */
+export const compareBefore = signal(false);
 /** The base swatches (7.5). Everything that shows or exports colors reads `outputPalette`. */
 export const palette = signal<Swatch[]>([]);
 export const adjustments = signal<Adjustments>({ ...DEFAULT_ADJUSTMENTS });
 /** The palette after adjustments (7.5 "palette"): what the strip shows and exports copy. */
-export const outputPalette = computed(() => applyAdjustments(palette.value, adjustments.value));
+export const outputPalette = computed(() =>
+  // Before/after compare (3.6, M3-T6) shows the base colors while on.
+  compareBefore.value ? palette.value : applyAdjustments(palette.value, adjustments.value),
+);
 export const imageMeta = signal<ImageMeta | null>(null);
 /** View settings (7.5, 3.8): part of the project, but never in undo history (3.6). */
 export const viewSettings = signal<ViewSettings>({ ...DEFAULT_VIEW_SETTINGS });
@@ -98,8 +103,6 @@ export const activeView = signal<View>("studio");
  */
 export const imageView = signal<ImageView>(fitView());
 
-/** Before/after compare (3.6): shows the base colors while on. */
-export const compareBefore = signal(false);
 /** The swatch whose card or marker is hovered, linking the two (3.7). */
 export const hoveredSwatchId = signal<string | null>(null);
 /** The show/hide toggle for all markers (3.7). */

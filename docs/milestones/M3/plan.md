@@ -357,7 +357,8 @@ Rules that hold for every task:
     - "Compare shows the base hexes and isn't an undo step"
     - "Copy HEX copies the adjusted hexes"
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+- Note: Compare is applied in `outputPalette`, so the strip, editor and views all show base colors.
 
 ### M3-T7: Ramps and harmonies
 - Files:

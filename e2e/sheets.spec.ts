@@ -45,7 +45,8 @@ test.describe("chevron rows and bottom sheets (M3-T2)", () => {
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     const region = page.getByTestId("row-adjustments");
     await expect(region).toBeVisible();
-    await expect(region).toContainText("Coming in a later version");
+    // M3-T6 replaced the placeholder with the adjustments panel.
+    await expect(region.getByTestId("adjustments-panel")).toBeVisible();
     // In place: no sheet, and the region sits right under its row, in column 2.
     await expect(sheet(page)).toHaveCount(0);
     await expect(trigger).toHaveAttribute("aria-controls", (await region.getAttribute("id")) ?? "");
@@ -81,7 +82,7 @@ test.describe("chevron rows and bottom sheets (M3-T2)", () => {
     test.skip(!isPhoneProject(info), "phone layout");
     await page.goto(demo("tab=palette"));
     let trigger = await openAdjustments(page);
-    await expect(sheet(page)).toContainText("Coming in a later version");
+    await expect(sheet(page).getByTestId("adjustments-panel")).toBeVisible();
     // The sheet is a modal dialog, so the page behind it is inert.
     expect(await page.locator("dialog").evaluate((el) => el.matches(":modal"))).toBe(true);
 
