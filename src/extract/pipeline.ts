@@ -136,6 +136,8 @@ function paletteFrom(
   const h = weightByVividness(histogram, vividness, settings.workingSpace);
   // Keep one outlier: extract N − 1 colors, then add the most distinct small cluster (decision 8).
   const outlier = settings.keepOutlier && algorithm !== "swatch-roles";
+  // Exact colors adds a real input color as the outlier (decision 8b), not a box mean.
+  const exactOutlier = outlier && algorithm === "exact";
   const n = outlier ? count - 1 : count;
   let clusters: Array<Cluster & { role?: string }>;
   switch (algorithm) {
@@ -163,6 +165,7 @@ function paletteFrom(
         alphaCutoff: settings.alphaCutoff,
         mask,
         ...(weights ? { weights } : {}),
+        ...(exactOutlier ? { outlier: settings.distanceMetric } : {}),
       });
       break;
     case "even-spread":
@@ -174,7 +177,7 @@ function paletteFrom(
     default:
       throw new Error(`The ${algorithm} algorithm is not available until a later version`);
   }
-  if (outlier) {
+  if (outlier && !exactOutlier) {
     clusters = addOutlier(h, clusters, {
       n: count,
       space: settings.workingSpace,

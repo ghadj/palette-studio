@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hexToOklab } from "../../src/color/convert";
+import { hexToOklab, oklabToHex } from "../../src/color/convert";
 import { deltaEOK } from "../../src/color/delta-e";
 import { extractPalette } from "../../src/extract/pipeline";
 import { SPEC_DEFAULT_SETTINGS } from "../../src/state/defaults";
@@ -88,5 +88,47 @@ describe("Keep one outlier (spec 2.4; M2 decision 8)", () => {
     );
     expect(two).toHaveLength(2);
     expect(extractPalette(row(pixels([["#FFFFFF", 50, 0]])), s)).toEqual([]);
+  });
+});
+
+describe("Keep one outlier under Exact colors (M2 decision 8b)", () => {
+  const photo = row(
+    pixels([
+      ["#14386B", 400],
+      ["#163A6D", 300],
+      ["#5039B0", 250],
+      ["#1DB07A", 30],
+      ["#1EB17B", 15],
+      ["#FF00AA", 4],
+      ["#010203", 1],
+    ]),
+  );
+  const inputs = new Set([
+    "#14386B",
+    "#163A6D",
+    "#5039B0",
+    "#1DB07A",
+    "#1EB17B",
+    "#FF00AA",
+    "#010203",
+  ]);
+
+  it("every output hex is an input color, and the outlier is the farthest real color holding at least 0.1%", () => {
+    const out = extractPalette(
+      photo,
+      settings({ algorithm: "exact", colors: 3, keepOutlier: true, mergeThreshold: 0 }),
+    );
+    expect(out).toHaveLength(3);
+    for (const c of out) expect(inputs.has(oklabToHex(c.lab).toUpperCase())).toBe(true);
+    expect(Math.abs(out.reduce((n, c) => n + c.population, 0) - 1)).toBeLessThan(1e-9);
+    // The two most common colors are kept; the outlier is the farthest of the rest holding at least
+    // 0.1% (so not #010203, which holds 0.05%).
+    const kept = ["#14386B", "#163A6D"];
+    const candidates = ["#5039B0", "#1DB07A", "#1EB17B", "#FF00AA"];
+    const dist = (hex: string) =>
+      Math.min(...kept.map((k) => deltaEOK(hexToOklab(hex), hexToOklab(k))));
+    const far = candidates.reduce((a, b) => (dist(b) > dist(a) ? b : a));
+    for (const k of kept) expect(near(out, k, 0.001)).toBe(true);
+    expect(near(out, far, 0.001)).toBe(true);
   });
 });
