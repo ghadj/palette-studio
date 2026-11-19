@@ -38,7 +38,7 @@ Fill these in once M1 has scaffolded the project:
 - No inline scripts or styles in HTML, because the Content Security Policy forbids them (spec 7.8). The theme script is `public/theme-init.js`.
 - Build every URL from `import.meta.env.BASE_URL`, since the site is served from `/<repo-name>/`.
 - UI styles use only the variables in `src/styles/tokens.css`, copied from `docs/design/tokens.css`: no literal colors, font sizes or radii in components. Mark user content (image, swatches, gradients, paint chips, the grid overlay) with `data-user-content`; it is never themed (spec 6.2).
-- Build layouts from `docs/design/ui-contract.md`, not by measuring the mockup images. Its intended deviations D1 to D3 are deliberate.
+- Build layouts from `docs/design/ui-contract.md`, not by measuring the mockup images. Its intended deviations D1 to D4 are deliberate.
 - Keep `?demo=mockup` working on every screen. It must never read or write autosave or the project library (spec 5.5).
 - Never update visual baselines yourself. They change only through the `visual-baselines.yml` workflow, after the user approves the review page.
 - Touch targets are at least 44 px. No feature depends on hover. Test at 320 px wide (spec 6.1).
