@@ -4,10 +4,15 @@
  * M1 reads the `view`, `tab` and `theme` parameters, and M2 `rows`; the others are ignored until
  * their milestone.
  */
-import { hexToOklab } from "../color/convert";
+import { hexToOklab, hexToOklch } from "../color/convert";
 import { createSwatch } from "../palette/model";
 import type { Project, Tab, View } from "../types";
-import { SCHEMA_VERSION, SPEC_DEFAULT_SETTINGS } from "./defaults";
+import {
+  DEFAULT_ADJUSTMENTS,
+  DEFAULT_VIEW_SETTINGS,
+  SCHEMA_VERSION,
+  SPEC_DEFAULT_SETTINGS,
+} from "./defaults";
 import {
   MOCKUP_IMAGE,
   MOCKUP_POPULATIONS,
@@ -68,6 +73,8 @@ export function buildMockupState(
       sampleRadius: "auto",
       point: { ...point },
       population: MOCKUP_POPULATIONS[i] ?? 0,
+      // The fixture swatches are extracted, so they can be reset to these (spec 3.7).
+      extracted: { color: hexToOklch(hex), point: { ...point } },
     }),
   );
   return {
@@ -81,7 +88,9 @@ export function buildMockupState(
         workingSpace: "oklab",
       },
       palette,
+      adjustments: { ...DEFAULT_ADJUSTMENTS },
       image: { ...MOCKUP_IMAGE },
+      view: { ...DEFAULT_VIEW_SETTINGS },
     },
     selectedSwatchId: palette[MOCKUP_SELECTED_INDEX]?.id ?? null,
     activeView: params?.view ?? "studio",

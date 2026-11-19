@@ -4,7 +4,7 @@
  * and pins under the header while the setting rows scroll (M2 decision 19; ui-contract D4).
  */
 import { useEffect, useRef } from "preact/hooks";
-import { palette, progressVisible } from "../state/signals";
+import { outputPalette, progressVisible } from "../state/signals";
 import { CopyButtons } from "./CopyButtons";
 import { comingSoon } from "./comingSoon";
 import { ImageMessageBanner, ImageWell } from "./ImageWell";
@@ -20,14 +20,32 @@ function ViewBar() {
         <button type="button" class="segment" aria-pressed="true">
           Image
         </button>
-        <button type="button" class="segment" aria-pressed="false" onClick={comingSoon}>
+        <button
+          type="button"
+          class="segment"
+          aria-pressed="false"
+          data-coming-soon=""
+          onClick={comingSoon}
+        >
           Palette
         </button>
-        <button type="button" class="segment" aria-pressed="false" onClick={comingSoon}>
+        <button
+          type="button"
+          class="segment"
+          aria-pressed="false"
+          data-coming-soon=""
+          onClick={comingSoon}
+        >
           Values
         </button>
       </fieldset>
-      <button type="button" class="chip" aria-pressed="false" onClick={comingSoon}>
+      <button
+        type="button"
+        class="chip"
+        aria-pressed="false"
+        data-coming-soon=""
+        onClick={comingSoon}
+      >
         Grid
       </button>
     </div>
@@ -82,9 +100,9 @@ export function SourcePanel({ variant }: { variant: "desktop" | "phone" }) {
       )}
       <ImageMessageBanner />
       <ViewBar />
-      {variant !== "desktop" && palette.value.length > 0 && <StripDock />}
+      {variant !== "desktop" && outputPalette.value.length > 0 && <StripDock />}
       {variant !== "desktop" && <EmptyRolesNote />}
-      {variant === "phone" && palette.value.length > 0 && <CopyButtons />}
+      {variant === "phone" && outputPalette.value.length > 0 && <CopyButtons />}
       <SettingsControls />
     </div>
   );

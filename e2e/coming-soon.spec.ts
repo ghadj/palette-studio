@@ -17,47 +17,61 @@ async function expectComingSoon(page: Page, control: Locator, minSize: number) {
   await expect(live).toContainText(MESSAGE);
 }
 
+/** Every visible control marked `data-coming-soon` (M1 decision 6), checked one by one. */
+async function expectAllComingSoon(page: Page, minSize: number): Promise<number> {
+  const controls = page.locator("[data-coming-soon]:visible");
+  const count = await controls.count();
+  for (let i = 0; i < count; i += 1) {
+    await expectComingSoon(page, controls.nth(i), minSize);
+  }
+  return count;
+}
+
 test.describe("controls for later features (M1 decision 6)", () => {
-  test("Undo, Redo, Share, the project-name chevron, the Materials view tab and the view-bar chips are visible, enabled, ≥ 44 px, and each tap shows the 'Coming in a later version' toast in a live region", async ({
+  test("every visible [data-coming-soon] control is enabled, ≥ 44 px on phones (≥ 32 px on desktop), and each tap shows the 'Coming in a later version' toast in a live region", async ({
     page,
   }, info) => {
     // Phone width: every control is a 44 px touch target.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(demo());
+    expect(await expectAllComingSoon(page, 44)).toBeGreaterThan(0);
+    // The project name and Share are still to come; the view bar keeps Image as the current view.
     const header = page.locator("header");
-    for (const name of ["Undo", "Redo", "Share"]) {
-      await expectComingSoon(page, header.getByRole("button", { name }), 44);
-    }
-    await expectComingSoon(page, header.getByRole("button", { name: /Harbor mural/ }), 44);
-    const viewBar = page.getByTestId("view-bar");
-    await expect(viewBar.getByRole("button", { name: "Image" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
+    await expect(header.getByRole("button", { name: "Share" })).toHaveAttribute(
+      "data-coming-soon",
+      "",
     );
-    for (const name of ["Palette", "Values", "Grid"]) {
-      await expectComingSoon(page, viewBar.getByRole("button", { name }), 44);
-    }
+    await expect(header.getByRole("button", { name: /Harbor mural/ })).toHaveAttribute(
+      "data-coming-soon",
+      "",
+    );
+    await expect(
+      page.getByTestId("view-bar").getByRole("button", { name: "Image" }),
+    ).toHaveAttribute("aria-pressed", "true");
 
     // The Studio and Materials view tabs exist only in the desktop header.
     if (isPhoneProject(info)) return;
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(demo());
+    expect(await expectAllComingSoon(page, 32)).toBeGreaterThan(0);
     const views = page.getByRole("navigation", { name: "Views" });
     await expect(views.getByRole("button", { name: "Studio" })).toHaveAttribute(
       "aria-current",
       "page",
     );
-    await expectComingSoon(page, views.getByRole("button", { name: "Materials" }), 44);
-    for (const name of ["Undo", "Redo", "Share"]) {
-      await expectComingSoon(page, page.locator("header").getByRole("button", { name }), 32);
-    }
-    await expectComingSoon(
-      page,
-      page.locator("header").getByRole("button", { name: /Harbor mural/ }),
-      32,
+    await expect(views.getByRole("button", { name: "Materials" })).toHaveAttribute(
+      "data-coming-soon",
+      "",
     );
-    for (const name of ["Palette", "Values", "Grid"]) {
-      await expectComingSoon(page, page.getByTestId("view-bar").getByRole("button", { name }), 32);
+  });
+
+  test("Undo and Redo are built, so they aren't marked coming soon (spec 3.6)", async ({
+    page,
+  }) => {
+    await page.goto(demo());
+    const header = page.locator("header");
+    for (const name of [/^Undo/, /^Redo/]) {
+      await expect(header.getByRole("button", { name })).not.toHaveAttribute("data-coming-soon");
     }
   });
 });

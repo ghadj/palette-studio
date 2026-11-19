@@ -5,7 +5,7 @@
 import { batch } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { clusterPinned, clusterToggle } from "../state/cluster";
-import { palette } from "../state/signals";
+import { outputPalette } from "../state/signals";
 import { CopyButtons } from "./CopyButtons";
 import { SettingRow } from "./SettingRow";
 import { EmptyRolesNote, SelectionLabel, SwatchStrip } from "./SwatchStrip";
@@ -53,7 +53,7 @@ function useNoFinePointer(): boolean {
 }
 
 export function PalettePanel({ variant }: { variant: "desktop" | "phone" }) {
-  const empty = palette.value.length === 0;
+  const empty = outputPalette.value.length === 0;
   // Phones always get the toggle; the desktop layout gets it when there's no fine pointer to hover
   // with, such as an iPad in landscape (decision 13f).
   const touchOnly = useNoFinePointer();

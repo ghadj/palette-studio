@@ -9,7 +9,7 @@
  */
 import { computed, signal } from "@preact/signals";
 import type { ClusterMap } from "../extract/cluster-map";
-import { clusterMap, palette, selectedSwatchId } from "./signals";
+import { clusterMap, outputPalette, selectedSwatchId } from "./signals";
 
 /** The swatch under a fine pointer. */
 export const clusterHover = signal<string | null>(null);
@@ -41,7 +41,7 @@ export const shownCluster = computed<ShownCluster | null>(() => {
     clusterPinned.value ??
     (clusterToggle.value ? selectedSwatchId.value : null);
   const map = clusterMap.value;
-  const swatches = palette.value;
+  const swatches = outputPalette.value;
   if (id === null || !map || map.shares.length !== swatches.length) return null;
   const index = swatches.findIndex((s) => s.id === id);
   if (index < 0) return null;

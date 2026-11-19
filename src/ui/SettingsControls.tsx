@@ -18,6 +18,7 @@ import {
   type PresetMatch,
 } from "../extract/presets";
 import { clampColors, MAX_COLORS, MIN_COLORS } from "../state/defaults";
+import { nameSettingsChange } from "../state/setting-labels";
 import { backgroundNotFound, initialOpenRows, settings } from "../state/signals";
 import type {
   Algorithm,
@@ -242,7 +243,11 @@ export function SettingsControls() {
           value={presetMatch}
           options={presets}
           onChange={(v) => {
-            if (v !== "custom") settings.value = applyPreset(settings.peek(), v);
+            if (v === "custom") return;
+            const next = applyPreset(settings.peek(), v);
+            // Its undo step reads "Preset: Vibrant", not the fields it set (decision 3a).
+            nameSettingsChange(next, `Preset: ${PRESET_LABELS[v]}`);
+            settings.value = next;
           }}
         />
       </SettingRow>

@@ -7,7 +7,7 @@
 import { oklchToOklab } from "../color/convert";
 import { imageClient } from "../extract/client";
 import { decodeImageFile } from "../image/load";
-import { clusterMap, displayImage, imageLoading, palette, settings } from "./signals";
+import { clusterMap, displayImage, imageLoading, outputPalette, settings } from "./signals";
 
 /** True while no real image has been loaded over the fixture. */
 const fixtureShown = (): boolean => displayImage.peek() === null && !imageLoading.peek();
@@ -17,7 +17,8 @@ const fixtureShown = (): boolean => displayImage.peek() === null && !imageLoadin
  * no image has been loaded meanwhile. On failure the demo simply has no map.
  */
 export async function loadMockupClusterMap(url: string, name: string): Promise<void> {
-  const fixture = palette.peek();
+  // The map is made for the colors on screen: the palette after adjustments (spec 7.5).
+  const fixture = outputPalette.peek();
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error(String(response.status));
@@ -42,7 +43,7 @@ export async function loadMockupClusterMap(url: string, name: string): Promise<v
       fixture.map((s) => oklchToOklab(s.color)),
       settings.peek(),
     );
-    if (palette.peek() === fixture && fixtureShown()) clusterMap.value = map;
+    if (outputPalette.peek() === fixture && fixtureShown()) clusterMap.value = map;
   } catch {
     // The map is an aid: without it the demo still shows its fixture.
   }

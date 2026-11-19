@@ -12,7 +12,7 @@ import {
   emptyRoles,
   extracting,
   imageLoading,
-  palette,
+  outputPalette,
   selectedSwatchId,
   selectSwatch,
 } from "../state/signals";
@@ -36,7 +36,7 @@ const clear = (target: typeof clusterHover, id: string): void => {
 };
 
 export function SwatchStrip() {
-  const swatches = palette.value;
+  const swatches = outputPalette.value;
   const selected = selectedSwatchId.value;
   const strip = useRef<HTMLFieldSetElement>(null);
   const [size, setSize] = useState({ width: 0, gap: 0 });
@@ -103,7 +103,7 @@ export function SwatchStrip() {
  */
 export function SelectionLabel() {
   const shown = shownCluster.value;
-  const label = swatchLabel(palette.value, shown?.id ?? selectedSwatchId.value);
+  const label = swatchLabel(outputPalette.value, shown?.id ?? selectedSwatchId.value);
   if (!label) return null;
   return (
     <p class="selection-label" data-testid="selection-label">

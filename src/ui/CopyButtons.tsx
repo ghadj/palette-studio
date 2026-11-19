@@ -4,7 +4,7 @@
  */
 import { paletteToCss } from "../export/palette-css";
 import { paletteToHexText } from "../export/palette-text";
-import { palette, projectName } from "../state/signals";
+import { outputPalette, projectName } from "../state/signals";
 import { showToast } from "./Toast";
 
 type Kind = "hex" | "css";
@@ -38,7 +38,7 @@ function download(text: string, name: string, type: string): void {
 
 export async function copyPalette(kind: Kind): Promise<void> {
   const format = FORMATS[kind];
-  const text = format.build(palette.peek());
+  const text = format.build(outputPalette.peek());
   try {
     if (!navigator.clipboard?.writeText)
       throw new DOMException("No clipboard", "NotSupportedError");
@@ -54,7 +54,7 @@ export async function copyPalette(kind: Kind): Promise<void> {
 }
 
 export function CopyButtons() {
-  const empty = palette.value.length === 0;
+  const empty = outputPalette.value.length === 0;
   return (
     <div class="copy-buttons">
       <button

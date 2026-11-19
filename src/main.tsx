@@ -5,6 +5,7 @@ import "./styles/app.css";
 import { centered } from "./image/viewport";
 import { clusterPinned } from "./state/cluster";
 import { startLiveExtraction } from "./state/extraction";
+import { redo, undo } from "./state/history";
 import {
   buildMockupState,
   parseMockupCluster,
@@ -25,6 +26,7 @@ import {
 } from "./state/signals";
 import { initTheme } from "./state/theme";
 import { App } from "./ui/App";
+import { registerShortcut } from "./ui/shortcuts";
 
 initTheme();
 
@@ -50,6 +52,9 @@ if (mockup) {
   void loadMockupClusterMap(`${import.meta.env.BASE_URL}${MOCKUP_IMAGE_PATH}`, MOCKUP_IMAGE.name);
 }
 startLiveExtraction();
+// Undo and redo (spec 3.6, 6 "Keyboard"). In the mockup state history lives in memory only.
+registerShortcut("mod+z", undo);
+registerShortcut("mod+shift+z", redo);
 
 const root = document.getElementById("app");
 if (root) render(<App />, root);

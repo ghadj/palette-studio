@@ -2,17 +2,40 @@
  * App state (spec 7.1): one signal per field of the M1 data model (7.5), so a change to one field
  * only re-renders what depends on it.
  */
-import { batch, signal } from "@preact/signals";
+import { batch, computed, signal } from "@preact/signals";
 import type { ClusterMap } from "../extract/cluster-map";
 import { fitView, type View as ImageView } from "../image/viewport";
-import type { ExtractionSettings, ImageMeta, Project, Swatch, Tab, View } from "../types";
-import { clampColors, DEFAULT_SETTINGS, SCHEMA_VERSION } from "./defaults";
+import { applyAdjustments } from "../palette/adjust";
+import type {
+  Adjustments,
+  ExtractionSettings,
+  EyedropperMode,
+  ImageMeta,
+  Project,
+  Swatch,
+  Tab,
+  View,
+  ViewSettings,
+} from "../types";
+import {
+  clampColors,
+  DEFAULT_ADJUSTMENTS,
+  DEFAULT_SETTINGS,
+  DEFAULT_VIEW_SETTINGS,
+  SCHEMA_VERSION,
+} from "./defaults";
 
 // Project fields (7.5)
 export const schemaVersion = signal<number>(SCHEMA_VERSION);
 export const settings = signal<ExtractionSettings>({ ...DEFAULT_SETTINGS });
+/** The base swatches (7.5). Everything that shows or exports colors reads `outputPalette`. */
 export const palette = signal<Swatch[]>([]);
+export const adjustments = signal<Adjustments>({ ...DEFAULT_ADJUSTMENTS });
+/** The palette after adjustments (7.5 "palette"): what the strip shows and exports copy. */
+export const outputPalette = computed(() => applyAdjustments(palette.value, adjustments.value));
 export const imageMeta = signal<ImageMeta | null>(null);
+/** View settings (7.5, 3.8): part of the project, but never in undo history (3.6). */
+export const viewSettings = signal<ViewSettings>({ ...DEFAULT_VIEW_SETTINGS });
 
 /** The project's name; it belongs to the library entry (5.5) and is shown in the header. */
 export const projectName = signal<string>("Untitled");
@@ -75,6 +98,14 @@ export const activeView = signal<View>("studio");
  */
 export const imageView = signal<ImageView>(fitView());
 
+/** Before/after compare (3.6): shows the base colors while on. */
+export const compareBefore = signal(false);
+/** The swatch whose card or marker is hovered, linking the two (3.7). */
+export const hoveredSwatchId = signal<string | null>(null);
+/** The show/hide toggle for all markers (3.7). */
+export const markersVisible = signal(true);
+export const eyedropperMode = signal<EyedropperMode>("off");
+
 /** True in the mockup state (?demo=mockup), which never touches storage (spec 5.5). */
 export const demoMode = signal(false);
 
@@ -87,7 +118,9 @@ export function loadProject(project: Project, name: string): void {
     settings.value = { ...project.settings, colors: clampColors(project.settings.colors) };
     palette.value = project.palette;
     clusterMap.value = null;
+    adjustments.value = project.adjustments;
     imageMeta.value = project.image;
+    viewSettings.value = project.view;
     projectName.value = name;
     selectedSwatchId.value = null;
     activeTab.value = "source";

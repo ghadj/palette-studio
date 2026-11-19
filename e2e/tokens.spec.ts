@@ -64,7 +64,7 @@ test.describe("token conformance @tokens", () => {
       await page.emulateMedia({ colorScheme: theme });
       await page.setViewportSize({ width: 1280, height: 800 });
       await page.goto("./?demo=mockup");
-      await page.getByRole("button", { name: "Undo" }).click();
+      await page.getByRole("button", { name: "Share" }).click();
       await expect(page.getByTestId("toast-region")).toContainText("Coming in a later version");
       await page.getByRole("button", { name: /^Theme/ }).click();
       await expect(page.getByRole("menu")).toBeVisible();

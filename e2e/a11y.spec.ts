@@ -160,7 +160,7 @@ test.describe("accessibility @a11y", () => {
     for (const theme of THEMES) {
       await page.emulateMedia({ colorScheme: theme });
       await page.goto("./?demo=mockup");
-      await page.getByRole("button", { name: "Undo" }).first().click();
+      await page.getByRole("button", { name: "Share" }).first().click();
       await page.getByRole("button", { name: /^Theme/ }).click();
       await expect(page.getByRole("menu")).toBeVisible();
       await settled(page);

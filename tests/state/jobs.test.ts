@@ -90,4 +90,27 @@ describe("extraction jobs (spec 7.4, 6.3)", () => {
     expect(progress).toEqual([]);
     expect(errors).toHaveLength(1);
   });
+
+  it("cancel drops a pending request and a running job's result, and clears busy (undo, M3 risk)", async () => {
+    const job = deferred<number>();
+    const run = vi.fn(() => job.promise);
+    const applied: number[] = [];
+    const busy: boolean[] = [];
+    const scheduler = createJobScheduler<number>({
+      run,
+      apply: (r) => applied.push(r),
+      onBusy: (b) => busy.push(b),
+    });
+    scheduler.runNow();
+    scheduler.cancel();
+    expect(busy).toEqual([true, false]);
+    job.resolve(1);
+    await vi.runAllTimersAsync();
+    expect(applied).toEqual([]);
+
+    scheduler.request();
+    scheduler.cancel();
+    await vi.runAllTimersAsync();
+    expect(run).toHaveBeenCalledTimes(1);
+  });
 });

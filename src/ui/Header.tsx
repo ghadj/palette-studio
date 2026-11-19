@@ -1,9 +1,11 @@
 /**
  * The header (ui-contract "Header"). Desktop: app name, project name, view tabs, Undo, Redo, Share
  * and the theme button. Below 1024 px: the project name, then icon buttons and the theme button.
- * The library, views, history and sharing arrive later, so those controls show a toast (decision 6).
+ * Undo and Redo work (spec 3.6); the library, views and sharing arrive later, so those controls
+ * show a toast (M1 decision 6).
  */
 import { ChevronDown, Redo2, Share, Undo2 } from "lucide-preact";
+import { canRedo, canUndo, redo, redoLabel, undo, undoLabel } from "../state/history";
 import { projectName } from "../state/signals";
 import { comingSoon } from "./comingSoon";
 import { ReplaceImageButton } from "./ReplaceImageButton";
@@ -15,10 +17,34 @@ function ProjectButton({ strong }: { strong: boolean }) {
     <button
       type="button"
       class={strong ? "project-button project-button--strong" : "project-button"}
+      data-coming-soon=""
       onClick={comingSoon}
     >
       <span class="project-button__name">{projectName.value}</span>
       <ChevronDown size={16} strokeWidth={1.5} aria-hidden="true" />
+    </button>
+  );
+}
+
+/**
+ * Undo or Redo. With nothing to undo it is aria-disabled, so keyboard focus stays on it. Its
+ * accessible name includes the step, such as "Undo Colors".
+ */
+function HistoryButton({ kind, icon }: { kind: "undo" | "redo"; icon: boolean }) {
+  const name = kind === "undo" ? "Undo" : "Redo";
+  const enabled = kind === "undo" ? canUndo.value : canRedo.value;
+  const step = kind === "undo" ? undoLabel.value : redoLabel.value;
+  const run = kind === "undo" ? undo : redo;
+  const Icon = kind === "undo" ? Undo2 : Redo2;
+  return (
+    <button
+      type="button"
+      class={icon ? "icon-button" : "text-button"}
+      aria-label={step ? `${name} ${step}` : icon ? name : undefined}
+      aria-disabled={!enabled || undefined}
+      onClick={() => enabled && run()}
+    >
+      {icon ? <Icon size={20} strokeWidth={1.5} aria-hidden="true" /> : name}
     </button>
   );
 }
@@ -39,19 +65,15 @@ export function Header({ layout }: { layout: Layout }) {
           <button type="button" class="view-tab" aria-current="page">
             Studio
           </button>
-          <button type="button" class="view-tab" onClick={comingSoon}>
+          <button type="button" class="view-tab" data-coming-soon="" onClick={comingSoon}>
             Materials
           </button>
         </nav>
         <div class="header__actions">
           <ReplaceImageButton />
-          <button type="button" class="text-button" onClick={comingSoon}>
-            Undo
-          </button>
-          <button type="button" class="text-button" onClick={comingSoon}>
-            Redo
-          </button>
-          <button type="button" class="text-button" onClick={comingSoon}>
+          <HistoryButton kind="undo" icon={false} />
+          <HistoryButton kind="redo" icon={false} />
+          <button type="button" class="text-button" data-coming-soon="" onClick={comingSoon}>
             Share
           </button>
           <ThemeButton variant="pill" />
@@ -65,13 +87,15 @@ export function Header({ layout }: { layout: Layout }) {
       <ProjectButton strong />
       <div class="header__actions header__actions--icons">
         <ReplaceImageButton />
-        <button type="button" class="icon-button" aria-label="Undo" onClick={comingSoon}>
-          <Undo2 size={20} strokeWidth={1.5} aria-hidden="true" />
-        </button>
-        <button type="button" class="icon-button" aria-label="Redo" onClick={comingSoon}>
-          <Redo2 size={20} strokeWidth={1.5} aria-hidden="true" />
-        </button>
-        <button type="button" class="icon-button" aria-label="Share" onClick={comingSoon}>
+        <HistoryButton kind="undo" icon />
+        <HistoryButton kind="redo" icon />
+        <button
+          type="button"
+          class="icon-button"
+          aria-label="Share"
+          data-coming-soon=""
+          onClick={comingSoon}
+        >
           <Share size={20} strokeWidth={1.5} aria-hidden="true" />
         </button>
         <ThemeButton variant="icon" />

@@ -271,6 +271,13 @@ fieldset {
   color: var(--color-text);
 }
 
+/* Undo and Redo with nothing to undo or redo (spec 3.6): aria-disabled, so focus stays. */
+.text-button[aria-disabled="true"],
+.icon-button[aria-disabled="true"] {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
 /* Icon-only pill button: the desktop theme button (ui-contract Components "Theme button"). */
 .icon-pill {
   display: inline-flex;
