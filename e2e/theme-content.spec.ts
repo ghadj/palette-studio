@@ -8,13 +8,16 @@ import { demo, isPhoneProject } from "./helpers/app";
  */
 
 /**
- * The zoom controls are themed UI over the image (decision 15e). Hiding them for the shot compares
- * every image pixel, including those under them. The CSP blocks injected style sheets, so this
+ * The zoom controls, the well tools and the selected marker's accent ring are themed UI over the
+ * image (decision 15e, M3-T12); the marker fills and rings are user content and stay compared.
+ * Hiding the rest for the shot compares every image pixel, including those under them. The CSP blocks injected style sheets, so this
  * goes through the element's style.
  */
 async function hideZoomControls(page: Page): Promise<void> {
   await page.evaluate(() => {
-    for (const el of document.querySelectorAll<HTMLElement>("[data-testid=zoom-controls]"))
+    for (const el of document.querySelectorAll<HTMLElement>(
+      "[data-testid=zoom-controls], [data-testid=well-tools], [data-marker-accent]",
+    ))
       el.style.setProperty("visibility", "hidden");
   });
 }

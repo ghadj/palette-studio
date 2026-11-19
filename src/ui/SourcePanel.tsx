@@ -120,6 +120,11 @@ export function SourcePanel({ variant }: { variant: "desktop" | "phone" }) {
       <ImageMessageBanner />
       <ViewBar />
       <ViewSummary />
+      {viewSettings.value.mode === "image" && outputPalette.value.length > 0 && (
+        <p class="hint" data-testid="marker-hint">
+          Drag a marker to resample
+        </p>
+      )}
       {variant !== "desktop" && outputPalette.value.length > 0 && <StripDock />}
       {variant !== "desktop" && <EmptyRolesNote />}
       {variant === "phone" && outputPalette.value.length > 0 && <CopyButtons />}

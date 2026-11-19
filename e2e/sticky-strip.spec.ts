@@ -98,8 +98,11 @@ test.describe("sticky swatch strip below 1024 px (M2 decision 19; ui-contract D4
     const viewBar = await page.getByTestId("view-bar").boundingBox();
     const bar = await strip(page).boundingBox();
     if (!viewBar || !bar) throw new Error("no view bar or strip");
-    // The panel's 12 px gap, unchanged by the pinned container.
-    expect(bar.y - (viewBar.y + viewBar.height)).toBeCloseTo(12, 0);
+    // The panel's 12 px gap, unchanged by the pinned container. The hint (ui-contract phone
+    // "Source tab" item 3, M3-T12) sits between the view bar and the strip.
+    const hint = await page.getByTestId("marker-hint").boundingBox();
+    const above = hint ?? viewBar;
+    expect(bar.y - (above.y + above.height)).toBeCloseTo(12, 0);
   });
 
   test("desktop 1280 × 800: the strip is in column 2 and isn't sticky", async ({ page }, info) => {

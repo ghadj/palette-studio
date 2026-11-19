@@ -548,7 +548,8 @@ Rules that hold for every task:
     - "markers are visible on all-white and all-black runtime images: both ring colors are present in a screenshot crop"
   - `e2e/theme-content.spec.ts` (an M2 test, not edited): it covers the marker fills through `data-user-content`.
 - Done when: tests pass; markers hide in the Palette and Values views.
-- [ ] Done
+- [x] Done
+  - Note: the Markers toggle sits bottom-left (the zoom pill keeps the bottom-right), and hides outside the Image view. A selected, focused or linked marker rises above the zoom pill, so one under it stays reachable by keyboard and from the strip. `Loupe` takes `{hex, crop, at, well, touch}`; T15 and T16 feed it the crop from `ExtractClient.sample`. The demo `loupe=<n>` crop is read from the fixture image. `e2e/theme-content.spec.ts` got one edit: it also hides `.well-tools` and the selected marker's accent ring (themed UI) before comparing; marker fills and rings stay compared. The desktop toggle is 32 px (`--hit`), 44 px on phones. The phone tap test for marker 5 taps the part of its hit area above the pill.
 
 ### M3-T13: Re-extraction keeps locked swatches; Place on image; reset position
 - Files:
