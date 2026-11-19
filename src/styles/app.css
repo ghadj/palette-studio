@@ -670,7 +670,11 @@ fieldset {
   background: var(--color-surface);
 }
 
-/* Where the shell fills the screen (up to its 640 px maximum), the container also covers the gutters. */
+/*
+ * Where the shell fills the screen (up to its 640 px maximum), the container also covers the gutters.
+ * Media queries can't read variables: keep 640px equal to .shell--phone's max-width,
+ * calc(var(--space-8) * 20).
+ */
 @media (max-width: 640px) {
   .strip-dock {
     margin-inline: calc(-1 * var(--space-4));

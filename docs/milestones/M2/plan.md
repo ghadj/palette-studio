@@ -602,6 +602,7 @@ Remaining spec departures:
 
 - M2-F3 (evaluator failure 1): setting rows wrap (`flex-wrap`). The label group keeps its natural width and the value its own; when both don't fit, the value drops to its own line, right-aligned, instead of drawing over the label or note. Covered by `e2e/setting-rows.spec.ts` (no overlap, no clipping, centered on one line) at 1280, 1024, 820, 390 and 320 px.
 - M2-F4: decision 21. M2-F5: decision 13f. M2-F6: decision 8b. M2-F7: decision 22.
+- M2-F9 (final evaluation failure 1): `nudgeFocusClear` ignores focus inside the header, strip dock, tab bar, menus and dialogs, and mouse or touch focus; a keydown-recorded scroll position is restored when keyboard focus enters that chrome (Chromium's native scroll-padding). The shell breakpoint comment ties the 640 px media query to `.shell--phone`'s max-width (CSS can't share it). Covered by `e2e/focus-no-scroll-on-chrome.spec.ts`.
 - The two visual shots `filters-desktop` and `filters-phone` were renamed `pixel-filters-desktop` and `pixel-filters-phone` and are listed in `docs/design/visual-testing.md`.
 
 ## Notes for the user's review (orchestrator, 2026-11-18, while the user was away)

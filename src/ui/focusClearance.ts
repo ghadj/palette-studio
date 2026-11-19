@@ -6,10 +6,22 @@
  */
 const PHONE = "(max-width: 1023.98px)";
 const GAP = 8;
+/** The sticky or fixed chrome itself, and its menus: focus inside never scrolls the page. */
+const CHROME = "header, [data-testid=strip-dock], .tabbar, [role=menu], [role=dialog]";
+
+const keyboardFocus = (el: Element): boolean => {
+  try {
+    return el.matches(":focus-visible");
+  } catch {
+    return false;
+  }
+};
 
 export function nudgeFocusClear(): void {
   const el = document.activeElement;
   if (!el || el === document.body || !window.matchMedia(PHONE).matches) return;
+  // Taps and clicks never scroll, and neither does focus inside the chrome (M2 decision 19).
+  if (el.closest(CHROME) || !keyboardFocus(el)) return;
   const top = ["header", "[data-testid=strip-dock]"].reduce((edge, selector) => {
     const chrome = document.querySelector(selector);
     return chrome ? Math.max(edge, chrome.getBoundingClientRect().bottom) : edge;
@@ -22,8 +34,32 @@ export function nudgeFocusClear(): void {
 }
 
 export function installFocusClearance(): void {
-  // After the browser's own focus scroll, which may come a frame later.
-  document.addEventListener("focusin", () => {
-    requestAnimationFrame(() => requestAnimationFrame(nudgeFocusClear));
+  // Chromium's native scroll-padding scrolls when keyboard focus enters the pinned strip. The
+  // chrome is already in view, so put the page back where it was when the key went down.
+  let keyY = window.scrollY;
+  document.addEventListener(
+    "keydown",
+    () => {
+      keyY = window.scrollY;
+    },
+    true,
+  );
+  document.addEventListener("focusin", (event) => {
+    const target = event.target;
+    const inChrome = target instanceof Element && target.closest(CHROME) !== null;
+    const restoreY = keyY;
+    // After the browser's own focus scroll, which may come a frame later.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        if (inChrome) {
+          if (
+            window.matchMedia(PHONE).matches &&
+            window.scrollY !== restoreY &&
+            keyboardFocus(document.activeElement ?? document.body)
+          )
+            window.scrollTo(0, restoreY);
+        } else nudgeFocusClear();
+      }),
+    );
   });
 }
