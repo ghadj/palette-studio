@@ -41,21 +41,14 @@ async function center(locator: Locator): Promise<Pt> {
   return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
 }
 
-/**
- * Where to press a marker: the ring's center, or, when the zoom pill covers that (decision 41, the
- * demo's marker 3 sits beneath it at Fit), the marker's own lowest edge that the pill leaves free.
- */
+/** Where to press a marker: the center of its ring. Nothing overlays a marker (decision 42). */
 async function gripOf(marker: Locator): Promise<{ grip: Pt; shift: Pt }> {
   return marker.evaluate((el) => {
     const ring = (el.querySelector(".marker__ring") ?? el).getBoundingClientRect();
-    const box = el.getBoundingClientRect();
-    const cx = ring.x + ring.width / 2;
-    const cy = ring.y + ring.height / 2;
-    if (document.elementFromPoint(cx, cy)?.closest("[data-marker]") === el)
-      return { grip: { x: cx, y: cy }, shift: { x: 0, y: 0 } };
-    // The drag keeps the grab offset, so the drop point shifts by the same amount.
-    const grip = { x: box.x + box.width / 2, y: box.bottom - 4 };
-    return { grip, shift: { x: grip.x - cx, y: grip.y - cy } };
+    return {
+      grip: { x: ring.x + ring.width / 2, y: ring.y + ring.height / 2 },
+      shift: { x: 0, y: 0 },
+    };
   });
 }
 
@@ -154,10 +147,6 @@ test.describe("dragging a marker (spec 3.7)", () => {
   test("dragging marker 3 onto patch 5 makes swatch 3 #1E8A2E, picked and pinned; Undo restores it all", async ({
     page,
   }, info) => {
-    // On a 412 px phone the zoom pill covers marker 3 entirely at Fit (decision 41), so a real touch
-    // can't reach it: use a tablet width, where the marker's lower edge is free.
-    if (info.project.name === "phone-chromium")
-      await page.setViewportSize({ width: 820, height: 1180 });
     await page.goto(demo());
     const before = {
       hex: await hexOf(page, 3),
@@ -315,8 +304,6 @@ test.describe("dragging a marker (spec 3.7)", () => {
     page,
   }, info) => {
     test.skip(info.project.name !== "phone-chromium", "CDP touch");
-    // The zoom pill covers marker 3 on a 412 px phone (decision 41): use a tablet width.
-    await page.setViewportSize({ width: 820, height: 1180 });
     await page.goto(demo());
     const { grip: from } = await gripOf(marker(page, 3));
     const box = await well(page).boundingBox();
@@ -429,7 +416,7 @@ test.describe("touch (spec 6.1 'Gestures', M2 decision 15h)", () => {
     expect(await page.evaluate(() => document.documentElement.scrollHeight > innerHeight)).toBe(
       true,
     );
-    // Drag marker 1 (marker 3 is under the zoom pill on a phone, decision 41) down and left with a finger.
+    // Drag marker 1 down and left with a finger.
     const { grip: from } = await gripOf(marker(page, 1));
     const to = { x: from.x - 60, y: from.y + 80 };
     const scrollY = await page.evaluate(() => window.scrollY);
@@ -500,7 +487,7 @@ test.describe("touch (spec 6.1 'Gestures', M2 decision 15h)", () => {
     expect(p1.y).toBeGreaterThan(p0.y);
     expect(await view(page)).toEqual(v0);
 
-    // One finger away from a marker and the zoom pill pans.
+    // One finger away from a marker pans.
     const box = await well(page).boundingBox();
     if (!box) throw new Error("no box");
     const a = { x: box.x + box.width * 0.55, y: box.y + box.height * 0.55 };

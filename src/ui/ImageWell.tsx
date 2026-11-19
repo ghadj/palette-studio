@@ -6,7 +6,7 @@
  * - `ViewLayer` in the transformed layer: the Palette and Values views (M3-T14).
  * - `MarkerLayer` over the well, untransformed, so markers keep their size (M3-T12, M3-T15).
  * - `EyedropperLayer` over the well (M3-T16).
- * - `WellTools` in the corner beside the zoom controls (M3-T12, M3-T16).
+ * - `ImageToolbar` (Markers, Eyedropper, zoom) is a row under the well, not in it (decision 42).
  * Pan and pinch ignore a pointerdown on a marker and every one while the eyedropper is on, and the
  * arrow keys don't pan from a marker (`pointerRouting.ts`).
  *
@@ -39,8 +39,7 @@ import { MarkerLayer } from "./MarkerLayer";
 import { takeMarkerPress } from "./markerPress";
 import { keysIgnored, panIgnores, panIgnoresExceptMarkers } from "./pointerRouting";
 import { ViewLayer } from "./ViewLayer";
-import { WellTools } from "./WellTools";
-import { UNIT_WELL, ZoomControls, zoomFit, zoomStep } from "./ZoomControls";
+import { UNIT_WELL, zoomFit, zoomStep } from "./ZoomControls";
 
 function DisplayCanvas({ bitmap, label }: { bitmap: ImageBitmap; label: string }) {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -361,8 +360,6 @@ function ZoomableWell({
       <span id="image-view-keys" class="visually-hidden">
         Press + or − to zoom, 0 to fit, and the arrow keys to pan.
       </span>
-      <WellTools />
-      <ZoomControls />
     </div>
   );
 }

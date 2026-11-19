@@ -8,9 +8,11 @@ import { fixture } from "./helpers/files";
  */
 
 const well = (page: Page) => page.locator("[data-testid=image-well]:visible").first();
-const zoomLevel = (page: Page) => well(page).getByTestId("zoom-level");
+/** The toolbar row under the well (M3 decision 42). */
+const toolbar = (page: Page) => page.locator("[data-testid=image-toolbar]:visible").first();
+const zoomLevel = (page: Page) => toolbar(page).getByTestId("zoom-level");
 const button = (page: Page, name: "Zoom in" | "Zoom out" | "Fit" | "Markers" | "Eyedropper") =>
-  well(page).getByRole("button", { name, exact: true });
+  toolbar(page).getByRole("button", { name, exact: true });
 
 interface View {
   scale: number;
@@ -288,13 +290,14 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
         expect(b?.width ?? 0, name).toBeGreaterThanOrEqual(44);
         expect(b?.height ?? 0, name).toBeGreaterThanOrEqual(44);
       }
-      // They sit in the well's top-right corner (M3 decision 26).
-      const controls = await well(page).getByTestId("zoom-controls").boundingBox();
+      // They sit on the right of the toolbar row under the well, and never cover the image (M3 decision 42).
+      const controls = await toolbar(page).getByTestId("zoom-controls").boundingBox();
       const box = await wellBox(page);
       expect((controls?.x ?? 0) + (controls?.width ?? 0)).toBeLessThanOrEqual(box.x + box.width);
-      expect(controls?.y ?? 0).toBeGreaterThanOrEqual(box.y);
+      expect(controls?.y ?? 0).toBeGreaterThanOrEqual(box.y + box.height);
       expect(controls?.x ?? 0).toBeGreaterThan(box.x + box.width / 2);
-      expect((controls?.y ?? 0) + (controls?.height ?? 0)).toBeLessThan(box.y + box.height / 2);
+      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(scrollWidth).toBeLessThanOrEqual(size.width);
     }
   });
 });

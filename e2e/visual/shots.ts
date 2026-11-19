@@ -89,7 +89,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: DESKTOP,
     mockup: null,
     frame:
-      "M2 decision 15: the image at 200%, centered; Zoom out, Zoom in and Fit in the well's bottom-right corner (not drawn).",
+      "M2 decision 15: the image at 200%, centered; Zoom out, Zoom in and Fit in the toolbar row under the well.",
   },
   {
     name: "zoom-phone",

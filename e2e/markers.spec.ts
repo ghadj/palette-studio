@@ -79,15 +79,12 @@ test.describe("markers on the image (spec 3.7)", () => {
   test("tapping marker 5 selects swatch 5 (phone)", async ({ page }, info) => {
     test.skip(!isPhoneProject(info), "phone");
     await page.goto(demo());
-    // Marker 5 sits under the zoom pill at Fit, so tap the strip of its hit area above the pill.
-    await marker(page, 5).tap({ position: { x: 22, y: 3 } });
+    await marker(page, 5).tap();
     await expect(marker(page, 5)).toHaveAttribute("aria-pressed", "true");
     await expect(swatch(page, 5)).toHaveAttribute("aria-pressed", "true");
   });
 
-  test("a marker under the zoom pill is reachable from the keyboard and the strip", async ({
-    page,
-  }) => {
+  test("a marker is reachable from the keyboard and the strip", async ({ page }) => {
     await page.goto(demo());
     await marker(page, 5).focus();
     await page.keyboard.press("Enter");
@@ -95,15 +92,7 @@ test.describe("markers on the image (spec 3.7)", () => {
     await swatch(page, 1).click();
     await expect(marker(page, 5)).toHaveAttribute("aria-pressed", "false");
     await swatch(page, 5).click();
-    // The selected marker rises above the pill, so it can be pointed at.
-    const b = await marker(page, 5).boundingBox();
-    if (!b) throw new Error("no box");
-    const hit = await page.evaluate(
-      ({ x, y }) =>
-        document.elementFromPoint(x, y)?.closest("[data-marker]")?.getAttribute("data-marker"),
-      { x: b.x + b.width / 2, y: b.y + b.height / 2 },
-    );
-    expect(hit).toBe("5");
+    await expect(marker(page, 5)).toHaveAttribute("aria-pressed", "true");
   });
 
   test("the marker diameter is the same at zoom 1 and 4, and markers stay on their patches at zoom 4", async ({
@@ -139,46 +128,32 @@ test.describe("markers on the image (spec 3.7)", () => {
     expect(style).toEqual(["none", "none"]);
   });
 
-  for (const width of [320, 390, 1280]) {
-    test(`marker 5 is fully visible at Fit at ${width} px; the zoom pill is top-right and clear of the well tools (decision 26)`, async ({
+  for (const width of [320, 390, 412, 1280]) {
+    test(`at ${width} px every marker's center is hit-testable and the toolbar is below the image (decision 42)`, async ({
       page,
     }, info) => {
       test.skip(isPhoneProject(info) && width >= 1024, "desktop viewport");
       await page.setViewportSize({ width, height: width >= 1024 ? 800 : 844 });
       await page.goto(demo());
-      const well = page.locator("[data-testid=image-well]:visible").first();
-      const wb = await well.boundingBox();
-      const zoom = await well.getByTestId("zoom-controls").boundingBox();
-      const tools = await well.locator(".well-tools").boundingBox();
-      const r = await ring(page, 5).boundingBox();
-      if (!wb || !zoom || !tools || !r) throw new Error("no boxes");
-      // The pill is in the top-right corner.
-      expect(zoom.y - wb.y).toBeLessThan(wb.height / 2);
-      expect(zoom.x + zoom.width / 2).toBeGreaterThan(wb.x + wb.width / 2);
-      const overlap = (a: typeof zoom, b: typeof zoom) =>
-        a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
-      expect(overlap(zoom, r)).toBe(false);
-      expect(overlap(tools, r)).toBe(false);
-      expect(overlap(zoom, tools)).toBe(false);
-      // Every corner and the center of the ring reach marker 5 (nothing covers it).
-      const points = [
-        [r.x + r.width / 2, r.y + r.height / 2],
-        [r.x + 2, r.y + r.height / 2],
-        [r.x + r.width - 2, r.y + r.height / 2],
-        [r.x + r.width / 2, r.y + 2],
-        [r.x + r.width / 2, r.y + r.height - 2],
-      ];
-      for (const [x, y] of points) {
+      for (let n = 1; n <= 6; n += 1) {
+        const r = await ring(page, n).boundingBox();
+        if (!r) throw new Error(`no ring ${n}`);
         const hit = await page.evaluate(
           ([px, py]) =>
             document
               .elementFromPoint(px as number, py as number)
               ?.closest("[data-marker]")
               ?.getAttribute("data-marker") ?? null,
-          [x, y],
+          [r.x + r.width / 2, r.y + r.height / 2],
         );
-        expect(hit).toBe("5");
+        expect(hit, `marker ${n}`).toBe(String(n));
       }
+      const image = await page.locator(".image-well__image:visible").first().boundingBox();
+      const bar = await page.locator("[data-testid=image-toolbar]:visible").first().boundingBox();
+      if (!image || !bar) throw new Error("no boxes");
+      expect(bar.y).toBeGreaterThanOrEqual(image.y + image.height);
+      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(scrollWidth).toBeLessThanOrEqual(width);
     });
   }
 
@@ -195,7 +170,7 @@ test.describe("markers on the image (spec 3.7)", () => {
     await expect(page.locator("[data-marker]")).toHaveCount(6);
   });
 
-  test("the toggle is a full-size control and clear of the zoom controls", async ({
+  test("the toggle is a full-size control, left of the zoom controls in the toolbar", async ({
     page,
   }, info) => {
     const min = isPhoneProject(info) ? 44 : 32; // --hit: 44 px on touch, 32 px on desktop

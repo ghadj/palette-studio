@@ -8,8 +8,8 @@ import { demo, isPhoneProject } from "./helpers/app";
  */
 
 /**
- * The zoom controls, the well tools and the selected marker's accent ring are themed UI over the
- * image (decision 15e, M3-T12); the marker fills and rings are user content and stay compared.
+ * The selected marker's accent ring is themed UI over the image (decision 15e, M3-T12; the zoom controls
+ * and well tools sit under the well since decision 42, and stay in the list in case they move); the marker fills and rings are user content and stay compared.
  * Hiding the rest for the shot compares every image pixel, including those under them. The CSP blocks injected style sheets, so this
  * goes through the element's style.
  */
@@ -162,7 +162,9 @@ test("the zoomed image keeps its colors in light and dark (decision 15)", async 
     await page.goto(demo("zoom=4"));
     await page.waitForLoadState("networkidle");
     const well = page.locator("[data-testid=image-well]:visible").first();
-    await expect(well.getByTestId("zoom-level")).toHaveText("400%");
+    await expect(
+      page.locator("[data-testid=image-toolbar]:visible").getByTestId("zoom-level"),
+    ).toHaveText("400%");
     await well.locator("img").evaluate((el) => (el as HTMLImageElement).decode?.());
     const box = await well.boundingBox();
     if (!box) throw new Error("no well");

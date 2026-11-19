@@ -9,6 +9,7 @@ import type { ImageViewMode } from "../types";
 import { CopyButtons } from "./CopyButtons";
 import { comingSoon } from "./comingSoon";
 import { EyedropperHint } from "./EyedropperLayer";
+import { ImageToolbar } from "./ImageToolbar";
 import { ImageMessageBanner, ImageWell } from "./ImageWell";
 import { PaletteViewRows, PaletteViewSummary } from "./PaletteViewRows";
 import { SettingsControls } from "./SettingsControls";
@@ -75,6 +76,7 @@ export function SourcePanel({ variant }: { variant: "desktop" | "phone" }) {
     <div class="panel" data-panel="source">
       {variant !== "phone" && <h2 class="section-label">Source</h2>}
       <ImageWell />
+      <ImageToolbar />
       {progressVisible.value && (
         <div class="progress" role="progressbar" aria-label="Working on the palette">
           <span class="progress__bar" />

@@ -499,13 +499,20 @@ fieldset {
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-/* Zoom out, Zoom in and Fit in the well's top-right corner (decisions 15e, 26). */
-.zoom-controls {
-  position: absolute;
-  right: var(--space-2);
-  top: var(--space-2);
-  z-index: 2;
+/* The toolbar row under the image well (decision 42): Markers and Eyedropper on the left, Zoom out,
+   Zoom in and Fit on the right. Nothing in it covers the image. */
+.image-toolbar {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.zoom-controls {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
   background: var(--color-surface);
   border: var(--stroke) solid var(--color-border-control);
   border-radius: var(--radius-pill);
@@ -2040,8 +2047,7 @@ fieldset {
   border-radius: var(--radius-pill);
 }
 
-/* The selected or focused marker rises above its neighbours but stays under the zoom pill and the well
-   tools (z-index 2), which must always be operable (decision 41). Only a marker being dragged rises above. */
+/* The selected or focused marker rises above its neighbours (nothing overlays the markers, decision 42). */
 .marker[aria-pressed="true"],
 .marker:focus-visible,
 .marker[data-linked] {
@@ -2095,13 +2101,12 @@ fieldset {
   pointer-events: none;
 }
 
-/* Corner tools (bottom-left), clear of the zoom pill in the top-right corner. */
+/* Markers and Eyedropper, left in the toolbar row under the well (decision 42). */
 .well-tools {
-  position: absolute;
-  z-index: 2;
-  left: var(--space-2);
-  bottom: var(--space-2);
   display: flex;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
   background: var(--color-surface);
   border: var(--stroke) solid var(--color-border-control);
   border-radius: var(--radius-pill);
@@ -2391,12 +2396,6 @@ fieldset {
 
 .eyedropper-layer[data-disabled] {
   cursor: not-allowed;
-}
-
-/* The tools and the zoom pill stay reachable above the layer. */
-.eyedropper-layer ~ .well-tools,
-.eyedropper-layer ~ .zoom-controls {
-  z-index: 5;
 }
 
 .hint-row {
