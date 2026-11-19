@@ -184,3 +184,29 @@ Diff ratios against the M1 baselines (local, for information only): studio-deskt
 6. Still open: the "% of the image" share definition (provisional), and the approved spec departures.
 
 User sign-off: not yet (deferred by the user).
+
+---
+
+# M2 final evaluation (after fix round 2)
+
+Verdict: **FAIL**, on one regression from M2-F8. Both failures of round 2 are fixed: lint passes, and the evaluator's own probe found 0 hidden or partly covered focus stops at 320, 390 and 820 px in Chromium, Firefox, WebKit, and emulated iPhone 13 and Pixel 7. Every check passes: e2e 1632 passed, 103 skipped, 0 failed, 0 flaky; axe 200/200; tokens 625/625; unit 272; build 52.9 kB JS gzip; review page 28 shots.
+Commit evaluated: milestone/M2 at 146113c. Date: 2026-11-19. Evidence: `artifacts/eval/M2-r3/`.
+
+## Failure
+
+1. **The F8 focus nudge scrolls the page when focus lands inside the header, the pinned strip or the tab bar, including on tap or click** (regression of decision 19 / D4, spec 6.1).
+   - Where: `src/ui/focusClearance.ts:10-22`. `nudgeFocusClear` never checks whether the focused element is inside the chrome.
+   - Measured from scrollY 600: a tap on strip swatch 3 goes to 520 on Pixel 7, Chromium 390 and Firefox 390; the header project button goes to 466; the Theme button goes to 0 and unpins the strip. WebKit doesn't focus on click, so it doesn't move. The build before F8 (39a1250) stays at 600 in every case.
+   - Shift+Tab into the pinned strip also scrolls up by up to 148 px.
+   - The e2e test misses it: it skips elements the chrome contains and never checks scroll position.
+   - Suggested fix: return early when `el.closest("header, [data-testid=strip-dock], .tabbar, [role=menu]")` matches, and add an e2e test that taps a pinned swatch and a header button and asserts `scrollY` doesn't change.
+
+## Notes
+
+1. The `@media (max-width: 640px)` strip-dock rule repeats the shell's maximum width as a literal.
+2. Native `scroll-padding` also makes Chromium scroll when keyboard focus enters the pinned strip.
+3. Two commits are labelled M2-F5; history only.
+4. Still open for the user: the "% of the image" share definition, and the approved spec departures.
+5. Rule checks found nothing.
+
+The fix rounds are used up (two), so this failure goes to the user. Visual sign-off is still deferred.
