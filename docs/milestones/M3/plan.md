@@ -421,7 +421,8 @@ Rules that hold for every task:
     - "a runtime-generated #E8693A/#EA6B3B image with merge threshold 0 gives two swatches and a 'Swatches 1 and 2 are very close' warning"
     - "the matrix cells are identical in light and dark"
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+  - Note: the plan's e2e premise (a #E8693A/#EA6B3B image at merge 0 shows a warning) can't hold. Both colors share one histogram bin even at 6 bits, so extraction gives one swatch; and at threshold 0 nothing is "closer than the threshold". The generated image uses #E8693A/#F0693A (two swatches, no warning at 0); the warning itself is tested by editing Swatch 3 to #EA6B3B in the demo, on the strip mark and in the Contrast row. Close pairs are checked on the adjusted palette. The diagonal shows no badge. The matrix scrolls sideways inside its own region at 12 swatches.
 
 ### M3-T9: CVD simulation
 - Files:

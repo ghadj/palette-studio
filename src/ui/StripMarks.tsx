@@ -4,8 +4,9 @@
  * - M3-T8: `<ClosePairsMark/>`, the close-pair warning, in the Image view only (spec 3.5).
  * - M3-T14: the warn bracket under the pair flagged Close in value, with "Close in value" beside
  *   it, in the Values view (ui-contract Values view item 6).
- * Empty until then.
  */
+import { ClosePairsMark } from "./ClosePairsMark";
+
 export function StripMarks() {
-  return null;
+  return <ClosePairsMark />;
 }
