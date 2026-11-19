@@ -9,7 +9,8 @@ import { type Extraction, imageClient } from "../extract/client";
 import type { ClusterMap } from "../extract/cluster-map";
 import type { ExtractedColor } from "../extract/postprocess";
 import { missingRoles } from "../extract/swatches";
-import { createSwatch } from "../palette/model";
+import { createSwatch, swatchOklab } from "../palette/model";
+import { mergeLocked } from "../palette/reextract";
 import type { Algorithm, ExtractionSettings, ImagePoint, Swatch } from "../types";
 import * as history from "./history";
 import { createJobScheduler, DEBOUNCE_MS, PROGRESS_DELAY_MS } from "./jobs";
@@ -44,11 +45,13 @@ function applyColors(
   algorithm: Algorithm | undefined,
   map: ClusterMap | null,
   points: readonly ImagePoint[] | undefined,
+  keepLocked: boolean,
 ): void {
   const previous = palette.peek();
-  const selectedIndex = previous.findIndex((s) => s.id === selectedSwatchId.peek());
+  const selectedId = selectedSwatchId.peek();
+  const selectedIndex = previous.findIndex((s) => s.id === selectedId);
   // Swatch roles name each swatch by its role (spec 3.1); the swatch label then shows it.
-  const next = colors.map((c, i) => {
+  const fresh: Swatch[] = colors.map((c, i) => {
     const s = createSwatch(c.lab, {
       population: c.population,
       origin: "extracted",
@@ -59,17 +62,27 @@ function applyColors(
     // Kept for "Reset to extracted" (spec 3.7).
     return { ...s, extracted: { color: s.color, point: s.point } };
   });
-  extractedMaps.set(next, map);
+  // Locked swatches survive a re-extraction of the same image, keeping id, point and origin; the
+  // others get fresh points (spec 3.6, 3.7; decisions 2a to 2c).
+  const next = keepLocked ? mergeLocked(previous, fresh, settings.peek().distanceMetric) : fresh;
+  // The map labels the extracted colors, so it no longer matches once a locked swatch is mixed in.
+  const shownMap = next.every((s) => fresh.includes(s)) ? map : null;
+  extractedMaps.set(next, shownMap);
   batch(() => {
     palette.value = next;
     // The cluster map is stored with the palette it was made for (spec 2.6).
-    clusterMap.value = map;
+    clusterMap.value = shownMap;
     // Empty roles are left out of the strip and named in a note (M2 decision 10b).
     emptyRoles.value =
       algorithm === "swatch-roles" ? missingRoles(colors.map((c) => c.name ?? "")) : [];
     if (imageMessage.peek()?.fromExtraction) imageMessage.value = null;
+    // A kept (locked) swatch stays selected; otherwise the swatch at the same position is.
     selectedSwatchId.value =
-      selectedIndex >= 0 ? (next[Math.min(selectedIndex, next.length - 1)]?.id ?? null) : null;
+      selectedIndex < 0
+        ? null
+        : next.some((s) => s.id === selectedId)
+          ? selectedId
+          : (next[Math.min(selectedIndex, next.length - 1)]?.id ?? null);
   });
 }
 
@@ -120,13 +133,16 @@ const scheduler = createJobScheduler<Extraction>({
     return imageClient().extract(current);
   },
   apply: ({ colors, reason, map, background, points }, jobId) => {
-    paletteVersion = jobVersions.get(jobId) ?? imageVersion;
+    const forImage = jobVersions.get(jobId) ?? imageVersion;
+    // A locked swatch's point belongs to its image: a new image keeps none of them.
+    const sameImage = forImage === paletteVersion;
+    paletteVersion = forImage;
     const algorithm = jobAlgorithms.get(jobId);
     const ranWith = jobSettings.get(jobId);
     jobVersions.clear();
     jobAlgorithms.clear();
     jobSettings.clear();
-    applyColors(colors, algorithm, map, points);
+    applyColors(colors, algorithm, map, points, sameImage);
     backgroundNotFound.value = background === "none";
     if (reason === "all-filtered") {
       // No pixel was left to fill any role, so only the filter message shows.
@@ -176,6 +192,28 @@ export function extractNewImage(): void {
   // Undo can't put the old image's palette over the new one (decision 3b).
   history.clear();
   scheduler.runNow();
+}
+
+/**
+ * Place on image (spec 3.7 "Edge cases"): puts a marker for a swatch at its best-matching spot,
+ * by the placement extraction uses. The point is stored on the swatch, so the markers show it; it
+ * is one undo step. Resolves false when there is no image or the placement failed.
+ */
+export async function placeOnImage(id: string): Promise<boolean> {
+  const list = palette.peek();
+  const index = list.findIndex((s) => s.id === id);
+  if (index < 0 || !displayImage.peek()) return false;
+  try {
+    const [point] = await imageClient().place(list.map(swatchOklab), [index], settings.peek());
+    // Nothing lands over a palette that changed while the worker worked.
+    if (!point || palette.peek() !== list) return false;
+    palette.value = list.map((s) => (s.id === id ? { ...s, point } : s));
+    history.commit("Place on image");
+    return true;
+  } catch {
+    imageMessage.value = { kind: "error", text: "The marker couldn't be placed. Try again." };
+    return false;
+  }
 }
 
 let started = false;

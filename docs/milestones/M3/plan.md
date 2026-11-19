@@ -572,7 +572,10 @@ Rules that hold for every task:
     - "Place on image gives a manual swatch a marker on its best-matching patch"
     - "Reset to extracted restores the marker position"
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+  - Note: the extraction already returns a point for every new color (T10), so the worker is not asked to place anything on re-extraction; `place` is used only by Place on image (`placeOnImage` in `extraction.ts`, one undo step "Place on image"; disabled with "Load an image first" when there is no image).
+  - Note: locked swatches are kept only when the result is for the same image; a new image keeps none, since their points belong to the old one. With a locked swatch mixed in, the cluster map (indexed by the extracted colors) is dropped, as the strip does on reorder.
+  - Note: "Reset to extracted restores the marker position" is covered by `tests/palette/model.test.ts` (T1) only. It needs a marker drag to move a point, which is T12/T15, so there is no e2e for it yet; T17 should add it.
 
 ### M3-T14: Palette and Values views (UI)
 - Files:

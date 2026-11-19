@@ -32,8 +32,16 @@ import {
   swatchHex,
 } from "../palette/model";
 import { clusterPinned, clusterToggle } from "../state/cluster";
+import { placeOnImage } from "../state/extraction";
 import { commit } from "../state/history";
-import { outputPalette, palette, selectedSwatchId, selectSwatch, settings } from "../state/signals";
+import {
+  displayImage,
+  outputPalette,
+  palette,
+  selectedSwatchId,
+  selectSwatch,
+  settings,
+} from "../state/signals";
 import type { SampleRadius, SampleStat, Swatch } from "../types";
 import { SettingRow } from "./SettingRow";
 import { showToast } from "./Toast";
@@ -518,6 +526,25 @@ function SwatchControls({ swatch, index }: { swatch: Swatch; index: number }) {
           {delta ?? ""}
         </span>
       </div>
+      {swatch.point === null && (
+        <div class="swatch-actions">
+          <button
+            type="button"
+            class="pill-button"
+            data-testid="place-on-image"
+            disabled={!displayImage.value}
+            aria-describedby={displayImage.value ? undefined : `${base}-place`}
+            onClick={() => void placeOnImage(swatch.id)}
+          >
+            Place on image
+          </button>
+          {!displayImage.value && (
+            <span class="swatch-note" id={`${base}-place`}>
+              Load an image first
+            </span>
+          )}
+        </div>
+      )}
       <Field label="Sample radius (px)">
         <Segments
           label="Sample radius"
