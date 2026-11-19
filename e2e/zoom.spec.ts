@@ -12,14 +12,6 @@ const zoomLevel = (page: Page) => well(page).getByTestId("zoom-level");
 const button = (page: Page, name: "Zoom in" | "Zoom out" | "Fit" | "Markers" | "Eyedropper") =>
   well(page).getByRole("button", { name, exact: true });
 
-/**
- * The fixture's selected marker 3 sits under the top-right zoom pill on a phone and, selected, rises
- * above it (decision 26). Selecting swatch 1 first leaves the pill clear.
- */
-async function clearZoomPill(page: Page) {
-  await page.locator("[data-testid=swatch-strip]:visible [data-swatch]").first().click();
-}
-
 interface View {
   scale: number;
   x: number;
@@ -72,7 +64,6 @@ const paletteSettled = async (page: Page) => {
 test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
   test("Zoom in twice gives 400% and the label says so; Fit returns to 100%", async ({ page }) => {
     await page.goto(demo());
-    await clearZoomPill(page);
     await expect(zoomLevel(page)).toHaveText("100%");
     await expect(button(page, "Zoom out")).toBeDisabled();
     await button(page, "Zoom in").click();
@@ -100,7 +91,7 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
     await expect(button(page, "Zoom in")).toBeEnabled();
   });
 
-  test("Ctrl + wheel over the image zooms around the pointer; a plain wheel scrolls the page", async ({
+  test("Ctrl + wheel over the image zooms around the pointer; a plain wheel scrolls column 1", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "desktop wheel");
@@ -127,13 +118,9 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
     expect(after.y).toBeCloseTo(before.y, 2);
     await expect(zoomLevel(page)).toHaveText(`${Math.round(zoomed.scale * 100)}%`);
 
-    // A plain wheel isn't taken: the view stays and the column scrolls.
+    // A plain wheel isn't taken: the view stays and column 1's scroll container scrolls (decision 37).
     const scrolled = () =>
-      page.evaluate(
-        () =>
-          (document.scrollingElement?.scrollTop ?? 0) +
-          (document.querySelector(".columns")?.scrollTop ?? 0),
-      );
+      page.evaluate(() => document.querySelector(".column__scroll")?.scrollTop ?? 0);
     const top = await scrolled();
     await page.mouse.wheel(0, 120);
     await expect.poll(scrolled).toBeGreaterThan(top);
@@ -486,7 +473,6 @@ test.describe("touch gestures (spec 6.1 'Gestures', decision 15h)", () => {
     page,
   }) => {
     await page.goto(demo());
-    await clearZoomPill(page);
     const image = well(page).locator("img");
     const styles = () =>
       well(page).evaluate((el) => {

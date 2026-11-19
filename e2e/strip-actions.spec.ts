@@ -94,19 +94,23 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
     const [a, b, c, d, e, f] = before;
     await swatches(page).nth(1).focus();
     await page.keyboard.press("ArrowRight");
-    expect(await order(page)).toEqual([a, c, b, d, e, f]);
+    // Focus follows the moved swatch after a re-render: wait for it before the next key, or the
+    // key lands on the old position.
+    await expect.poll(() => order(page)).toEqual([a, c, b, d, e, f]);
     await expect(swatches(page).nth(2)).toBeFocused();
     await expect(swatches(page).nth(2)).toHaveAttribute("aria-label", new RegExp(`${b}$`));
     await page.keyboard.press("ArrowLeft");
+    await expect.poll(() => order(page)).toEqual([a, b, c, d, e, f]);
+    await expect(swatches(page).nth(1)).toBeFocused();
     await page.keyboard.press("ArrowLeft");
-    expect(await order(page)).toEqual([b, a, c, d, e, f]);
+    await expect.poll(() => order(page)).toEqual([b, a, c, d, e, f]);
     await expect(swatches(page).nth(0)).toBeFocused();
     // The first swatch has no place to its left.
     await page.keyboard.press("ArrowLeft");
     expect(await order(page)).toEqual([b, a, c, d, e, f]);
     // Each move was one undo step.
     await undoButton(page).click();
-    expect(await order(page)).toEqual([a, b, c, d, e, f]);
+    await expect.poll(() => order(page)).toEqual([a, b, c, d, e, f]);
   });
 
   test("Tab moves focus between swatches and a move is announced", async ({

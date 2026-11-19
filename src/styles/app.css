@@ -2039,15 +2039,12 @@ fieldset {
   border-radius: var(--radius-pill);
 }
 
-/* The selected or focused marker rises above its neighbours and the zoom pill, so it stays reachable. */
+/* The selected or focused marker rises above its neighbours but stays under the zoom pill and the well
+   tools (z-index 2), which must always be operable (decision 41). Only a marker being dragged rises above. */
 .marker[aria-pressed="true"],
 .marker:focus-visible,
 .marker[data-linked] {
-  z-index: 2;
-}
-
-.marker[aria-pressed="true"] {
-  z-index: 3;
+  z-index: 1;
 }
 
 /* Light outer stroke, dark inner stroke, then the swatch color: visible on any image (spec 3.7). */
@@ -2100,6 +2097,7 @@ fieldset {
 /* Corner tools (bottom-left), clear of the zoom pill in the top-right corner. */
 .well-tools {
   position: absolute;
+  z-index: 2;
   left: var(--space-2);
   bottom: var(--space-2);
   display: flex;
