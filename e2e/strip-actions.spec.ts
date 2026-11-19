@@ -132,6 +132,8 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
   }, info) => {
     test.skip(!isPhoneProject(info), "phone only");
     test.skip(browserName !== "chromium", "WebKit has no scripted touch scroll");
+    // A short viewport, so the page scrolls now that the "+" tile shares the swatches' row (decision 29).
+    await page.setViewportSize({ width: 390, height: 520 });
     await page.goto(demo("tab=palette"));
     const before = await order(page);
     const at = await center(swatches(page).nth(1));
@@ -268,6 +270,23 @@ test.describe('the "+" tile (decisions 4a, 40; D12)', () => {
       await expect(swatches(page)).toHaveCount(7 + i);
     }
     await expect(addTile(page)).toBeDisabled();
+  });
+
+  test("with 6 swatches the '+' tile is on the swatches' row, desktop and the phone Palette tab's dock (decision 29)", async ({
+    page,
+  }, info) => {
+    await page.setViewportSize(
+      isPhoneProject(info) ? { width: 390, height: 844 } : { width: 1280, height: 800 },
+    );
+    await page.goto(demo("tab=palette"));
+    const tile = await addTile(page).boundingBox();
+    const first = await swatches(page).first().boundingBox();
+    const last = await swatches(page).nth(5).boundingBox();
+    if (!tile || !first || !last) throw new Error("no boxes");
+    expect(Math.abs(tile.y - first.y)).toBeLessThanOrEqual(1);
+    expect(tile.x).toBeGreaterThan(last.x);
+    expect(tile.width).toBeGreaterThanOrEqual(44);
+    expect(last.width).toBeGreaterThanOrEqual(44);
   });
 
   test("the '+' tile is at least 44 × 44 at 320 px, and nothing overflows", async ({ page }) => {

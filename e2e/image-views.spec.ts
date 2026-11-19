@@ -208,16 +208,20 @@ test.describe("Values view (spec 3.8)", () => {
     await openView(page, "values");
     const swatches = strip(page).locator("[data-swatch]");
     await expect(swatches).toHaveCount(6);
-    const tile = await strip(page).getByTestId("add-swatch").boundingBox();
     const first = await swatches.first().boundingBox();
     const last = await swatches.nth(5).boundingBox();
     const line = await page
       .locator("[data-testid=value-bracket]:visible [data-bracket-line]")
       .boundingBox();
-    if (!tile || !first || !last || !line) throw new Error("no boxes");
-    expect(Math.abs(tile.y - first.y)).toBeLessThanOrEqual(1);
-    expect(tile.x).toBeGreaterThan(last.x);
-    expect(tile.height).toBeGreaterThanOrEqual(44);
+    if (!first || !last || !line) throw new Error("no boxes");
+    // The phone Source tab has no "+" tile (decision 32); strip-actions covers the Palette tab.
+    if (!isPhoneProject(info)) {
+      const tile = await strip(page).getByTestId("add-swatch").boundingBox();
+      if (!tile) throw new Error("no tile");
+      expect(Math.abs(tile.y - first.y)).toBeLessThanOrEqual(1);
+      expect(tile.x).toBeGreaterThan(last.x);
+      expect(tile.height).toBeGreaterThanOrEqual(44);
+    }
     for (const box of [first, last]) expect(box.width).toBeGreaterThanOrEqual(44);
     const gap = line.y - (first.y + first.height);
     expect(gap).toBeGreaterThanOrEqual(-1);

@@ -122,6 +122,7 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
     await page.goto(demo("tab=palette"));
     for (let i = 0; i < 6; i += 1) {
       await addTile(page).click();
+      await expect(swatches(page)).toHaveCount(7 + i);
     }
     await expect(swatches(page)).toHaveCount(12);
     // The "+" tile is on the Palette tab below 1024 px, the image on the Source tab (decision 32).
@@ -139,11 +140,14 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
   });
 
   test("picking the 12th color turns the eyedropper off", async ({ page }, info) => {
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     for (let i = 0; i < 5; i += 1) {
       await addTile(page).click();
+      await expect(swatches(page)).toHaveCount(7 + i);
     }
     await expect(swatches(page)).toHaveCount(11);
+    // The image is on the Source tab below 1024 px (decision 32).
+    await showTab(page, "Source");
     await tool(page).click();
     await pick(page, PATCH[4], isPhoneProject(info));
     await expect(swatches(page)).toHaveCount(12);
