@@ -973,6 +973,17 @@ fieldset {
   }
 }
 
+/*
+ * Touch (M2 decision 22): labels, toggle rows, chevron titles and plain-text values step up to
+ * 15 px beside the 16 px fields. Notes and hints keep their own sizes.
+ */
+@media (max-width: 1023.98px), (pointer: coarse) {
+  .setting-row,
+  .chevron-row__summary {
+    font-size: var(--text-row-touch);
+  }
+}
+
 .chevron-row__summary::-webkit-details-marker {
   display: none;
 }

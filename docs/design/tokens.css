@@ -56,6 +56,7 @@
   --text-sm: 13px;          /* body, values, buttons, chips, tabs */
   --text-md: 15px;          /* app name, sheet and drawer titles */
   --text-lg: 20px;          /* empty-state headings */
+  --text-row-touch: var(--text-md); /* setting-row labels, values and chevron titles on touch, beside the 16 px fields */
   --text-input-touch: 16px; /* text inputs on touch devices, prevents iOS focus zoom (spec 6.1) */
   --weight-regular: 400;
   --weight-strong: 600;     /* names, selected tab, selected chip, primary button */
