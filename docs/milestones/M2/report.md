@@ -210,3 +210,12 @@ Commit evaluated: milestone/M2 at 146113c. Date: 2026-11-19. Evidence: `artifact
 5. Rule checks found nothing.
 
 The fix rounds are used up (two), so this failure goes to the user. Visual sign-off is still deferred.
+
+## Fix after the final evaluation (approved by the user)
+
+- **852e0c8 M2-F9:** focus clearance now ignores the sticky chrome itself. The `focusin` nudge skips elements inside the header, the strip-dock, the tab bar, menus and dialogs, and it acts only on `:focus-visible`. Chromium's native scroll into the pinned strip is undone on keyboard focus.
+- **New test:** `e2e/focus-no-scroll-on-chrome.spec.ts`. Before the fix it failed 24 of 32 runs; after the fix 32 of 32 pass, also with `--repeat-each=2`.
+- **Targeted run:** the new spec plus focus-visible-under-sticky, sticky-strip, layout, zoom and cluster-map, on all 5 projects: 177 passed, 58 skipped (the specs' own project skips), 0 failed.
+- **Not run:** a full re-evaluation; the user chose the targeted check.
+
+**M2 status:** implementation complete; visual sign-off pending with the user.
