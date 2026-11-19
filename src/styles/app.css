@@ -735,6 +735,10 @@ fieldset {
 }
 
 .setting-row {
+  --setting-label-min: calc(var(--space-8) * 3);
+  --slider-min: calc(var(--space-8) * 2);
+  --slider-natural: calc(var(--space-8) * 4);
+  --number-width: calc(var(--space-8) * 2);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -757,18 +761,40 @@ fieldset {
   cursor: default;
 }
 
-/* Label and note keep their natural width until the row wraps; then they may wrap themselves. */
+/*
+ * Label and value share one line (M2 decision 23). The label, or label group with its note, has a
+ * minimum width and flexes, so its text wraps first; the slider shrinks next; fields, selects and
+ * toggles keep their natural width. Only if the minimums still don't fit does the value wrap below.
+ */
+.setting-row > .setting-row__label,
+.setting-row__label-group {
+  flex: 1 1 var(--setting-label-min);
+  min-width: var(--setting-label-min);
+}
+
 .setting-row__label-group {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  min-width: 0;
   padding: var(--space-1) 0;
 }
 
 .setting-row__note {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
+}
+
+/* A value with a slider shrinks from its natural width to its minimum before the row wraps. */
+.setting-row__value:has(.slider-group) {
+  flex: 1 1 calc(var(--slider-min) + var(--space-2) + var(--number-width));
+  min-width: 0;
+  max-width: calc(var(--slider-natural) + var(--space-2) + var(--number-width));
+}
+
+/* A select with long options shrinks, ellipsized, before the row wraps. */
+.setting-row__value:has(.select) {
+  flex: 1 1 calc(var(--space-8) * 3);
+  min-width: var(--hit);
+  max-width: max-content;
 }
 
 /* The value keeps its width and wraps under the label and note when they don't fit together. */
@@ -801,13 +827,17 @@ fieldset {
 /* Select styled as a setting value: text color, right aligned, chevron after it. */
 .select {
   position: relative;
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
 }
 
 .select__control {
   appearance: none;
+  flex: 1 1 auto;
   min-width: var(--hit);
+  text-overflow: ellipsis;
   min-height: var(--hit);
   padding: 0 calc(var(--space-4) + var(--space-1)) 0 var(--space-2);
   border: 0;
@@ -828,14 +858,17 @@ fieldset {
 }
 
 .slider-group {
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
   gap: var(--space-2);
 }
 
 /* Number field (spec 6.1: inputmode decimal, 16 px on touch so iOS doesn't zoom). */
 .number-field {
-  width: calc(var(--space-8) * 2);
+  flex: 0 0 auto;
+  width: var(--number-width, calc(var(--space-8) * 2));
   min-height: var(--hit);
   padding: 0 var(--space-2);
   border: var(--stroke) solid var(--color-border-control);
@@ -867,8 +900,9 @@ fieldset {
 /* Slider (ui-contract Components "Slider"): divider-colored track, round accent thumb. */
 .slider {
   appearance: none;
-  width: calc(var(--space-8) * 4);
-  min-width: var(--hit);
+  flex: 1 1 auto;
+  width: var(--slider-natural, calc(var(--space-8) * 4));
+  min-width: var(--slider-min, var(--hit));
   min-height: var(--hit);
   margin: 0;
   background: transparent;
@@ -920,8 +954,11 @@ fieldset {
 }
 
 @media (max-width: 1023.98px), (pointer: coarse) {
+  .setting-row {
+    --slider-natural: calc(var(--space-8) * 3);
+  }
   .slider {
-    width: calc(var(--space-8) * 3);
+    width: var(--slider-natural, calc(var(--space-8) * 3));
   }
   .slider::-webkit-slider-thumb {
     width: var(--space-6);
