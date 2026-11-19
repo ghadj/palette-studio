@@ -7,10 +7,15 @@
  * button, a tap on the scrim and a downward swipe on the grabber or title each close it, and focus
  * returns to the control that opened it. The panel pads for the home indicator. Its slide-in uses
  * the motion tokens, which are 0 ms when reduced motion is requested (spec 6.4).
+ *
+ * Where the page has a pinned swatch strip (the Source and Palette tabs below 1024 px), the sheet
+ * and its scrim start under the strip, so the palette stays visible above and updates live while a
+ * setting changes (M3 decision 35). The sheet scrolls inside the space left.
  */
 import { X } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 import { useEffect, useId, useRef, useState } from "preact/hooks";
+import { dockSheetBelowStrip } from "./sheetDock";
 
 /** A downward swipe this far, in CSS px, closes the sheet; a shorter one springs back. */
 export const SWIPE_CLOSE_PX = 64;
@@ -49,8 +54,11 @@ export function BottomSheet({
     // Esc closes the dialog natively; every way of closing ends here.
     const onDialogClose = () => close.current();
     el.addEventListener("close", onDialogClose);
+    // Below the pinned swatch strip, when the page has one (M3 decision 35).
+    const undock = dockSheetBelowStrip(el);
     if (!el.open) el.showModal();
     return () => {
+      undock();
       el.removeEventListener("close", onDialogClose);
       if (el.open) el.close();
       if (opener?.isConnected) opener.focus();

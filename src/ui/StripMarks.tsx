@@ -125,10 +125,10 @@ function ValueBracket() {
   );
 }
 
-export function StripMarks() {
+export function StripMarks({ closePairs = true }: { closePairs?: boolean }) {
   return (
     <div class="strip-marks" data-testid="strip-marks">
-      <ClosePairsMark />
+      {closePairs && <ClosePairsMark />}
       <ValueBracket />
     </div>
   );

@@ -1173,7 +1173,12 @@ fieldset {
 }
 
 .app--phone {
-  padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
+  /* --sheet-extra lets the page scroll far enough to pin the strip while a sheet is open. */
+  padding-bottom: calc(
+    var(--tabbar-height) +
+    env(safe-area-inset-bottom) +
+    var(--sheet-extra, 0px)
+  );
 }
 
 /* Export drawer (ui-contract "Export drawer"). Its top border stays inside the page gutters (L11). */
@@ -1374,9 +1379,10 @@ fieldset {
  */
 .bottom-sheet {
   position: fixed;
-  inset: 0;
+  /* --sheet-top is the pinned strip's bottom edge, when there is one (M3 decision 35). */
+  inset: var(--sheet-top, 0px) 0 0 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% - var(--sheet-top, 0px));
   max-width: none;
   max-height: none;
   margin: 0;
@@ -1407,7 +1413,7 @@ fieldset {
   display: flex;
   flex-direction: column;
   max-width: calc(var(--space-8) * 20);
-  max-height: calc(100dvh - var(--header-height));
+  max-height: calc(100dvh - var(--sheet-top, var(--header-height)));
   margin: 0 auto;
   padding-top: 0;
   padding-right: calc(var(--space-4) + env(safe-area-inset-right));

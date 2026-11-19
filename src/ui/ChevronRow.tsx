@@ -70,11 +70,14 @@ export function RowContent({
 export function ChevronRow({
   id,
   label,
+  testId,
   children,
 }: {
   /** Names the row for the mockup state's `rows` parameter and test ids, such as "adjustments". */
   id: string;
   label: string;
+  /** A test id for the row's own box, such as the Source tab's "filters-row". */
+  testId?: string | undefined;
   children: ComponentChildren;
 }) {
   const [open, setOpen] = useRowOpen(id);
@@ -83,7 +86,7 @@ export function ChevronRow({
   const buttonId = `${base}-button`;
   const regionId = `${base}-region`;
   return (
-    <div class="chevron-row" data-row={id}>
+    <div class="chevron-row" data-row={id} data-testid={testId}>
       <button
         id={buttonId}
         type="button"

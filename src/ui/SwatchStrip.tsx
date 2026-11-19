@@ -23,6 +23,7 @@ import { clusterFocus, clusterHover, shareText, shownCluster } from "../state/cl
 import { startEyedropper } from "../state/eyedropper";
 import { commit } from "../state/history";
 import {
+  activeTab,
   clusterMap,
   emptyRoles,
   extracting,
@@ -180,6 +181,9 @@ function AddTile({ alone, full }: { alone: boolean; full: boolean }) {
             class="strip-menu__item"
             onClick={() => {
               setOpen(false);
+              // The image is on the Source tab below 1024 px, where the "+" tile no longer is
+              // (M3 decision 32): go there to pick.
+              activeTab.value = "source";
               startEyedropper();
             }}
           >
@@ -202,7 +206,11 @@ function AddTile({ alone, full }: { alone: boolean; full: boolean }) {
   );
 }
 
-export function SwatchStrip() {
+/**
+ * With `showAdd` false the strip shows only the swatches: no "+" tile and no 12-color note. The
+ * Source tab below 1024 px does this (M3 decision 32).
+ */
+export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
   const swatches = outputPalette.value;
   const selected = selectedSwatchId.value;
   const linked = hoveredSwatchId.value;
@@ -440,10 +448,10 @@ export function SwatchStrip() {
             />
           );
         })}
-        <AddTile alone={aloneRow} full={full} />
+        {showAdd && <AddTile alone={aloneRow} full={full} />}
       </fieldset>
       <div class="live-region" role="status">
-        {full && (
+        {showAdd && full && (
           <p class="hint" id="strip-full-note" data-testid="strip-full-note">
             {FULL_MESSAGE}
           </p>

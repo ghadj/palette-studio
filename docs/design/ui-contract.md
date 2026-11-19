@@ -137,10 +137,12 @@ A header at the top, one panel at a time, and a bottom tab bar: Source, Palette,
 1. Image well with markers.
 2. The view bar, as on desktop.
 3. The hint (Image view only).
-4. The swatch strip, with the selection outlined. It is a compact view of the palette, so the result stays visible while markers move; tapping a swatch selects its marker. Editing happens on the Palette tab.
-5. Setting rows for the current view. In the Image view: Algorithm, Colors, Working space. Below 1024 px each row has `--space-2` of padding above and below, so the 44 px controls don't fill the row from divider to divider (M2 decision 21). Row labels, toggle rows, chevron-row titles and plain-text values use `--text-row-touch` (15 px), on any touch device too (decision 22).
+4. The swatch strip, with the selection outlined. It is a compact view of the palette, so the result stays visible while markers move; tapping a swatch selects its marker. Editing happens on the Palette tab. Below 1024 px it shows only the swatches: the "+" tile and the close-pair mark are on the Palette tab (M3 decision 32). The Values view's "Close in value" bracket stays here.
+5. Setting rows for the current view. In the Image view: Algorithm, Colors, Working space. Below 1024 px the Filters and Advanced rows are chevron rows that open bottom-sheet drawers, like the Palette tab's (M3 decision 34); Preset, Algorithm, Colors and Working space stay inline. Below 1024 px each row has `--space-2` of padding above and below, so the 44 px controls don't fill the row from divider to divider (M2 decision 21). Row labels, toggle rows, chevron-row titles and plain-text values use `--text-row-touch` (15 px), on any touch device too (decision 22).
 
-**Palette tab.** Not drawn. Use the desktop palette column stacked vertically (the swatch strip, then the editor), with the chevron rows opening bottom sheets.
+**Palette tab.** Not drawn. Use the desktop palette column stacked vertically (the swatch strip, then the editor), with the chevron rows opening bottom sheets. The strip, with the "+" tile and the close-pair mark under it, pins under the header like the Source tab's (M3 decision 33).
+
+**Drawers on both tabs.** A bottom sheet opened on the Source or Palette tab stops under the pinned swatch strip: its top edge is at or below the strip's bottom, the scrim starts there, and the sheet is sized to the space between the strip and the bottom edge and scrolls inside. The palette colors stay visible and update while a setting changes (M3 decision 35).
 
 **Gradient tab.** Preview, type chips, stop bar, then the Interpolation and Technique rows.
 
@@ -221,6 +223,9 @@ Visual review treats these as correct.
 - **D2, desktop split chips.** The desktop match cards (`05`, `06`) draw the paint half of the split chip as a slightly darker shade of the swatch. Build it from the paint's own hex, as the phone mockups do (the hexes are in `mockup-state.md`).
 - **D3, type sizes on phones.** To fit the scaled frames, the phone mockups use type smaller than `--text-xs` in places (tab labels, the view bar, counts in the Filters sheet). Use the type tokens; the 44 px touch targets win over matching the drawing.
 - **D4, sticky swatch strip on phone and tablet.** The mockups draw an unscrolled page; below 1024 px the Source tab's swatch strip pins under the header while the setting rows scroll, on an opaque `--color-surface` container with a `--color-border` divider while pinned (M2 decision 19).
+
+- **D5, drawers under the strip, and the Palette tab's pinned strip.** The mockups draw sheets that rise from the bottom over the page and a Source tab with inline Filters and Advanced rows. Below 1024 px those two rows open as bottom sheets, a sheet on the Source or Palette tab stops under the pinned swatch strip so the palette stays visible, and the Palette tab's strip pins like the Source tab's (M3 decisions 33 to 35).
+- **D6, the Source tab's strip shows only swatches.** Below 1024 px the "+" tile and the close-pair mark are on the Palette tab, not the Source tab (M3 decision 32). On desktop, where the strip is in column 2, nothing changes.
 
 Earlier deviations from the previous version of the mockups (control borders, phone Undo and Redo, quality dots on phone cards, all four medium chips) are now drawn in the mockups.
 

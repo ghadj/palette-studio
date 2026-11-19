@@ -3,7 +3,7 @@
  * evaluation failure 1). The focus clearance nudge only serves elements under the chrome.
  */
 import { expect, type Page, test } from "@playwright/test";
-import { demo } from "./helpers/app";
+import { addScrollSpace, demo } from "./helpers/app";
 
 const SIZES = [
   { width: 390, height: 844 },
@@ -35,7 +35,8 @@ for (const size of SIZES) {
   test.describe(`${size.width} × ${size.height}`, () => {
     test.beforeEach(async ({ page }) => {
       await page.setViewportSize(size);
-      await page.goto(demo("rows=filters,advanced"));
+      await page.goto(demo());
+      await addScrollSpace(page);
       await expect(page.locator("[data-testid=strip-dock]")).toBeVisible();
       await page.evaluate(() => window.scrollTo(0, 600));
       await settle(page);

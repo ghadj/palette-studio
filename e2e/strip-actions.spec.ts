@@ -3,7 +3,7 @@
  * to reorder, and the arrow keys. Each move is one undo step.
  */
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { demo, isPhoneProject } from "./helpers/app";
+import { demo, isPhoneProject, showTab } from "./helpers/app";
 import { fixture } from "./helpers/files";
 
 const strip = (page: Page) => page.locator("[data-testid=swatch-strip]:visible").first();
@@ -53,7 +53,7 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
   test("mouse drag of swatch 1 onto swatch 3 gives the order 2, 3, 1, 4, 5, 6; Undo restores it", async ({
     page,
   }) => {
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     await expect(swatches(page)).toHaveCount(6);
     const before = await order(page);
     const from = await center(swatches(page).nth(0));
@@ -71,7 +71,7 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
   });
 
   test("a drag doesn't select by its click", async ({ page }) => {
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     await swatches(page).nth(1).click();
     await expect(swatches(page).nth(1)).toHaveAttribute("aria-pressed", "true");
     const from = await center(swatches(page).nth(0));
@@ -89,7 +89,7 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
   });
 
   test("ArrowRight on focused swatch 2 swaps it with 3 and keeps focus on it", async ({ page }) => {
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     const before = await order(page);
     const [a, b, c, d, e, f] = before;
     await swatches(page).nth(1).focus();
@@ -113,7 +113,7 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
     page,
     browserName,
   }) => {
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     await swatches(page).nth(0).focus();
     if (browserName === "webkit") {
       // Safari's Tab skips buttons unless the user turns that on; focus the next one directly.
@@ -132,7 +132,7 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
   }, info) => {
     test.skip(!isPhoneProject(info), "phone only");
     test.skip(browserName !== "chromium", "WebKit has no scripted touch scroll");
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     const before = await order(page);
     const at = await center(swatches(page).nth(1));
     const cdp = await page.context().newCDPSession(page);
@@ -151,7 +151,7 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
     page,
   }, info) => {
     test.skip(!isPhoneProject(info), "phone only");
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     const before = await order(page);
     const from = await center(swatches(page).nth(0));
     const to = await center(swatches(page).nth(2));
@@ -165,7 +165,7 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
 
   test("phone: a 300 ms press, then a drag, reorders", async ({ page }, info) => {
     test.skip(!isPhoneProject(info), "phone only");
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     const before = await order(page);
     const from = await center(swatches(page).nth(0));
     const to = await center(swatches(page).nth(2));
@@ -184,7 +184,7 @@ test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
   test("'+' then 'Type a color' adds swatch 7, origin manual, and focuses the HEX field", async ({
     page,
   }, info) => {
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     await addTile(page).click();
     await expect(addTile(page)).toHaveAttribute("aria-expanded", "true");
     await page.getByRole("menuitem", { name: "Pick from image" }).waitFor();
@@ -205,7 +205,7 @@ test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
   });
 
   test("'Pick from image' starts the eyedropper (M3-T16)", async ({ page }) => {
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     await addTile(page).click();
     const item = page.getByRole("menuitem", { name: "Pick from image" });
     await expect(item).not.toHaveAttribute("data-coming-soon");
@@ -218,7 +218,7 @@ test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
   });
 
   test("Escape closes the menu and returns focus to the tile", async ({ page }) => {
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     await addTile(page).click();
     await expect(page.getByRole("menuitem", { name: "Pick from image" })).toBeFocused();
     await page.keyboard.press("ArrowDown");
@@ -235,13 +235,15 @@ test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
     await page.locator("#setting-colors:visible").fill("12");
     await expect(swatches(page)).toHaveCount(12);
     await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
+    // The "+" tile and its note are on the Palette tab below 1024 px (M3 decision 32).
+    await showTab(page, "Palette");
     await expect(addTile(page)).toBeDisabled();
     await expect(page.getByTestId("strip-full-note")).toHaveText(/at most 12/i);
   });
 
   test("the '+' tile is at least 44 × 44 at 320 px, and nothing overflows", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     const box = await addTile(page).boundingBox();
     if (!box) throw new Error("no tile");
     expect(box.width).toBeGreaterThanOrEqual(44);
@@ -261,7 +263,7 @@ test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
     page,
   }, info) => {
     test.skip(!isPhoneProject(info), "phone only");
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await page.waitForFunction(
       () =>

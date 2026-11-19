@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { demo, isPhoneProject } from "./helpers/app";
+import { demo, isPhoneProject, showTab } from "./helpers/app";
 
 /** The eyedropper (spec 3.2, 3.7; M3 decision 5c and D11, M3-T16). */
 
@@ -144,12 +144,14 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
   test("disabled at 12 in Add mode: a click adds nothing and the hint says why", async ({
     page,
   }, info) => {
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     for (let i = 0; i < 6; i += 1) {
       await addTile(page).click();
       await page.getByRole("menuitem", { name: "Type a color" }).click();
     }
     await expect(swatches(page)).toHaveCount(12);
+    // The "+" tile is on the Palette tab below 1024 px, the image on the Source tab (decision 32).
+    await showTab(page, "Source");
     await tool(page).click();
     await expect(page.getByTestId("marker-hint")).toContainText("12");
     await pick(page, PATCH[4], isPhoneProject(info));
@@ -183,7 +185,7 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
   });
 
   test("the + tile's Pick from image starts the eyedropper in Add mode", async ({ page }) => {
-    await page.goto(demo());
+    await page.goto(demo("tab=palette"));
     await addTile(page).click();
     await page.getByRole("menuitem", { name: "Pick from image" }).click();
     await expect(tool(page)).toHaveAttribute("aria-pressed", "true");

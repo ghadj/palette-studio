@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { fixture } from "./helpers/files";
 import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
+import { openRow } from "./helpers/rows";
 import { M1_SCREENS, THEMES } from "./helpers/screens";
 import { checkTokens, describeFailures } from "./helpers/tokens";
 
@@ -92,7 +93,7 @@ test.describe("token conformance @tokens", () => {
         await page.emulateMedia({ colorScheme: theme });
         await page.setViewportSize(viewport);
         await page.goto("./");
-        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+        await openRow(page, "Advanced");
         await expect(page.locator("#setting-seed:visible")).toBeVisible();
         // The M2-T7 rows, with the Keep one outlier toggle off, then on (ui-contract "Toggle").
         await expect(page.locator("#setting-sort:visible")).toBeVisible();
@@ -126,7 +127,7 @@ test.describe("token conformance @tokens", () => {
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
-        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+        await openRow(page, "Advanced");
         await expect(page.locator("#setting-outlier:visible")).toBeDisabled();
         await expect(page.locator("#setting-merge:visible")).toBeDisabled();
         await expect(page.locator("#setting-outlier-note:visible")).toHaveText(
@@ -188,7 +189,7 @@ test.describe("token conformance @tokens", () => {
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.locator("#setting-algorithm:visible").selectOption({ label: "Median cut" });
-        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+        await openRow(page, "Advanced");
         await expect(page.locator("#setting-seed:visible")).toBeDisabled();
         const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
         expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
@@ -232,7 +233,7 @@ test.describe("token conformance @tokens", () => {
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
-        await page.locator("[data-testid=filters-row]:visible summary").click();
+        await openRow(page, "Filters");
         await page.locator("#setting-ignore-background:visible").selectOption({ label: "Auto" });
         await expect(
           page.locator("[data-testid=filters-row]:visible #setting-ignore-background-note"),

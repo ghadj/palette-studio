@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
-import { demo, isPhoneProject } from "./helpers/app";
+import { demo, isPhoneProject, showTab } from "./helpers/app";
 import { closePairImage } from "./helpers/close-pair";
+import { isSheetLayout, openRow } from "./helpers/rows";
 
 // Contrast matrix and close-pair warnings (spec 3.5; M3-T8; decision 6c).
 
@@ -98,10 +99,15 @@ test.describe("close pairs (spec 3.5)", () => {
       .first()
       .locator("[data-swatch]");
     await expect(strip.first()).toBeVisible();
-    await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+    await openRow(page, "Advanced");
     await page.locator("#setting-merge:visible").fill("0");
     await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
     await expect(strip).toHaveCount(2);
+    // The close-pair mark is on the Palette tab below 1024 px (M3 decision 32).
+    if (await isSheetLayout(page)) {
+      await page.keyboard.press("Escape");
+      await showTab(page, "Palette");
+    }
     // Nothing is closer than a threshold of 0, so nothing is flagged.
     await expect(mark(page)).toHaveCount(0);
   });

@@ -7,6 +7,7 @@
  * weighting (M2-T9), Keep one outlier and Sort (M2-T7). Every change re-extracts live (spec 1, 7.4).
  */
 import { ChevronDown, ChevronRight } from "lucide-preact";
+import type { ComponentChildren } from "preact";
 import { type SettingKey, settingApplies, settingNote } from "../extract/applicability";
 import { AVAILABLE_ALGORITHMS } from "../extract/pipeline";
 import {
@@ -31,7 +32,9 @@ import type {
   SpatialWeighting,
   WorkingSpace,
 } from "../types";
+import { ChevronRow } from "./ChevronRow";
 import { DecimalField } from "./DecimalField";
+import { useLayout } from "./layout";
 import { NumberField } from "./NumberField";
 import { SettingRow } from "./SettingRow";
 import { Slider } from "./Slider";
@@ -140,6 +143,41 @@ function applicability(key: SettingKey, algorithm: Algorithm, noteId: string) {
   return { enabled, note, noteId, describedBy: note ? noteId : undefined };
 }
 
+/**
+ * A collapsed row on the Source tab. From 1024 px it expands in place, as a `<details>`; below that
+ * it opens a bottom sheet with the Palette tab's `ChevronRow`, so both tabs share one drawer
+ * behavior (M3 decision 34). The rows that are always visible (Preset, Algorithm, Colors, Working
+ * space) stay inline.
+ */
+function CollapsibleRow({
+  id,
+  label,
+  testId,
+  children,
+}: {
+  id: string;
+  label: string;
+  testId?: string | undefined;
+  children: ComponentChildren;
+}) {
+  if (useLayout() === "phone") {
+    return (
+      <ChevronRow id={id} label={label} testId={testId}>
+        {children}
+      </ChevronRow>
+    );
+  }
+  return (
+    <details class="chevron-row" data-testid={testId} open={initialOpenRows.peek().includes(id)}>
+      <summary class="chevron-row__summary">
+        <span>{label}</span>
+        <ChevronRight class="chevron-row__chevron" size={16} strokeWidth={1.5} aria-hidden="true" />
+      </summary>
+      {children}
+    </details>
+  );
+}
+
 export function SettingsControls() {
   const s = settings.value;
   // Decision 14: settings that don't apply to the algorithm are disabled, not hidden, and keep their values.
@@ -226,16 +264,7 @@ export function SettingsControls() {
         />
       </SettingRow>
       <FiltersRow s={s} />
-      <details class="chevron-row" open={initialOpenRows.peek().includes("advanced")}>
-        <summary class="chevron-row__summary">
-          <span>Advanced</span>
-          <ChevronRight
-            class="chevron-row__chevron"
-            size={16}
-            strokeWidth={1.5}
-            aria-hidden="true"
-          />
-        </summary>
+      <CollapsibleRow id="advanced" label="Advanced">
         <SettingRow label="Sample size" htmlFor="setting-sample-size">
           <Select
             id="setting-sample-size"
@@ -287,7 +316,7 @@ export function SettingsControls() {
           </span>
         </SettingRow>
         <AdvancedRows s={s} />
-      </details>
+      </CollapsibleRow>
     </div>
   );
 }
@@ -368,15 +397,7 @@ function FiltersRow({ s }: { s: ExtractionSettings }) {
   const backgroundNote =
     s.ignoreBackground === "auto" && backgroundNotFound.value ? NO_BACKGROUND_NOTE : null;
   return (
-    <details
-      class="chevron-row"
-      data-testid="filters-row"
-      open={initialOpenRows.peek().includes("filters")}
-    >
-      <summary class="chevron-row__summary">
-        <span>Filters</span>
-        <ChevronRight class="chevron-row__chevron" size={16} strokeWidth={1.5} aria-hidden="true" />
-      </summary>
+    <CollapsibleRow id="filters" label="Filters" testId="filters-row">
       <SettingRow label="Ignore dark" htmlFor="setting-ignore-dark">
         <Toggle
           id="setting-ignore-dark"
@@ -473,7 +494,7 @@ function FiltersRow({ s }: { s: ExtractionSettings }) {
           />
         </span>
       </SettingRow>
-    </details>
+    </CollapsibleRow>
   );
 }
 

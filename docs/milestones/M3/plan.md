@@ -950,6 +950,14 @@ Confirmed by the user on 2026-11-19, from choices M3-T1 made:
 - 3e. Undo while a re-extraction is pending cancels that job and restores the last committed state.
 - 3f. A duplicated swatch copies its source's population.
 
+Layout requests from the user on 2026-11-20 (decisions 32 to 37; built in M3-F6 to M3-F8, ui-contract D5 and D6):
+- 32. Below 1024 px, the Source tab's swatch strip shows only the swatches: no "+" tile (nor its 12-color note) and no close-pair mark (T8 `ClosePairsMark`). Both are on the Palette tab. The Values view's own "Close in value" bracket stays on the Source tab. Desktop is unchanged.
+- 33. Below 1024 px, the Palette tab's strip (with its marks) is sticky under the header like the Source tab's (M2 decision 19): one shared `StripDock`, an opaque container with a divider when pinned. Focus clearance (F8, F9) already reads the dock, so it covers both tabs.
+- 34. Below 1024 px, the Source tab's Filters and Advanced rows open as bottom-sheet drawers with the same `ChevronRow` and `BottomSheet` as the Palette tab. Preset, Algorithm, Colors and Working space stay inline. From 1024 px they stay `<details>`.
+- 35. Below 1024 px, on both tabs, an open drawer stops below the pinned strip. `BottomSheet` scrolls the page until the dock is pinned (adding room at the bottom of a short page while the sheet is open), sets `--sheet-top` to the dock's bottom, and the dialog, its scrim and the panel's max height start there. The strip stays visible and updates live; being under a modal, it is not interactive while a sheet is open. Esc, swipe, scrim tap and focus return are unchanged.
+- 36. The cluster map is made in the worker at the display copy's resolution, at most 1024 px on the long side (`mapSize`), from the master with "smooth" resampling, using the same filters and keep mask. The overlay draws without `image-rendering: pixelated`. Shares come from this map. Markers still use the analysis-size map (spec 3.7). Where the main thread sends analysis pixels (the fallback without a worker canvas) the analysis-size map is used.
+- 37. From 1024 px the page doesn't scroll vertically and each column scrolls on its own (`.column__scroll`, `overflow-y: auto`). The image well scrolls with column 1 (the contract draws it at the top of the column, unpinned). The window's 640 px minimum height (fix L4) is kept for very short windows. Keyboard focus scrolls within the column; focus clearance applies only below 1024 px.
+
 ## Open questions (must be answered before approval)
 
 1. **Lock, adjustments and edits.** Spec 3.3 says adjustments apply to unlocked swatches; spec 3.7 says a dragged swatch is locked and that adjustments apply on top of its picked color.

@@ -93,8 +93,9 @@ test.describe("chevron rows and bottom sheets (M3-T2)", () => {
     await expectClosed(page, trigger);
 
     trigger = await openAdjustments(page);
-    // A tap on the scrim above the panel.
-    await page.getByTestId("sheet-scrim").click({ position: { x: 20, y: 20 } });
+    // A tap on the scrim. The sheet fills the space under the pinned strip (M3 decision 35), so
+    // there may be no scrim left uncovered above the panel to tap: send the click to the scrim.
+    await page.getByTestId("sheet-scrim").dispatchEvent("click");
     await expectClosed(page, trigger);
 
     // A short swipe springs back; a longer one closes it.

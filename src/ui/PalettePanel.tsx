@@ -1,7 +1,7 @@
 /**
  * The Palette column (ui-contract "Column 2: PALETTE"; the phone Palette tab stacks the same
  * controls, spec 6.6 rule 6):
- * 1. the swatch strip, with its marks under it
+ * 1. the swatch strip, with its marks under it (pinned under the header below 1024 px, M3 decision 33)
  * 2. the selection label
  * 3. and 4. the editor: L, C, H, then HEX with the Lock and Ramp pills
  * 5. chevron rows: Swatch (M3 decision 5a), Adjustments, Contrast and CVD. They expand in place on
@@ -18,6 +18,7 @@ import { ChevronRow } from "./ChevronRow";
 import { ContrastPanel } from "./ContrastPanel";
 import { CopyButtons } from "./CopyButtons";
 import { CvdPanel } from "./CvdPanel";
+import { StripDock } from "./StripDock";
 import { StripMarks } from "./StripMarks";
 import { SwatchDetails } from "./SwatchDetails";
 import { SwatchEditor } from "./SwatchEditor";
@@ -28,8 +29,15 @@ export function PalettePanel({ variant }: { variant: "desktop" | "phone" }) {
   return (
     <div class="panel" data-panel="palette">
       {variant === "desktop" && <h2 class="section-label">Palette</h2>}
-      <SwatchStrip />
-      {!empty && <StripMarks />}
+      {/* Below 1024 px the strip and its marks pin under the header (M3 decision 33). */}
+      {variant === "phone" && !empty ? (
+        <StripDock host="palette" />
+      ) : (
+        <>
+          <SwatchStrip />
+          {!empty && <StripMarks />}
+        </>
+      )}
       <SelectionLabel />
       <EmptyRolesNote />
       {!empty && <SwatchEditor />}
