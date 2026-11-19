@@ -204,15 +204,16 @@ test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
     await expect(swatches(page)).toHaveCount(6);
   });
 
-  test("'Pick from image' is marked coming soon and explains itself", async ({ page }) => {
+  test("'Pick from image' starts the eyedropper (M3-T16)", async ({ page }) => {
     await page.goto(demo());
     await addTile(page).click();
     const item = page.getByRole("menuitem", { name: "Pick from image" });
-    await expect(item).toHaveAttribute("data-coming-soon", "");
+    await expect(item).not.toHaveAttribute("data-coming-soon");
     await item.click();
-    await expect(
-      page.getByTestId("toast-region").getByText("Coming in a later version"),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Eyedropper" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await expect(swatches(page)).toHaveCount(6);
   });
 

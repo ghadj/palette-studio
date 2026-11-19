@@ -48,7 +48,15 @@ export function loupePosition(
   const height = LOUPE_SIZE + HEX_HEIGHT;
   let left = touch ? at.x - LOUPE_SIZE / 2 : at.x + GAP;
   let top = touch ? at.y - GAP - height : at.y - height / 2;
-  if (touch && top < EDGE) top = at.y + GAP; // no room above: go below
+  if (touch && top < EDGE) {
+    if (at.y + GAP + height <= well.height - EDGE) {
+      top = at.y + GAP; // no room above: go below
+    } else {
+      // A short well (a phone) has room for neither: go beside the finger, toward the roomier side.
+      left = at.x < well.width / 2 ? at.x + GAP : at.x - GAP - LOUPE_SIZE;
+      top = at.y - height / 2;
+    }
+  }
   if (!touch && left + LOUPE_SIZE > well.width - EDGE) left = at.x - GAP - LOUPE_SIZE;
   left = Math.max(EDGE, Math.min(left, well.width - LOUPE_SIZE - EDGE));
   top = Math.max(EDGE, Math.min(top, well.height - height - EDGE));

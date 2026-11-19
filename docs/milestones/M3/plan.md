@@ -661,7 +661,8 @@ Rules that hold for every task:
     - "disabled at 12 in Add mode"
     - "phone: a tap with the loupe works and the page doesn't scroll during the press"
 - Done when: tests pass; nothing uses the browser EyeDropper API (6.1).
-- [ ] Done
+- [x] Done
+  - Note: pure parts are in `src/state/eyedropper.ts` (`pointFromWell`, `addPicked`, `replaceWithPick`, `startEyedropper`). The hint row (`EyedropperHint`, with the "Replace swatch N" chip) lives in `EyedropperLayer.tsx` and replaces the marker hint `<p>` in `SourcePanel.tsx` (one edit there). The E button turns it on in Add mode (it always starts in Add; at 12 the hint says so and the chip still retargets). The layer sits above markers, and `.well-tools` and the zoom pill rise above it by a sibling rule. Pick undo labels: "Add picked color", "Replace color". "Pick from image" no longer has `data-coming-soon`, so the strip-actions test for it now expects the eyedropper to start. Deviation in T12's `Loupe.tsx`: on a well too short for the loupe above or below the finger (phones), `loupePosition` puts it beside the finger, so it doesn't sit under it. The phone e2e picks patch 6, since patch 5 sits under the zoom pill.
 
 ### M3-T17: Integration sweep, phone and theme pass, review page
 - Files:

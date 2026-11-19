@@ -20,6 +20,7 @@ import {
   swatchLabel,
 } from "../palette/model";
 import { clusterFocus, clusterHover, shareText, shownCluster } from "../state/cluster";
+import { startEyedropper } from "../state/eyedropper";
 import { commit } from "../state/history";
 import {
   clusterMap,
@@ -34,7 +35,6 @@ import {
   viewSettings,
 } from "../state/signals";
 import { viewShares } from "../state/view-result";
-import { comingSoon } from "./comingSoon";
 import { stripColumns } from "./stripLayout";
 
 /** Only a fine pointer hovers (spec 6.1 "No hover"); touch uses the Cluster map toggle. */
@@ -178,10 +178,9 @@ function AddTile({ alone, full }: { alone: boolean; full: boolean }) {
             type="button"
             role="menuitem"
             class="strip-menu__item"
-            data-coming-soon=""
             onClick={() => {
-              close(true);
-              comingSoon();
+              setOpen(false);
+              startEyedropper();
             }}
           >
             Pick from image

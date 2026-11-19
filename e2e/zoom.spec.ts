@@ -9,7 +9,7 @@ import { fixture } from "./helpers/files";
 
 const well = (page: Page) => page.locator("[data-testid=image-well]:visible").first();
 const zoomLevel = (page: Page) => well(page).getByTestId("zoom-level");
-const button = (page: Page, name: "Zoom in" | "Zoom out" | "Fit" | "Markers") =>
+const button = (page: Page, name: "Zoom in" | "Zoom out" | "Fit" | "Markers" | "Eyedropper") =>
   well(page).getByRole("button", { name, exact: true });
 
 interface View {
@@ -185,7 +185,7 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
     expect(await view(page)).toEqual({ scale: 1, x: 0, y: 0 });
     // The zoom buttons are reachable with Tab from the image. WebKit on macOS tabs only to form
     // fields by default, so it is checked in the other browsers.
-    // Since M3-T12 the six markers and the Markers toggle come first in the tab order.
+    // Since M3-T12 the six markers, the Markers toggle and the Eyedropper (M3-T16) come first in the tab order.
     if (!info.project.name.includes("webkit")) {
       for (let n = 1; n <= 6; n += 1) {
         await page.keyboard.press("Tab");
@@ -193,6 +193,8 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
       }
       await page.keyboard.press("Tab");
       await expect(button(page, "Markers")).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(button(page, "Eyedropper")).toBeFocused();
       await page.keyboard.press("Tab");
       await expect(button(page, "Zoom out")).toBeFocused();
     }

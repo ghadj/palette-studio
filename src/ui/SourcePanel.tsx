@@ -8,6 +8,7 @@ import { outputPalette, progressVisible, viewSettings } from "../state/signals";
 import type { ImageViewMode } from "../types";
 import { CopyButtons } from "./CopyButtons";
 import { comingSoon } from "./comingSoon";
+import { EyedropperHint } from "./EyedropperLayer";
 import { ImageMessageBanner, ImageWell } from "./ImageWell";
 import { PaletteViewRows, PaletteViewSummary } from "./PaletteViewRows";
 import { SettingsControls } from "./SettingsControls";
@@ -120,11 +121,7 @@ export function SourcePanel({ variant }: { variant: "desktop" | "phone" }) {
       <ImageMessageBanner />
       <ViewBar />
       <ViewSummary />
-      {viewSettings.value.mode === "image" && outputPalette.value.length > 0 && (
-        <p class="hint" data-testid="marker-hint">
-          Drag a marker to resample
-        </p>
-      )}
+      <EyedropperHint />
       {variant !== "desktop" && outputPalette.value.length > 0 && <StripDock />}
       {variant !== "desktop" && <EmptyRolesNote />}
       {variant === "phone" && outputPalette.value.length > 0 && <CopyButtons />}
