@@ -669,6 +669,26 @@ fieldset {
   background: var(--color-surface);
 }
 
+/*
+ * Focus and scrollIntoView keep controls clear of the pinned header, the strip and the fixed tab
+ * bar (spec 8 v1 acceptance 10; WCAG 2.2 SC 2.4.11). SourcePanel sets --strip-dock-height.
+ */
+@media (max-width: 1023.98px) {
+  html {
+    scroll-padding-top: calc(
+      var(--header-height) +
+      env(safe-area-inset-top) +
+      var(--strip-dock-height, 0px) +
+      var(--space-2)
+    );
+    scroll-padding-bottom: calc(
+      var(--tabbar-height) +
+      env(safe-area-inset-bottom) +
+      var(--space-2)
+    );
+  }
+}
+
 .strip-dock[data-stuck] {
   box-shadow: 0 var(--stroke) 0 var(--color-border);
 }

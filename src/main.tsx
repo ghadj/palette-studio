@@ -25,8 +25,10 @@ import {
 } from "./state/signals";
 import { initTheme } from "./state/theme";
 import { App } from "./ui/App";
+import { installFocusClearance } from "./ui/focusClearance";
 
 initTheme();
+installFocusClearance();
 
 // The mockup state loads its fixture directly and never touches storage (mockup-state.md, spec 5.5).
 const mockup = parseMockupParams(window.location.search);
