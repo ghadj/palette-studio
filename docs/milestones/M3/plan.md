@@ -318,7 +318,8 @@ Rules that hold for every task:
     - "the '+' tile is at least 44 × 44 at 320 px"
   - `e2e/strip-layout.spec.ts` gets no edits; it must still pass.
 - Done when: tests pass; nothing depends on hover.
-- [ ] Done
+- [x] Done
+  - Note: "Type a color" focuses the HEX field only when it is visible (phones keep the editor in the Palette tab).
 
 ### M3-T6: Global adjustments and before/after compare
 - Files:

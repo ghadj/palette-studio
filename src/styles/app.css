@@ -1577,7 +1577,82 @@ fieldset {
 /* ---- end M3-T4 ---- */
 
 /* ---- M3-T5 strip actions: "+" tile, reorder (SwatchStrip.tsx) ---- */
-/* M3-T5 styles go here. */
+.swatch {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.swatch[data-dragging] {
+  opacity: 0.6;
+  outline: var(--stroke-selected) dashed var(--color-accent);
+  outline-offset: var(--stroke-selected);
+}
+
+.strip-add {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.strip-add[data-alone] {
+  grid-column: 1 / -1;
+}
+
+.strip-add__tile {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: var(--stroke) dashed var(--color-border-control);
+  border-radius: var(--radius-swatch);
+  color: var(--color-text-muted);
+}
+
+.strip-add__tile:disabled {
+  border-color: var(--color-divider);
+}
+
+.strip-add__tile:focus-visible,
+.strip-menu__item:focus-visible {
+  outline: var(--stroke-selected) solid var(--color-accent);
+  outline-offset: var(--stroke-selected);
+}
+
+.strip-menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: calc(var(--touch-target) * 4);
+  padding: var(--space-1);
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.strip-menu[data-align="start"] {
+  left: 0;
+}
+
+.strip-menu[data-align="end"] {
+  right: 0;
+}
+
+.strip-menu__item {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-input);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-align: start;
+  white-space: nowrap;
+}
 
 /* ---- end M3-T5 ---- */
 
