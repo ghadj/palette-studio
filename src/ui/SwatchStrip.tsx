@@ -36,7 +36,7 @@ import {
   viewSettings,
 } from "../state/signals";
 import { viewShares } from "../state/view-result";
-import { stripColumns } from "./stripLayout";
+import { stripCells, stripColumns } from "./stripLayout";
 
 /** Only a fine pointer hovers (spec 6.1 "No hover"); touch uses the Cluster map toggle. */
 const hovers = (event: PointerEvent): boolean =>
@@ -236,12 +236,11 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
     return () => observer.disconnect();
   }, [shown]);
   if (!shown) return null;
-  // The "+" tile takes a cell when there are 5 or fewer swatches; otherwise it fills a gap in the
-  // last row or sits on a row of its own. Decision 13 still governs the swatches.
-  const swatchColumns = stripColumns(swatches.length, size.width, size.gap);
-  const columns = swatches.length < 6 ? swatches.length + 1 : swatchColumns;
-  const aloneRow = swatches.length >= 6 && swatches.length % columns === 0;
+  // The "+" tile is a cell of the same row as the swatches, which shrink to make room and wrap
+  // only when 44 px no longer fits (decisions 13, 29). At 12 it is disabled, on a row of its own.
   const full = !canAdd(swatches);
+  const columns = stripColumns(stripCells(swatches.length), size.width, size.gap);
+  const aloneRow = full;
 
   const announce = (id: string, to: number) => {
     const list = palette.peek();

@@ -1,5 +1,5 @@
 /**
- * Zoom controls in the image well's bottom-right corner (M2 decision 15b, 15e): Zoom out, Zoom in
+ * Zoom controls in the image well's top-right corner (M2 decision 15b, 15e; M3 decision 26): Zoom out, Zoom in
  * and Fit. The buttons step through 100%, 200%, 400% and 800% about the well's center, and the zoom
  * level is announced through a live region. At the ends of the range a button is aria-disabled, so
  * keyboard focus stays on it.

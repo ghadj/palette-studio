@@ -199,6 +199,31 @@ test.describe("Values view (spec 3.8)", () => {
     );
   });
 
+  test("6 swatches: the '+' tile is on the swatches' row, and the bracket is within 8 px of their bottoms (decision 29)", async ({
+    page,
+  }, info) => {
+    await page.setViewportSize(
+      isPhoneProject(info) ? { width: 390, height: 844 } : { width: 1280, height: 800 },
+    );
+    await openView(page, "values");
+    const swatches = strip(page).locator("[data-swatch]");
+    await expect(swatches).toHaveCount(6);
+    const tile = await strip(page).getByTestId("add-swatch").boundingBox();
+    const first = await swatches.first().boundingBox();
+    const last = await swatches.nth(5).boundingBox();
+    const line = await page
+      .locator("[data-testid=value-bracket]:visible [data-bracket-line]")
+      .boundingBox();
+    if (!tile || !first || !last || !line) throw new Error("no boxes");
+    expect(Math.abs(tile.y - first.y)).toBeLessThanOrEqual(1);
+    expect(tile.x).toBeGreaterThan(last.x);
+    expect(tile.height).toBeGreaterThanOrEqual(44);
+    for (const box of [first, last]) expect(box.width).toBeGreaterThanOrEqual(44);
+    const gap = line.y - (first.y + first.height);
+    expect(gap).toBeGreaterThanOrEqual(-1);
+    expect(gap).toBeLessThanOrEqual(8);
+  });
+
   test("phone: the Close in value row is at least 44 px tall", async ({ page }, info) => {
     test.skip(!isPhoneProject(info), "phone only");
     await openView(page, "values");

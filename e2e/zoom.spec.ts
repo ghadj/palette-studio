@@ -12,6 +12,14 @@ const zoomLevel = (page: Page) => well(page).getByTestId("zoom-level");
 const button = (page: Page, name: "Zoom in" | "Zoom out" | "Fit" | "Markers" | "Eyedropper") =>
   well(page).getByRole("button", { name, exact: true });
 
+/**
+ * The fixture's selected marker 3 sits under the top-right zoom pill on a phone and, selected, rises
+ * above it (decision 26). Selecting swatch 1 first leaves the pill clear.
+ */
+async function clearZoomPill(page: Page) {
+  await page.locator("[data-testid=swatch-strip]:visible [data-swatch]").first().click();
+}
+
 interface View {
   scale: number;
   x: number;
@@ -64,6 +72,7 @@ const paletteSettled = async (page: Page) => {
 test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
   test("Zoom in twice gives 400% and the label says so; Fit returns to 100%", async ({ page }) => {
     await page.goto(demo());
+    await clearZoomPill(page);
     await expect(zoomLevel(page)).toHaveText("100%");
     await expect(button(page, "Zoom out")).toBeDisabled();
     await button(page, "Zoom in").click();
@@ -292,13 +301,13 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
         expect(b?.width ?? 0, name).toBeGreaterThanOrEqual(44);
         expect(b?.height ?? 0, name).toBeGreaterThanOrEqual(44);
       }
-      // They sit in the well's bottom-right corner.
+      // They sit in the well's top-right corner (M3 decision 26).
       const controls = await well(page).getByTestId("zoom-controls").boundingBox();
       const box = await wellBox(page);
       expect((controls?.x ?? 0) + (controls?.width ?? 0)).toBeLessThanOrEqual(box.x + box.width);
-      expect((controls?.y ?? 0) + (controls?.height ?? 0)).toBeLessThanOrEqual(box.y + box.height);
+      expect(controls?.y ?? 0).toBeGreaterThanOrEqual(box.y);
       expect(controls?.x ?? 0).toBeGreaterThan(box.x + box.width / 2);
-      expect(controls?.y ?? 0).toBeGreaterThan(box.y + box.height / 2);
+      expect((controls?.y ?? 0) + (controls?.height ?? 0)).toBeLessThan(box.y + box.height / 2);
     }
   });
 });
@@ -477,6 +486,7 @@ test.describe("touch gestures (spec 6.1 'Gestures', decision 15h)", () => {
     page,
   }) => {
     await page.goto(demo());
+    await clearZoomPill(page);
     const image = well(page).locator("img");
     const styles = () =>
       well(page).evaluate((el) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stripColumns } from "../../src/ui/stripLayout";
+import { stripCells, stripColumns } from "../../src/ui/stripLayout";
 
 describe("swatch strip layout (decision 13)", () => {
   it("up to 6 swatches always sit in one row", () => {
@@ -22,5 +22,16 @@ describe("swatch strip layout (decision 13)", () => {
   it("an unmeasured strip assumes two rows for more than 6", () => {
     expect(stripColumns(12, 0, 8)).toBe(6);
     expect(stripColumns(0, 300, 8)).toBe(1);
+  });
+
+  it("the '+' tile counts as a cell until the 12-swatch limit (decision 29)", () => {
+    expect(stripCells(6)).toBe(7);
+    expect(stripCells(11)).toBe(12);
+    expect(stripCells(12)).toBe(12);
+    // 6 swatches and the tile: one row at 390 px (358 px of content), two rows at 320 px.
+    expect(stripColumns(stripCells(6), 358, 4)).toBe(7);
+    expect(stripColumns(stripCells(6), 288, 4)).toBe(4);
+    // 11 swatches and the tile wrap evenly, 6 and 6.
+    expect(stripColumns(stripCells(11), 400, 8)).toBe(6);
   });
 });

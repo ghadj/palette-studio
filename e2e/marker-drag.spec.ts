@@ -473,10 +473,10 @@ test.describe("touch (spec 6.1 'Gestures', M2 decision 15h)", () => {
     expect(p1.y).toBeGreaterThan(p0.y);
     expect(await view(page)).toEqual(v0);
 
-    // One finger away from a marker pans.
+    // One finger away from a marker and the zoom pill pans.
     const box = await well(page).boundingBox();
     if (!box) throw new Error("no box");
-    const a = { x: box.x + box.width * 0.7, y: box.y + box.height * 0.3 };
+    const a = { x: box.x + box.width * 0.55, y: box.y + box.height * 0.55 };
     const b = { x: a.x - 60, y: a.y };
     const pan = path(a, b, 6);
     if (info.project.name === "phone-chromium") {

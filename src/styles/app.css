@@ -499,11 +499,12 @@ fieldset {
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-/* Zoom out, Zoom in and Fit in the well's bottom-right corner (decision 15e). */
+/* Zoom out, Zoom in and Fit in the well's top-right corner (decisions 15e, 26). */
 .zoom-controls {
   position: absolute;
   right: var(--space-2);
-  bottom: var(--space-2);
+  top: var(--space-2);
+  z-index: 2;
   display: flex;
   background: var(--color-surface);
   border: var(--stroke) solid var(--color-border-control);
@@ -2063,7 +2064,7 @@ fieldset {
   pointer-events: none;
 }
 
-/* Corner tools beside the zoom pill, on the opposite side so they don't add to what it covers. */
+/* Corner tools (bottom-left), clear of the zoom pill in the top-right corner. */
 .well-tools {
   position: absolute;
   left: var(--space-2);
@@ -2294,6 +2295,11 @@ fieldset {
 .value-bracket {
   position: relative;
   height: calc(var(--space-4) + var(--space-1));
+}
+
+/* The panel's gap would leave the bracket 12 px under its swatches; it sits within 8 px (decision 29). */
+.panel > .strip-marks:has(.value-bracket-lanes) {
+  margin-top: calc(var(--space-2) * -1);
 }
 
 .value-bracket__line {

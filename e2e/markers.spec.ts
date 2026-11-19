@@ -139,6 +139,49 @@ test.describe("markers on the image (spec 3.7)", () => {
     expect(style).toEqual(["none", "none"]);
   });
 
+  for (const width of [320, 390, 1280]) {
+    test(`marker 5 is fully visible at Fit at ${width} px; the zoom pill is top-right and clear of the well tools (decision 26)`, async ({
+      page,
+    }, info) => {
+      test.skip(isPhoneProject(info) && width >= 1024, "desktop viewport");
+      await page.setViewportSize({ width, height: width >= 1024 ? 800 : 844 });
+      await page.goto(demo());
+      const well = page.locator("[data-testid=image-well]:visible").first();
+      const wb = await well.boundingBox();
+      const zoom = await well.getByTestId("zoom-controls").boundingBox();
+      const tools = await well.locator(".well-tools").boundingBox();
+      const r = await ring(page, 5).boundingBox();
+      if (!wb || !zoom || !tools || !r) throw new Error("no boxes");
+      // The pill is in the top-right corner.
+      expect(zoom.y - wb.y).toBeLessThan(wb.height / 2);
+      expect(zoom.x + zoom.width / 2).toBeGreaterThan(wb.x + wb.width / 2);
+      const overlap = (a: typeof zoom, b: typeof zoom) =>
+        a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+      expect(overlap(zoom, r)).toBe(false);
+      expect(overlap(tools, r)).toBe(false);
+      expect(overlap(zoom, tools)).toBe(false);
+      // Every corner and the center of the ring reach marker 5 (nothing covers it).
+      const points = [
+        [r.x + r.width / 2, r.y + r.height / 2],
+        [r.x + 2, r.y + r.height / 2],
+        [r.x + r.width - 2, r.y + r.height / 2],
+        [r.x + r.width / 2, r.y + 2],
+        [r.x + r.width / 2, r.y + r.height - 2],
+      ];
+      for (const [x, y] of points) {
+        const hit = await page.evaluate(
+          ([px, py]) =>
+            document
+              .elementFromPoint(px as number, py as number)
+              ?.closest("[data-marker]")
+              ?.getAttribute("data-marker") ?? null,
+          [x, y],
+        );
+        expect(hit).toBe("5");
+      }
+    });
+  }
+
   test("the show/hide toggle hides all markers and is view state (not in undo)", async ({
     page,
   }) => {
