@@ -37,6 +37,18 @@ export async function tokenColor(page: Page, token: string): Promise<string> {
   }, token);
 }
 
+/** Resolves a length token to pixels through a probe element. */
+export async function tokenPx(page: Page, token: string): Promise<number> {
+  return page.evaluate((name) => {
+    const probe = document.createElement("div");
+    probe.style.setProperty("width", `var(${name})`);
+    document.body.appendChild(probe);
+    const value = Number.parseFloat(getComputedStyle(probe).width);
+    probe.remove();
+    return value;
+  }, token);
+}
+
 export const PHONE_SIZES: ReadonlyArray<{ width: number; height: number }> = [
   { width: 320, height: 568 },
   { width: 375, height: 667 },

@@ -703,9 +703,10 @@ fieldset {
 
 .setting-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-1) var(--space-4);
   min-height: var(--touch-target);
   border-bottom: var(--stroke) solid var(--color-divider);
 }
@@ -725,7 +726,9 @@ fieldset {
 
 .setting-row__label-group {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
+  min-width: 0;
   padding: var(--space-1) 0;
 }
 
@@ -734,11 +737,13 @@ fieldset {
   font-size: var(--text-xs);
 }
 
+/* The value keeps its width and wraps under the label and note when they don't fit together. */
 .setting-row__value {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
-  min-width: 0;
+  margin-left: auto;
 }
 
 /*
