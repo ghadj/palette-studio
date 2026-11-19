@@ -40,7 +40,9 @@ const NO_FINE_POINTER = "(hover: none), (pointer: coarse)";
 
 /** True on a device without a fine pointer, at any width (decision 13f). */
 function useNoFinePointer(): boolean {
-  const [touchOnly, setTouchOnly] = useState(() => window.matchMedia(NO_FINE_POINTER).matches);
+  const [touchOnly, setTouchOnly] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(NO_FINE_POINTER).matches,
+  );
   useEffect(() => {
     const query = window.matchMedia(NO_FINE_POINTER);
     const update = () => setTouchOnly(query.matches);
