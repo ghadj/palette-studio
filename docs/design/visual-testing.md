@@ -72,7 +72,7 @@ Work through the `ui-contract.md` section for that screen, region by region:
 - Hierarchy matches: strong versus muted text, which item carries the accent.
 - Selected states sit where the mockup state puts them.
 - Dark mode keeps the same content colors (spec 6.2): the image, swatches, gradients, paint chips and grid lines don't change with the theme.
-- Intended deviations D1 to D3 are applied, not flagged.
+- Intended deviations D1 to D4 are applied, not flagged.
 
 Report each difference with:
 - the shot

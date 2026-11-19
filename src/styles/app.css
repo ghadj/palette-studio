@@ -656,17 +656,26 @@ fieldset {
 
 /*
  * Below 1024 px the Source tab's strip pins just under the header while the setting rows scroll
- * (M2 decision 19; ui-contract D4). The container is opaque and spans the panel gutters so nothing
- * shows beside it. Its padding gives the swatches room under the header and is offset by negative
- * margins, so the unpinned layout is unchanged. Pinned, a divider separates it from the rows.
+ * (M2 decision 19; ui-contract D4). The container is opaque. On a phone it spans the panel gutters so
+ * nothing shows beside it; on a tablet it stays within the row column. Its padding gives the swatches
+ * room under the header and is offset by negative margins, so the unpinned layout is unchanged.
+ * Pinned, a divider separates it from the rows.
  */
 .strip-dock {
   position: sticky;
   top: calc(var(--header-height) + env(safe-area-inset-top));
   z-index: 5;
-  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-4));
-  padding: var(--space-2) var(--space-4);
+  margin: calc(-1 * var(--space-2)) 0;
+  padding: var(--space-2) 0;
   background: var(--color-surface);
+}
+
+/* Where the shell fills the screen (up to its 640 px maximum), the container also covers the gutters. */
+@media (max-width: 640px) {
+  .strip-dock {
+    margin-inline: calc(-1 * var(--space-4));
+    padding-inline: var(--space-4);
+  }
 }
 
 /*

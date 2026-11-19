@@ -138,7 +138,7 @@ A header at the top, one panel at a time, and a bottom tab bar: Source, Palette,
 2. The view bar, as on desktop.
 3. The hint (Image view only).
 4. The swatch strip, with the selection outlined. It is a compact view of the palette, so the result stays visible while markers move; tapping a swatch selects its marker. Editing happens on the Palette tab.
-5. Setting rows for the current view. In the Image view: Algorithm, Colors, Working space.
+5. Setting rows for the current view. In the Image view: Algorithm, Colors, Working space. Below 1024 px each row has `--space-2` of padding above and below, so the 44 px controls don't fill the row from divider to divider (M2 decision 21). Row labels, toggle rows, chevron-row titles and plain-text values use `--text-row-touch` (15 px), on any touch device too (decision 22).
 
 **Palette tab.** Not drawn. Use the desktop palette column stacked vertically (the swatch strip, then the editor), with the chevron rows opening bottom sheets.
 
@@ -195,7 +195,7 @@ Not drawn. Follow spec 6.1: the phone layout, wider. The phone header, one panel
 | Pill button | pill, control border, `--text-sm` | default, hover, pressed, disabled, focus |
 | Primary button | pill, accent-soft fill, 2 px accent outline, strong | default, pressed, disabled, focus |
 | Select button | `--radius-input`, control border, chevron on the right | default, filtered (accent-soft fill, accent outline, strong), focus |
-| Setting row | muted label left, value right, divider below | default, focus |
+| Setting row | muted label left, value right, divider below. Below 1024 px: `--space-2` padding above and below (decision 21). Under `(max-width: 1023.98px), (pointer: coarse)`: label and plain-text value at `--text-row-touch`, 15 px; fields stay at `--text-input-touch`, 16 px (decision 22). Desktop with a fine pointer is unchanged at 13 px | default, focus |
 | Chevron row | label left, chevron right, divider below | collapsed, expanded |
 | Slider | divider-colored track, accent thumb, number field beside it on phones | default, dragging, focus |
 | Stop handle | stop color, light ring | default, selected (accent ring), dragging |
@@ -222,7 +222,7 @@ Visual review treats these as correct.
 - **D3, type sizes on phones.** To fit the scaled frames, the phone mockups use type smaller than `--text-xs` in places (tab labels, the view bar, counts in the Filters sheet). Use the type tokens; the 44 px touch targets win over matching the drawing.
 - **D4, sticky swatch strip on phone and tablet.** The mockups draw an unscrolled page; below 1024 px the Source tab's swatch strip pins under the header while the setting rows scroll, on an opaque `--color-surface` container with a `--color-border` divider while pinned (M2 decision 19).
 
-Deviations D1 to D4 of the previous version (control borders, phone Undo and Redo, quality dots on phone cards, all four medium chips) are now drawn in the mockups.
+Earlier deviations from the previous version of the mockups (control borders, phone Undo and Redo, quality dots on phone cards, all four medium chips) are now drawn in the mockups.
 
 ## Not drawn: build from the spec, then flag for design review
 
