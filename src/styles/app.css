@@ -2320,3 +2320,8 @@ fieldset {
 .swatch-details .setting-rows {
   border-top: none;
 }
+
+/* A mounted live region that adds no box of its own (spec 6.3). */
+.live-region {
+  display: contents;
+}

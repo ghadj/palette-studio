@@ -23,7 +23,7 @@ import {
   canAdd,
   deleteSwatch,
   duplicateSwatch,
-  MAX_SWATCHES,
+  FULL_MESSAGE,
   renameSwatch,
   resetToExtracted,
   selectedSwatch,
@@ -67,7 +67,7 @@ const RADII: ReadonlyArray<{ value: SampleRadius; label: string }> = [
   { value: 11, label: "11" },
 ];
 
-export const FULL_MESSAGE = `A palette holds up to ${MAX_SWATCHES} colors`;
+export { FULL_MESSAGE };
 
 // sRGB helpers for the RGB and HSL fields
 
@@ -219,6 +219,7 @@ function CommitField({
       inputMode={inputMode}
       autoComplete="off"
       autoCapitalize="off"
+      autoCorrect="off"
       spellcheck={false}
       aria-label={label}
       value={draft ?? value}
@@ -506,11 +507,13 @@ function SwatchControls({ swatch, index }: { swatch: Swatch; index: number }) {
           Delete
         </button>
       </div>
-      {full && (
-        <p class="swatch-note" id={`${base}-full`}>
-          {FULL_MESSAGE}
-        </p>
-      )}
+      <div class="live-region" role="status">
+        {full && (
+          <p class="swatch-note" id={`${base}-full`}>
+            {FULL_MESSAGE}
+          </p>
+        )}
+      </div>
       <div class="swatch-actions">
         <button
           type="button"

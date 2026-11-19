@@ -11,19 +11,25 @@ export const closePairText = (first: number, second: number): string =>
   `Swatches ${first + 1} and ${second + 1} are very close`;
 
 export function ClosePairsMark() {
-  if (viewSettings.value.mode !== "image") return null;
   const { distanceMetric, mergeThreshold } = settings.value;
-  const pairs = closePairs(outputPalette.value, distanceMetric, mergeThreshold);
+  const pairs =
+    viewSettings.value.mode === "image"
+      ? closePairs(outputPalette.value, distanceMetric, mergeThreshold)
+      : [];
   const [pair] = pairs;
-  if (!pair) return null;
   const more = pairs.length - 1;
+  // The live region stays mounted so a pair that appears is announced (spec 6.3).
   return (
-    <p class="close-pairs-mark" data-testid="close-pairs-mark">
-      <span class="close-dot" aria-hidden="true" />
-      <span>
-        {closePairText(pair.first, pair.second)}
-        {more > 0 ? ` and ${more} more` : ""}
-      </span>
-    </p>
+    <div class="live-region" role="status">
+      {pair && (
+        <p class="close-pairs-mark" data-testid="close-pairs-mark">
+          <span class="close-dot" aria-hidden="true" />
+          <span>
+            {closePairText(pair.first, pair.second)}
+            {more > 0 ? ` and ${more} more` : ""}
+          </span>
+        </p>
+      )}
+    </div>
   );
 }

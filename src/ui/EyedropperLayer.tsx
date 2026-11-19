@@ -12,7 +12,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { oklabToHex } from "../color/convert";
 import { imageClient } from "../extract/client";
-import { canAdd, MAX_SWATCHES, selectedSwatch } from "../palette/model";
+import { canAdd, FULL_MESSAGE, selectedSwatch } from "../palette/model";
 import { addPicked, pointFromWell, replaceWithPick } from "../state/eyedropper";
 import { commit } from "../state/history";
 import {
@@ -250,7 +250,7 @@ export function EyedropperHint() {
   if (viewSettings.value.mode !== "image") return null;
   if (mode === "off") {
     return list.length > 0 ? (
-      <p class="hint" data-testid="marker-hint">
+      <p class="hint" role="status" data-testid="marker-hint">
         Drag a marker to resample
       </p>
     ) : null;
@@ -262,7 +262,7 @@ export function EyedropperHint() {
     target.kind === "replace"
       ? `Pick a color to replace swatch ${index + 1}`
       : !canAdd(list)
-        ? `A palette holds at most ${MAX_SWATCHES} colors. Replace a swatch instead`
+        ? `${FULL_MESSAGE} Replace a swatch instead.`
         : "Pick a color from the image to add it";
   return (
     <div class="hint-row">

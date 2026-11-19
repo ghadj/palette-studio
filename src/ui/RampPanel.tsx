@@ -7,10 +7,9 @@
 import { type Oklch, oklchToHex, oklchToOklab } from "../color/convert";
 import { harmonies } from "../color/harmony";
 import { ramp } from "../color/ramps";
-import { addSwatch, canAdd, createSwatch, selectedSwatch } from "../palette/model";
+import { addSwatch, canAdd, createSwatch, FULL_MESSAGE, selectedSwatch } from "../palette/model";
 import { commit } from "../state/history";
 import { outputPalette, palette, selectedSwatchId } from "../state/signals";
-import { FULL_MESSAGE } from "./SwatchDetails";
 
 /** The panel's name: the sheet title on phones. */
 export const RAMP_TITLE = "Ramp";
@@ -110,11 +109,13 @@ export function RampPanel() {
           </div>
         ))}
       </div>
-      {full && (
-        <p class="swatch-note" id={noteId}>
-          {FULL_MESSAGE}
-        </p>
-      )}
+      <div class="live-region" role="status">
+        {full && (
+          <p class="swatch-note" id={noteId}>
+            {FULL_MESSAGE}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

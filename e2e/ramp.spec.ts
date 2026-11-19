@@ -64,7 +64,7 @@ test.describe("ramp panel", () => {
     }
     await expect(strip(page)).toHaveCount(12);
     await expect(tiles(page).first()).toBeDisabled();
-    await expect(panel(page)).toContainText("A palette holds up to 12 colors");
+    await expect(panel(page)).toContainText("A palette holds at most 12 colors.");
   });
 
   test("phone: opens as a sheet", async ({ page }, info) => {

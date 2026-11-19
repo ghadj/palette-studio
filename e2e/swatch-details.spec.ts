@@ -85,6 +85,13 @@ test.describe("fields", () => {
     await hex.press("Enter");
     await expect(hex).toHaveValue("#14386B");
   });
+
+  test("the HEX field turns autocorrect and autocapitalize off (spec 6.1)", async ({ page }) => {
+    await open(page);
+    const hex = details(page).getByLabel("HEX", { exact: true });
+    await expect(hex).toHaveAttribute("autocorrect", "off");
+    await expect(hex).toHaveAttribute("autocapitalize", "off");
+  });
 });
 
 test.describe("copy", () => {
@@ -131,8 +138,8 @@ test.describe("duplicate and delete", () => {
     for (let i = 7; i < 12; i++) await duplicate.click();
     await expect(strip(page)).toHaveCount(12);
     await expect(duplicate).toBeDisabled();
-    await expect(details(page)).toContainText("A palette holds up to 12 colors");
-    await expect(duplicate).toHaveAccessibleDescription("A palette holds up to 12 colors");
+    await expect(details(page)).toContainText("A palette holds at most 12 colors.");
+    await expect(duplicate).toHaveAccessibleDescription("A palette holds at most 12 colors.");
   });
 
   test("Delete, then Undo, restores the swatch in place", async ({ page }) => {
@@ -232,5 +239,27 @@ test.describe("cluster map toggle (D21, 13d)", () => {
     await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
     await page.getByRole("tab", { name: "Source" }).tap();
     await expect(page.locator("[data-testid=cluster-overlay]")).toBeVisible();
+  });
+});
+
+test.describe("live regions (spec 6.3)", () => {
+  const live = (page: Page, text: string) =>
+    page.locator('[role="status"], [aria-live="polite"]').filter({ hasText: text });
+
+  test("a close pair is announced through a live region", async ({ page }) => {
+    await open(page);
+    const hex = details(page).getByLabel("HEX", { exact: true });
+    await hex.fill("#EA6B3B");
+    await hex.press("Enter");
+    await expect(live(page, "very close").first()).toBeAttached();
+    await expect(live(page, "Swatches 1 and 3 are very close").first()).toBeAttached();
+  });
+
+  test("reaching 12 colors is announced through a live region", async ({ page }) => {
+    await open(page);
+    const duplicate = details(page).getByRole("button", { name: "Duplicate" });
+    for (let i = 6; i < 12; i++) await duplicate.click();
+    await expect(strip(page)).toHaveCount(12);
+    await expect(live(page, "A palette holds at most 12 colors.").first()).toBeAttached();
   });
 });

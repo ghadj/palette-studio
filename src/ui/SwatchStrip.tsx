@@ -14,7 +14,7 @@ import {
   addSwatch,
   canAdd,
   createSwatch,
-  MAX_SWATCHES,
+  FULL_MESSAGE,
   moveSwatch,
   swatchHex,
   swatchLabel,
@@ -442,11 +442,13 @@ export function SwatchStrip() {
         })}
         <AddTile alone={aloneRow} full={full} />
       </fieldset>
-      {full && (
-        <p class="hint" id="strip-full-note" data-testid="strip-full-note">
-          A palette holds at most {MAX_SWATCHES} colors.
-        </p>
-      )}
+      <div class="live-region" role="status">
+        {full && (
+          <p class="hint" id="strip-full-note" data-testid="strip-full-note">
+            {FULL_MESSAGE}
+          </p>
+        )}
+      </div>
       <p class="visually-hidden" role="status" data-testid="strip-announce">
         {announcement}
       </p>

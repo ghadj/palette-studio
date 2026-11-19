@@ -103,21 +103,23 @@ export function ContrastPanel() {
       </p>
       <section class="close-pairs" data-testid="close-pairs" aria-label="Close pairs">
         <h3 class="section-label">Close pairs</h3>
-        {pairs.length === 0 ? (
-          <p class="hint">No swatches are very close.</p>
-        ) : (
-          <ul class="close-pairs__list">
-            {pairs.map((pair) => (
-              <li class="close-pairs__item" key={`${pair.first}-${pair.second}`}>
-                <span class="close-dot" aria-hidden="true" />
-                <span>
-                  {closePairText(pair.first, pair.second)} (
-                  {distanceText(distanceMetric, pair.distance)})
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div class="live-region" role="status">
+          {pairs.length === 0 ? (
+            <p class="hint">No swatches are very close.</p>
+          ) : (
+            <ul class="close-pairs__list">
+              {pairs.map((pair) => (
+                <li class="close-pairs__item" key={`${pair.first}-${pair.second}`}>
+                  <span class="close-dot" aria-hidden="true" />
+                  <span>
+                    {closePairText(pair.first, pair.second)} (
+                    {distanceText(distanceMetric, pair.distance)})
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
     </div>
   );

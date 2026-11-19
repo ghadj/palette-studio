@@ -9,6 +9,9 @@ import type { ImagePoint, Oklch, Swatch } from "../types";
 /** A palette holds at most 12 swatches everywhere (M1 decision 13; M3 decision 4a). */
 export const MAX_SWATCHES = 12;
 
+/** The one wording for the limit, shown and announced everywhere (spec 6.3). */
+export const FULL_MESSAGE = `A palette holds at most ${MAX_SWATCHES} colors.`;
+
 let nextId = 1;
 
 /** A new id, unique within this page load. */
