@@ -212,7 +212,7 @@ describe("image worker: assign (spec 2.6, 7.4)", () => {
     vi.resetModules();
   });
 
-  it("assign resolves with the map; the buffer is transferred", async () => {
+  it("assign resolves with the map, transferring the buffer, in the assign worker suite", async () => {
     // Load the real worker module against a stand-in scope and send it an assign request with
     // fallback pixels: #E8693A, #14386B, and one transparent pixel.
     const posted: Array<{ message: FromWorker; transfer: Transferable[] }> = [];

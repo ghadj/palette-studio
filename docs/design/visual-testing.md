@@ -50,6 +50,8 @@ A failure names the element (a selector path) and the value that isn't a token. 
 | zoom-phone | `?demo=mockup&zoom=2` | 390 × 844 | contract text (not drawn): as zoom-desktop, controls at 44 px (M2 decision 15) |
 | cluster-map-desktop | `?demo=mockup&cluster=3` | 1280 × 800 | contract text (not drawn): swatch 3's cluster map over the image, other pixels dimmed toward mid-gray, and "Swatch 3 · 0.5% of the image" in the selection label (M2 decision 13) |
 | cluster-map-phone | `?demo=mockup&cluster=3` | 390 × 844 | contract text (not drawn): as cluster-map-desktop, on the Source tab (M2 decision 13). The Cluster map toggle shows in palette-phone (13d) |
+| pixel-filters-desktop | `?demo=mockup&rows=filters` | 1280 × 800 | contract text (not drawn): the Filters chevron row open after Working space (M2 decision 2b) |
+| pixel-filters-phone | `?demo=mockup&rows=filters` | 390 × 844 | contract text (not drawn): as pixel-filters-desktop, on the Source tab (M2 decision 2b) |
 
 Each shot is taken in light and dark, by setting the browser's color scheme. A shot joins the list in the milestone that builds its screen: the image views and grid in M3 and M5, the library in M5, the Materials view and filters with Part 2.
 

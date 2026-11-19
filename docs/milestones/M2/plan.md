@@ -252,13 +252,13 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "Minimum chroma 0.05 on grayscale-plus-red.png gives only red"
     - "filtering everything shows 'Every pixel is filtered out. Loosen a filter.' in a live region and an empty strip; loosening it brings the palette back"
     - "the threshold slider is disabled while its toggle is off"
-- Done when: tests pass; the screens `filters-desktop` and `filters-phone` are in the token and axe lists.
+- Done when: tests pass; the screens `pixel-filters-desktop` and `pixel-filters-phone` are in the token and axe lists.
 - [x] Done
   - Note: #111111 has OKLab L 0.178, not 0.173 (culori agrees). The test asserts 0.178; it is still dropped at 0.2.
   - Note: `runExtraction` returns `{ colors, reason }`, and the worker, client and extraction state carry the reason. `extractPalette` still returns the colors only. "All filtered" counts the alpha cutoff, because it is in the Filters row, so a fully transparent image shows the message too.
   - Note: each threshold has its own row under its toggle ("Dark threshold", "Light threshold"), with a slider and a number field. Both run over OKLab L 0 to 1 in steps of 0.01. Minimum chroma steps by 0.01. Alpha cutoff has a slider and an integer field.
   - Note: built in parallel with T7, so `src/ui/Toggle.tsx` is a minimal toggle (a switch button) and `src/ui/DecimalField.tsx` is a minimal decimal field. Reconcile both with T7's Toggle and NumberField on merge.
-  - Note: the existing e2e locators `details.chevron-row:visible summary` now name the Advanced row, since Filters is a second chevron row. `filters-desktop` and `filters-phone` are also in the review shot list, without a mockup. `rows` isn't in `mockup-state.md` yet; T13 records it.
+  - Note: the existing e2e locators `details.chevron-row:visible summary` now name the Advanced row, since Filters is a second chevron row. `pixel-filters-desktop` and `pixel-filters-phone` are also in the review shot list, without a mockup. `rows` isn't in `mockup-state.md` yet; T13 records it.
   - Note: `tests/fixtures/grayscale-plus-red.png` is byte-identical to the in-memory image from T6's `e2e/helpers/grayscale-plus-red.ts` (240 × 60, red band on rows 24 to 35). With Swatch roles, an all-filtered result shows only the filter message, not six empty roles.
 
 ### M2-T9: Ignore background and spatial weighting
@@ -289,7 +289,7 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "Ignore background Auto on studio-backdrop.png leaves no swatch within ΔE OK 0.04 of #ECEAE6"
     - "a busy border shows 'None found'"
 - Done when: tests pass.
-- [ ] Done (blocked on one e2e test; see the first note)
+- [x] Done (the blocked e2e test was fixed; e2e and the review page passed at c448dcd)
   - Note: e2e pending: browsers unavailable. While this task was being built, the macOS login session changed, so no browser can launch in this process (`bootstrap_check_in` error 141). The new filters tests passed in Chromium before that, and so did the token and axe cases and the Advanced e2e changes. The full five-project run is still to do.
   - Note (open question): the plan's e2e "Ignore background Auto on studio-backdrop.png leaves no swatch within ΔE OK 0.04 of #ECEAE6" can't hold together with the planned fixture and the unit test "the enclosed #ECEAE6 patch is kept". The kept patch forms its own small swatch (#E8E6E3 in Chromium, the 4th of 4). That test is not written. In its place, an extra e2e test checks that the backdrop is removed: the subject's two colors lead, and at most one swatch, the smallest, stays near #ECEAE6. To settle it, either allow the patch's small swatch in the e2e test, or shrink the patch to 1 or 2 px so that resampling at 256 px smears it away. The second option relies on how each browser resamples.
   - Note (2026-11-19, full five-project run): the studio-backdrop test failed in Firefox only. The resampled edges between the navy half and the patch form a swatch of their own, which Chromium ranks above the patch (#1E4171, 1.2%) and Firefox below it (#214372, 0.1%), so the patch's swatch isn't always the smallest. The test no longer checks its rank. It checks that at most one swatch is near #ECEAE6 and that its share is at most twice the patch's area share of the subject (0.33%); a backdrop that was left in would be far larger. The subject's two colors must still lead.
@@ -390,7 +390,7 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "the Preset select is keyboard operable and 44 px at phone width"
   - `e2e/mockup-state.spec.ts` › "Preset reads Balanced".
 - Done when: tests pass; studio-desktop, source-phone and studio-tablet review shots are regenerated (the Preset row changes them).
-- [ ] Done (code, unit tests, lint, typecheck and build pass; the e2e run and the review page are still to run, see the last note)
+- [x] Done (e2e and the review page passed at c448dcd)
   - Note: the ignore dark and light preset fields are the toggles only. Their thresholds aren't in decision 11's list, so a preset keeps them, and `matchPreset` ignores them. It also ignores T9's ignore background and spatial weighting, and every other field a preset keeps.
   - Note: numbers match within 1e-9, so values the decimal fields commit (such as 0.6) still match. Each preset has its own algorithm, so at most one matches.
   - Note: the Custom option is listed, disabled, only while no preset matches, as the Algorithm select does for an unavailable algorithm. Choosing a preset replaces the whole settings object once, so it re-extracts once.
@@ -445,7 +445,7 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
   - `e2e/theme-content.spec.ts` › "overlay pixels are identical in light and dark".
   - `e2e/tokens.spec.ts`, `e2e/a11y.spec.ts` › `cluster-map-desktop`, `cluster-map-phone` and the Palette tab with the toggle, in both themes.
 - Done when: tests pass; nothing depends on hover (phone acceptance 2); the review page has the new shots; `visual-testing.md` lists every new shot.
-- [ ] Done
+- [x] Done
   - Note: e2e and review page pending: browsers unavailable. Lint, typecheck, unit tests and build pass; the e2e specs are written but not yet run.
   - Note (orchestrator decision, provisional, pending the user): the "% of the image" share is the plain pixel share from the cluster map (kept pixels nearest the swatch over all kept pixels), not the swatch's weighted population.
   - Note: the selection label names the swatch whose map is showing, with its share ("Swatch 2 · 83.2% of the image" while swatch 2 is hovered, even with swatch 3 selected), so hovering any swatch shows its own share as spec 2.6 asks. With no map showing it reads "Swatch 3" as before, so the mockup shots keep their label. Confirmed by the user on 2026-11-19 (decision 13e).
@@ -462,7 +462,7 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
 | Screen | ui-contract regions | New or changed screenshots | Mockup-state additions | Not-drawn items needing design review |
 | --- | --- | --- | --- | --- |
 | Desktop Studio view | Column 1 item 1 (image well: zoom controls, cluster overlay); item 4 (setting rows: Preset, Algorithm with all seven, Filters row, Advanced rows); Column 2 items 1 and 2 (strip hover and focus, share in the selection label) | changed: studio-desktop. New: filters-desktop (`?demo=mockup&rows=filters`), advanced-desktop (`&rows=advanced`), zoom-desktop (`&zoom=2`), cluster-map-desktop (`&cluster=3`) | `rows=filters\|advanced`, `zoom=<2\|4\|8>`, `cluster=<n>`; fixture populations (decision 14a) | Preset row; Filters row and its rows; new Advanced rows; Toggle component; zoom controls in the well's corner; cluster overlay look and share label; "None found" and all-filtered messages; the empty-roles note; disabled rows with their "Used by" and "Not used by" notes |
-| Phone Source tab | items 1 and 5 (image well, setting rows) | changed: source-phone. New: filters-phone (`?demo=mockup&rows=filters`), zoom-phone (`&zoom=2`), cluster-map-phone (`&cluster=3`) | as above | same as desktop at phone width |
+| Phone Source tab | items 1 and 5 (image well, setting rows) | changed: source-phone. New: pixel-filters-phone (`?demo=mockup&rows=filters`), zoom-phone (`&zoom=2`), cluster-map-phone (`&cluster=3`) | as above | same as desktop at phone width |
 | Phone Palette tab | strip and selection label, plus the Cluster map toggle row | changed: palette-phone | none | the Cluster map toggle row (spec 6.1 puts it in the M3 swatch sheet) |
 | Tablet | as phone (contract "Tablet") | changed: studio-tablet | none | as phone |
 | Empty screens | unchanged | none | none | none |
@@ -550,6 +550,7 @@ Decisions 1 to 14 and 16 to 18 accept the proposed option A. Decision 15 changes
 6b. **Vividness floor** (user decision, 2026-11-18). The bin weight has a floor of 0.05: weight = max(0.05, (1 − v) + v × min(1, C / 0.2)). So a fully gray image at vividness 1 still gives a palette. With vividness above 0, populations are shares of the weighted histogram. The ranking score of decision 5c is unchanged.
 7. **Distance metric.** It governs the merge threshold and the outlier distance; clustering stays Euclidean in the working space (7.6). Under CIEDE2000 the threshold is in ΔE00 units: range 0 to 15, default 3.0.
 8. **Keep one outlier.** Extract N − 1 colors, then add the box from a 4N median-cut split that is farthest from its nearest kept swatch and holds at least 0.1% of the pixels.
+8b. **Keep one outlier under Exact colors (user decision, 2026-11-19; fix M2-F6).** With Exact colors the outlier is the most distinct actual 24-bit input color: the one farthest from its nearest kept swatch, among colors holding at least 0.1% of the kept pixels. It isn't a median-cut box mean, so spec 2.2's "real colors only" holds. Other algorithms are unchanged.
 9. **Spatial weighting.**
    - a. Center: a Gaussian with σ 0.35. Contrast: 0.25 plus the normalized Sobel magnitude of L.
    - b. Populations are weighted shares.
@@ -569,6 +570,7 @@ Decisions 1 to 14 and 16 to 18 accept the proposed option A. Decision 15 changes
     - c. The share shows in the selection label: "Swatch 3 · 0.5% of the image".
     - d. On phones, a temporary "Cluster map" toggle row sits on the Palette tab and moves into the swatch sheet in M3.
 13e. **Selection label** (user decision, 2026-11-19, T14). The selection label names the swatch whose map is showing (the hovered or focused one), with its share.
+13f. **Cluster map toggle on touch-only devices (user decision, 2026-11-19; fix M2-F5).** The "Cluster map" toggle shows on any device without a fine pointer (`(hover: none)` or `(pointer: coarse)`) at any width, including the desktop layout on an iPad in landscape, where it sits under the swatch strip in column 2. Fine-pointer desktops are unchanged.
 14. **Mockup fixture.**
     - a. Populations become 0.832, 0.147 and 0.005 × 4, normalized.
     - b. The `rows` and `cluster` parameters and the new shots are approved. The `zoom` parameter is approved (15g).
@@ -587,12 +589,20 @@ Decisions 1 to 14 and 16 to 18 accept the proposed option A. Decision 15 changes
 18. **Messages.** All-filtered: "Every pixel is filtered out. Loosen a filter." No background found: "None found".
 19. **Sticky swatch strip on phone and tablet (user request, 2026-11-19).** Below 1024 px the swatch strip on the Source tab pins just under the header (`position: sticky`) while the setting rows scroll, so a setting change shows its effect even with Filters and Advanced open. Its container is opaque (`--color-surface`), spans the panel gutters, has a small vertical padding offset by negative margins (so the unscrolled layout is unchanged), and shows a `--color-border` divider while pinned. The page scrolls in the window. Desktop, the Palette tab and the image well are unchanged. This follows ui-contract Phone "Source tab" item 4 ("so the result stays visible") and is recorded there as intended deviation D4. Fix M2-F1.
 20. **Clearly dimmed disabled setting rows (user request, 2026-11-19).** A setting row whose control is disabled stays visible (M1 decision 14) but is clearly dimmed: `SettingRow` takes `disabled` and sets `data-disabled`, and the row's label and value drop to 50% opacity on top of the controls' own disabled styles (divider-colored field border, muted text and thumb). Every label is already `--color-text-muted`, and `tokens.css` has no disabled color, so the dimming is reduced emphasis, not a new color. The "Used by" or "Not used by" note keeps its style and full opacity. It applies to every row with a disabled control: the Dark and Light thresholds while their Ignore toggle is off, Colors, Seed, Iterations, Restarts, Merge threshold, Population vs. vividness and Keep one outlier. Fix M2-F2.
+21. **Setting-row padding on phone and tablet (user request, 2026-11-19).** Below 1024 px, setting rows and chevron rows get `--space-2` of padding above and below, so the 44 px controls don't fill the row from divider to divider. Desktop rows are unchanged. Fix M2-F4.
+22. **Larger setting-row text on touch (user request, 2026-11-19).** Under `(max-width: 1023.98px), (pointer: coarse)`, setting-row labels, toggle rows, chevron-row titles and plain-text values use the new token `--text-row-touch` (`--text-md`, 15 px), beside the 16 px fields that stay at `--text-input-touch` (spec 6.1). Notes and hints keep their size; a fine-pointer desktop stays at 13 px. Fix M2-F7.
 
 Remaining spec departures:
 - No region of interest (15a).
 - Phone sample size 256 instead of 128 (M1 decision 5).
 - The cluster-map toggle on the Palette tab instead of the swatch sheet, until M3 (13d).
 - Page scroll allowed on the image at Fit, instead of `touch-action: none` (15h).
+
+## Fixes after evaluation (2026-11-19)
+
+- M2-F3 (evaluator failure 1): setting rows wrap (`flex-wrap`). The label group keeps its natural width and the value its own; when both don't fit, the value drops to its own line, right-aligned, instead of drawing over the label or note. Covered by `e2e/setting-rows.spec.ts` (no overlap, no clipping, centered on one line) at 1280, 1024, 820, 390 and 320 px.
+- M2-F4: decision 21. M2-F5: decision 13f. M2-F6: decision 8b. M2-F7: decision 22.
+- The two visual shots `filters-desktop` and `filters-phone` were renamed `pixel-filters-desktop` and `pixel-filters-phone` and are listed in `docs/design/visual-testing.md`.
 
 ## Notes for the user's review (orchestrator, 2026-11-18, while the user was away)
 

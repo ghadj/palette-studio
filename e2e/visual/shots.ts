@@ -96,14 +96,14 @@ export const M1_SHOTS: readonly Shot[] = [
   },
   // M2-T8: the Filters row is not drawn; it goes to design review (M2 plan, Screens affected).
   {
-    name: "filters-desktop",
+    name: "pixel-filters-desktop",
     path: "./?demo=mockup&rows=filters",
     viewport: DESKTOP,
     mockup: null,
     frame: "M2 decision 2b: the Filters chevron row after Working space, open.",
   },
   {
-    name: "filters-phone",
+    name: "pixel-filters-phone",
     path: "./?demo=mockup&rows=filters",
     viewport: PHONE,
     mockup: null,
