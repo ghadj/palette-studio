@@ -132,7 +132,9 @@ test.describe("palette sync (desktop)", () => {
     );
   });
 
-  test("a marker wears the adjusted color the strip shows", async ({ page }) => {
+  test("a marker keeps the image color while the strip shows the adjusted one (spec 3.7)", async ({
+    page,
+  }) => {
     await page.goto(demo("rows=adjustments"));
     const lightness = page
       .locator("[data-testid=adjustments-panel]:visible")
@@ -143,10 +145,11 @@ test.describe("palette sync (desktop)", () => {
     const fill = (selector: string) =>
       page.locator(selector).evaluate((el) => getComputedStyle(el).backgroundColor);
     await expect(strip(page).nth(2)).not.toHaveAttribute("aria-label", /#14386B$/);
-    expect(await fill('[data-marker="3"] .marker__ring')).toBe(
-      await strip(page)
-        .nth(2)
-        .evaluate((el) => getComputedStyle(el).backgroundColor),
-    );
+    const markerFill = await fill('[data-marker="3"] .marker__ring');
+    const stripFill = await strip(page)
+      .nth(2)
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(markerFill).toBe("rgb(20, 56, 107)"); // #14386B, the base color
+    expect(markerFill).not.toBe(stripFill);
   });
 });

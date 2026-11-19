@@ -43,7 +43,6 @@ import {
   imageView,
   initialLoupe,
   markersVisible,
-  outputPalette,
   palette,
   selectedSwatchId,
   selectSwatch,
@@ -303,7 +302,6 @@ export function MarkerLayer() {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [crop, setCrop] = useState<LoupePixels | null>(null);
   const swatches = palette.value;
-  const outputs = outputPalette.value;
   const view = imageView.value;
   const selected = selectedSwatchId.value;
   const linked = hoveredSwatchId.value;
@@ -354,9 +352,8 @@ export function MarkerLayer() {
       {shown &&
         size.width > 0 &&
         placed.map((p) => {
-          // The marker wears the color the strip shows, after adjustments (spec 3.3).
-          const shownSwatch = outputs.find((o) => o.id === p.swatch.id) ?? p.swatch;
-          const hex = swatchHex(shownSwatch);
+          // The ring shows the color found in the image; the strip shows the adjusted result (spec 3.7).
+          const hex = swatchHex(p.swatch);
           const isSelected = p.swatch.id === selected;
           return (
             <button
