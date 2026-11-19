@@ -1,7 +1,9 @@
 /**
  * The Source column (ui-contract "Column 1: SOURCE" and phone "Source tab"): image well, view bar,
- * and the setting rows. Below 1024 px the swatch strip sits under the view bar, as in mockup 09.
+ * and the setting rows. Below 1024 px the swatch strip sits under the view bar, as in mockup 09,
+ * and pins under the header while the setting rows scroll (M2 decision 19; ui-contract D4).
  */
+import { useEffect, useRef } from "preact/hooks";
 import { palette, progressVisible } from "../state/signals";
 import { CopyButtons } from "./CopyButtons";
 import { comingSoon } from "./comingSoon";
@@ -32,6 +34,42 @@ function ViewBar() {
   );
 }
 
+/**
+ * The swatch strip's sticky container below 1024 px (M2 decision 19): it pins just under the
+ * header so the result of a setting change stays visible. While pinned it carries `data-stuck`,
+ * which draws a divider under it. The page scrolls in the window, so the check runs on its scroll.
+ */
+function StripDock() {
+  const dock = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = dock.current;
+    if (!el) return;
+    let frame = 0;
+    const check = () => {
+      frame = 0;
+      const top = Number.parseFloat(getComputedStyle(el).top) || 0;
+      const stuck = window.scrollY > 0 && el.getBoundingClientRect().top <= top + 0.5;
+      el.toggleAttribute("data-stuck", stuck);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(check);
+    };
+    check();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, []);
+  return (
+    <div ref={dock} class="strip-dock" data-testid="strip-dock">
+      <SwatchStrip />
+    </div>
+  );
+}
+
 export function SourcePanel({ variant }: { variant: "desktop" | "phone" }) {
   return (
     <div class="panel" data-panel="source">
@@ -44,7 +82,7 @@ export function SourcePanel({ variant }: { variant: "desktop" | "phone" }) {
       )}
       <ImageMessageBanner />
       <ViewBar />
-      {variant !== "desktop" && <SwatchStrip />}
+      {variant !== "desktop" && palette.value.length > 0 && <StripDock />}
       {variant !== "desktop" && <EmptyRolesNote />}
       {variant === "phone" && palette.value.length > 0 && <CopyButtons />}
       <SettingsControls />

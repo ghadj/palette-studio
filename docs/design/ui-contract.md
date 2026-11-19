@@ -220,6 +220,7 @@ Visual review treats these as correct.
 - **D1, gradient angle.** The phone mockup draws the preview diagonally and the desktop horizontally. Both show the same gradient: whatever angle the state holds (90° in the mockup state).
 - **D2, desktop split chips.** The desktop match cards (`05`, `06`) draw the paint half of the split chip as a slightly darker shade of the swatch. Build it from the paint's own hex, as the phone mockups do (the hexes are in `mockup-state.md`).
 - **D3, type sizes on phones.** To fit the scaled frames, the phone mockups use type smaller than `--text-xs` in places (tab labels, the view bar, counts in the Filters sheet). Use the type tokens; the 44 px touch targets win over matching the drawing.
+- **D4, sticky swatch strip on phone and tablet.** The mockups draw an unscrolled page; below 1024 px the Source tab's swatch strip pins under the header while the setting rows scroll, on an opaque `--color-surface` container with a `--color-border` divider while pinned (M2 decision 19).
 
 Deviations D1 to D4 of the previous version (control borders, phone Undo and Redo, quality dots on phone cards, all four medium chips) are now drawn in the mockups.
 

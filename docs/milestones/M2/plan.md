@@ -585,6 +585,7 @@ Decisions 1 to 14 and 16 to 18 accept the proposed option A. Decision 15 changes
 16. **Sort directions.** Lightness dark to light, chroma high to low, hue ascending from 0°.
 17. **Milestone size.** One milestone of 14 tasks.
 18. **Messages.** All-filtered: "Every pixel is filtered out. Loosen a filter." No background found: "None found".
+19. **Sticky swatch strip on phone and tablet (user request, 2026-11-19).** Below 1024 px the swatch strip on the Source tab pins just under the header (`position: sticky`) while the setting rows scroll, so a setting change shows its effect even with Filters and Advanced open. Its container is opaque (`--color-surface`), spans the panel gutters, has a small vertical padding offset by negative margins (so the unscrolled layout is unchanged), and shows a `--color-border` divider while pinned. The page scrolls in the window. Desktop, the Palette tab and the image well are unchanged. This follows ui-contract Phone "Source tab" item 4 ("so the result stays visible") and is recorded there as intended deviation D4. Fix M2-F1.
 
 Remaining spec departures:
 - No region of interest (15a).
