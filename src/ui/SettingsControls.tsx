@@ -87,13 +87,13 @@ function update<K extends keyof ExtractionSettings>(key: K, value: ExtractionSet
   settings.value = { ...settings.peek(), [key]: value };
 }
 
-interface Option<T> {
+export interface Option<T> {
   value: T;
   label: string;
   disabled?: boolean;
 }
 
-function Select<T extends string | number>({
+export function Select<T extends string | number>({
   id,
   value,
   options,

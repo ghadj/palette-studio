@@ -7,7 +7,14 @@
 import { oklchToOklab } from "../color/convert";
 import { imageClient } from "../extract/client";
 import { decodeImageFile } from "../image/load";
-import { clusterMap, displayImage, imageLoading, outputPalette, settings } from "./signals";
+import {
+  clusterMap,
+  displayImage,
+  imageLoading,
+  masterThread,
+  outputPalette,
+  settings,
+} from "./signals";
 
 /** True while no real image has been loaded over the fixture. */
 const fixtureShown = (): boolean => displayImage.peek() === null && !imageLoading.peek();
@@ -37,6 +44,8 @@ export async function loadMockupClusterMap(url: string, name: string): Promise<v
     const client = imageClient();
     const prepared = await client.prepare(bitmap);
     prepared.display.close();
+    // The master is ready, so the image views can be drawn from it (M3-T14).
+    if (fixtureShown()) masterThread.value = prepared.thread;
     // If the worker stops, it can rebuild the fixture's master, until a real image replaces it.
     if (fixtureShown()) client.setRestore(decode);
     const map = await client.assign(

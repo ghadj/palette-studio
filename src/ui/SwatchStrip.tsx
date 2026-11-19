@@ -31,7 +31,9 @@ import {
   palette,
   selectedSwatchId,
   selectSwatch,
+  viewSettings,
 } from "../state/signals";
+import { viewShares } from "../state/view-result";
 import { comingSoon } from "./comingSoon";
 import { stripColumns } from "./stripLayout";
 
@@ -462,9 +464,17 @@ export function SelectionLabel() {
   const shown = shownCluster.value;
   const label = swatchLabel(outputPalette.value, shown?.id ?? selectedSwatchId.value);
   if (!label) return null;
+  // In the Palette view the label gives the selected swatch's share (spec 3.8; M3-T14).
+  const view = viewShares.value;
+  const index = outputPalette.value.findIndex((s) => s.id === selectedSwatchId.value);
+  const viewShare =
+    viewSettings.value.mode === "palette" && view?.mode === "palette" ? view.shares[index] : null;
+  const share = shown ? shown.share : viewShare;
   return (
     <p class="selection-label" data-testid="selection-label">
-      {shown ? `${label} · ${shareText(shown.share)} of the image` : label}
+      {share === null || share === undefined
+        ? label
+        : `${label} · ${shareText(share)} of the image`}
     </p>
   );
 }

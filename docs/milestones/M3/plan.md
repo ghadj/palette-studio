@@ -606,7 +606,8 @@ Rules that hold for every task:
     - "Bands 3 gives 3 grays"
     - "Dither on keeps palette colors only"
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+  - Note: legend, share bar and band strip are `PaletteViewSummary`/`ValuesViewSummary` (above the strip on phones, as in mockup 11), the pure legend text is in `src/palette/view-legend.ts`, and `viewShares` (`src/state/view-result.ts`) carries the worker's shares. The view draws RGBA with `putImageData` (T2 note), not an ImageBitmap. "Matched paints" is a disabled option labelled "(needs paint matching)", so the row keeps the mockup layout. The Values canvas holds the 4 used grays: band 1 is empty in the fixture (mockup-state.md), so the test checks a subset of the 5. The marker-hiding test checks that no `[data-marker]` exists; T12 owns the hiding. A pair outside the strip's last row gets no bracket (it stays in the pairs list). The mockup state now sets `masterThread` after preparing the fixture, so views can draw.
 
 ### M3-T15: Dragging markers (mouse, touch, pen, keyboard)
 - Files:
