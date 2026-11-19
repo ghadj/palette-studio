@@ -154,7 +154,7 @@ export interface Adjustments {
 export type ImageViewMode = "image" | "palette" | "values";
 
 /** The eyedropper (spec 3.2): off, adding a swatch, or retargeting the selected one (plan 5c). */
-export type EyedropperMode = "off" | "add" | "replace";
+export type EyedropperMode = "off" | "add";
 
 /** View settings (spec 3.8, 7.5). The transfer grid joins them in M5. */
 export interface ViewSettings {

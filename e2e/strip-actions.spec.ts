@@ -275,3 +275,111 @@ test.describe('the "+" tile (decisions 4a, 5b; D12)', () => {
     await expect(swatches(page)).toHaveCount(7);
   });
 });
+
+test.describe("Remove button on the selected swatch (M3 decision 38)", () => {
+  const remove = (page: Page) => strip(page).getByTestId("remove-swatch");
+  const undoKey = (page: Page) => page.keyboard.press("Control+z");
+  const labelAt = (page: Page, point: { x: number; y: number }) =>
+    page.evaluate(
+      ({ x, y }) =>
+        document.elementFromPoint(x, y)?.closest("[data-swatch]")?.getAttribute("aria-label"),
+      point,
+    );
+
+  test("the X shows on the selected swatch only; removing it deletes it, selects the neighbour, and Undo restores it", async ({
+    page,
+  }) => {
+    await page.goto(demo());
+    await expect(remove(page)).toHaveCount(1);
+    // Swatch 3 is selected in the demo.
+    await expect(remove(page)).toHaveAccessibleName("Remove swatch 3");
+    const before = await order(page);
+    await remove(page).click();
+    await expect(swatches(page)).toHaveCount(5);
+    expect(await order(page)).toEqual(before.filter((_, i) => i !== 2));
+    // The swatch that took its place (the old 4) is selected and carries the X.
+    await expect(swatches(page).nth(2)).toHaveAttribute("aria-pressed", "true");
+    await expect(remove(page)).toHaveAccessibleName("Remove swatch 3");
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await undoKey(page);
+    await expect(swatches(page)).toHaveCount(6);
+    expect(await order(page)).toEqual(before);
+  });
+
+  test("selecting another swatch moves the X to it", async ({ page }, info) => {
+    await page.goto(demo());
+    if (isPhoneProject(info)) await swatches(page).nth(0).tap();
+    else await swatches(page).nth(0).click();
+    await expect(remove(page)).toHaveCount(1);
+    await expect(remove(page)).toHaveAccessibleName("Remove swatch 1");
+  });
+
+  test("a phone tap removes the swatch", async ({ page }, info) => {
+    test.skip(!isPhoneProject(info), "touch");
+    await page.goto(demo());
+    await remove(page).tap();
+    await expect(swatches(page)).toHaveCount(5);
+  });
+
+  test("keyboard: Tab from the selected swatch reaches the X; Enter removes; Delete and Backspace on a swatch remove it", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "keyboard");
+    await page.goto(demo());
+    await swatches(page).nth(2).focus();
+    await page.keyboard.press("Tab");
+    await expect(remove(page)).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(swatches(page)).toHaveCount(5);
+    // Focus moves to the selected neighbour; Delete removes it, and so does Backspace.
+    await expect(swatches(page).nth(2)).toBeFocused();
+    await page.keyboard.press("Delete");
+    await expect(swatches(page)).toHaveCount(4);
+    await swatches(page).nth(1).focus();
+    await page.keyboard.press("Backspace");
+    await expect(swatches(page)).toHaveCount(3);
+  });
+
+  test("Backspace in the HEX field edits text and doesn't remove a swatch", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "the editor is in the Palette tab on a phone");
+    await page.goto(demo());
+    const hex = page.getByRole("textbox", { name: "HEX" });
+    await hex.focus();
+    await page.keyboard.press("Backspace");
+    await expect(swatches(page)).toHaveCount(6);
+  });
+
+  test("the hit area is at least 44 px on phones and --hit on desktop, and it leaves the neighbours and a reorder press reachable", async ({
+    page,
+  }, info) => {
+    await page.goto(demo());
+    const phone = isPhoneProject(info);
+    const box = await remove(page).boundingBox();
+    if (!box) throw new Error("no X");
+    const min = phone ? 44 : 32;
+    expect(box.width).toBeGreaterThanOrEqual(min);
+    expect(box.height).toBeGreaterThanOrEqual(min);
+    for (const i of [1, 3]) {
+      const c = await center(swatches(page).nth(i));
+      expect(await labelAt(page, c)).toBe(await swatches(page).nth(i).getAttribute("aria-label"));
+    }
+    // The selected swatch's lower-left area still reaches it, for a reorder press.
+    const own = await swatches(page).nth(2).boundingBox();
+    if (!own) throw new Error("no swatch");
+    const lowerLeft = await labelAt(page, {
+      x: own.x + own.width * 0.3,
+      y: own.y + own.height * 0.8,
+    });
+    expect(lowerLeft).toBe(await swatches(page).nth(2).getAttribute("aria-label"));
+  });
+
+  test("the X works in the Palette tab's strip on a phone too", async ({ page }, info) => {
+    test.skip(!isPhoneProject(info), "phone tabs");
+    await page.goto(demo("tab=palette"));
+    await expect(remove(page)).toHaveCount(1);
+    await remove(page).tap();
+    await expect(swatches(page)).toHaveCount(5);
+  });
+});

@@ -8,7 +8,7 @@
  * focusing it from the keyboard sets `hoveredSwatchId`, and the swatch it names carries
  * `data-linked`, whether a swatch or its marker (M3-T12) set it.
  */
-import { Lock, Pin, Plus } from "lucide-preact";
+import { Lock, Pin, Plus, X } from "lucide-preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import {
   addSwatch,
@@ -22,6 +22,7 @@ import {
 import { clusterFocus, clusterHover, shareText, shownCluster } from "../state/cluster";
 import { startEyedropper } from "../state/eyedropper";
 import { commit } from "../state/history";
+import { removeSwatch } from "../state/remove-swatch";
 import {
   activeTab,
   clusterMap,
@@ -374,8 +375,25 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
     window.addEventListener("keydown", onKey, true);
   };
 
+  /** Removes a swatch and gives focus to the one that is selected after it (decision 38). */
+  const remove = (id: string) => {
+    removeSwatch(id);
+    const now = selectedSwatchId.peek();
+    requestAnimationFrame(() => {
+      const next = now
+        ? strip.current?.querySelector<HTMLElement>(`[data-swatch-id="${now}"]`)
+        : strip.current?.querySelector<HTMLElement>("[data-testid=add-swatch]");
+      next?.focus();
+    });
+  };
+
   const onSwatchKey = (e: KeyboardEvent, id: string) => {
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      remove(id);
+      return;
+    }
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     e.preventDefault();
     const index = palette.peek().findIndex((s) => s.id === id);
@@ -404,56 +422,70 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
         {swatches.map((swatch, i) => {
           const hex = swatchHex(swatch);
           return (
-            <button
-              key={swatch.id}
-              type="button"
-              class="swatch"
-              data-swatch=""
-              data-user-content=""
-              data-swatch-id={swatch.id}
-              data-origin={swatch.origin}
-              data-dragging={swatch.id === dragging ? "" : undefined}
-              data-share={shares?.[i]}
-              aria-label={`${swatchLabel(swatches, swatch.id)}, ${hex}`}
-              aria-description={swatch.locked ? "Locked" : swatch.pinned ? "Pinned" : undefined}
-              data-locked={swatch.locked ? "" : undefined}
-              data-pinned={swatch.pinned ? "" : undefined}
-              aria-pressed={swatch.id === selected}
-              data-linked={swatch.id === linked ? "" : undefined}
-              style={{ backgroundColor: hex }}
-              onClick={() => {
-                if (!suppressClick.current) selectSwatch(swatch.id);
-              }}
-              onContextMenu={(e) => {
-                if (press.current?.touch) e.preventDefault();
-              }}
-              onPointerDown={(e) => startPress(e, swatch.id)}
-              onKeyDown={(e) => onSwatchKey(e, swatch.id)}
-              onPointerEnter={(e) => {
-                if (press.current?.active) return;
-                if (hovers(e)) clusterHover.value = swatch.id;
-                if (points(e)) hoveredSwatchId.value = swatch.id;
-              }}
-              onPointerLeave={() => {
-                clear(clusterHover, swatch.id);
-                clear(hoveredSwatchId, swatch.id);
-              }}
-              onFocus={(e) => {
-                if (!keyboardFocus(e.currentTarget)) return;
-                clusterFocus.value = swatch.id;
-                hoveredSwatchId.value = swatch.id;
-              }}
-              onBlur={() => {
-                clear(clusterFocus, swatch.id);
-                clear(hoveredSwatchId, swatch.id);
-              }}
-            >
-              {(swatch.locked || swatch.pinned) && (
-                <span class="swatch__badge" aria-hidden="true">
-                  {swatch.locked ? <Lock /> : <Pin />}
-                </span>
+            <div key={swatch.id} class="swatch-cell">
+              <button
+                type="button"
+                class="swatch"
+                data-swatch=""
+                data-user-content=""
+                data-swatch-id={swatch.id}
+                data-origin={swatch.origin}
+                data-dragging={swatch.id === dragging ? "" : undefined}
+                data-share={shares?.[i]}
+                aria-label={`${swatchLabel(swatches, swatch.id)}, ${hex}`}
+                aria-description={swatch.locked ? "Locked" : swatch.pinned ? "Pinned" : undefined}
+                data-locked={swatch.locked ? "" : undefined}
+                data-pinned={swatch.pinned ? "" : undefined}
+                aria-pressed={swatch.id === selected}
+                data-linked={swatch.id === linked ? "" : undefined}
+                style={{ backgroundColor: hex }}
+                onClick={() => {
+                  if (!suppressClick.current) selectSwatch(swatch.id);
+                }}
+                onContextMenu={(e) => {
+                  if (press.current?.touch) e.preventDefault();
+                }}
+                onPointerDown={(e) => startPress(e, swatch.id)}
+                onKeyDown={(e) => onSwatchKey(e, swatch.id)}
+                onPointerEnter={(e) => {
+                  if (press.current?.active) return;
+                  if (hovers(e)) clusterHover.value = swatch.id;
+                  if (points(e)) hoveredSwatchId.value = swatch.id;
+                }}
+                onPointerLeave={() => {
+                  clear(clusterHover, swatch.id);
+                  clear(hoveredSwatchId, swatch.id);
+                }}
+                onFocus={(e) => {
+                  if (!keyboardFocus(e.currentTarget)) return;
+                  clusterFocus.value = swatch.id;
+                  hoveredSwatchId.value = swatch.id;
+                }}
+                onBlur={() => {
+                  clear(clusterFocus, swatch.id);
+                  clear(hoveredSwatchId, swatch.id);
+                }}
+              >
+                {(swatch.locked || swatch.pinned) && (
+                  <span class="swatch__badge" aria-hidden="true">
+                    {swatch.locked ? <Lock /> : <Pin />}
+                  </span>
+                )}
+              </button>
+              {swatch.id === selected && (
+                <button
+                  type="button"
+                  class="swatch-remove"
+                  data-testid="remove-swatch"
+                  aria-label={`Remove swatch ${i + 1}`}
+                  onClick={() => remove(swatch.id)}
+                >
+                  <span class="swatch-remove__chip" aria-hidden="true">
+                    <X />
+                  </span>
+                </button>
               )}
-            </button>
+            </div>
           );
         })}
         {showAdd && <AddTile alone={aloneRow} full={full} />}

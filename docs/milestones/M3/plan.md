@@ -934,7 +934,7 @@ The user left before these questions could be put to them. Their instruction on 
 - 4b. A: a ramp is a preview of 11 steps, and any step can be added to the palette.
 - 5a. A: a "Swatch" chevron row above Adjustments; it expands in place on desktop and opens as the swatch sheet on phones.
 - 5b. A: a "+" tile at the end of the strip, with "Pick from image" and "Type a color".
-- 5c. A: Eyedropper and Markers icon buttons in the image corner; the eyedropper adds by default, and a "Replace swatch N" chip switches it to retargeting.
+- 5c. A: Eyedropper and Markers icon buttons in the image corner; the eyedropper always adds (decision 38 removed the "Replace swatch N" chip and Replace mode).
 - 6a. A: no APCA in M3.
 - 6b. A: the preview surround setting goes to M4.
 - 6c. A: the matrix is swatch × swatch only, with close pairs listed in the same row.
@@ -953,6 +953,8 @@ Decisions made by the user on 2026-11-20, after the M3 evaluation (24 replaces p
 - 29. The "+" tile shares the swatches' row; swatches shrink to make room and wrap only when 44 px no longer fits (up to 12), so the Values bracket sits under its swatches.
 - 30. The Palette and Values views use the user's alpha cutoff (spec 2.4), not a fixed 128 (worker `view` request and cache key).
 - 31. "Place on image" is enabled in `?demo=mockup` (still no storage access). Changing a swatch's sample radius or statistic resamples it at once through the worker `sample`, as one undo step.
+
+- 38. The eyedropper always adds a new swatch (picked, pinned, with its point, one undo step); Replace mode and the "Replace swatch N" chip are gone, and dragging a marker still updates a swatch (T15). At 12 swatches the Eyedropper button is aria-disabled with the note "A palette holds at most 12 colors." (which also replaces the marker hint), the "+" tile is disabled, and the E key does nothing; picking the 12th color turns the eyedropper off. The selected swatch shows a small X (a chip behind it, tokens only) at its top-right corner, named "Remove swatch N": it removes the swatch as one undo step and selects the neighbour, as T4's Delete did (an empty palette is allowed, so the X shows with one swatch left). Its hit area is `--hit` square (44 px on phones), reaching 12 px past the swatch's top and right edges so it covers little of the swatch and leaves a reorder press possible on the rest; it follows the swatch in DOM order, so Tab reaches it. Delete or Backspace on a focused swatch also removes it, never in a text field. The X shows in the strip on every tab (Source and Palette); decision 32's hiding of "+" on the phone Source tab does not apply to it. The Swatch row's Delete button stays (until decision 39 removes it).
 
 Confirmed by the user on 2026-11-19, from choices M3-T1 made:
 - 3c. Undo step labels use the setting's name ("Colors", "Dark threshold"). Applying a preset reads "Preset: <name>"; several settings changed at once read "Settings"; no step is recorded when nothing changed.

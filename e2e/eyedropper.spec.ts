@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demo, isPhoneProject, showTab } from "./helpers/app";
 
-/** The eyedropper (spec 3.2, 3.7; M3 decision 5c and D11, M3-T16). */
+/** The eyedropper (spec 3.2, 3.7; M3 decisions 5c, 38 and D11, M3-T16). */
 
 /** The fixture's patches (docs/design/mockup-state.md), by swatch number. */
 const PATCH = {
@@ -85,25 +85,7 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
     await expect(swatches(page).nth(6)).toHaveAttribute("aria-pressed", "true");
   });
 
-  test("in Replace mode, a click on patch 6 makes swatch 3 #5039B0", async ({ page }, info) => {
-    await page.goto(demo());
-    await tool(page).click();
-    const chip = page.getByRole("button", { name: "Replace swatch 3" });
-    await expect(chip).toHaveAttribute("aria-pressed", "false");
-    await chip.click();
-    await expect(chip).toHaveAttribute("aria-pressed", "true");
-    await pick(page, PATCH[6], isPhoneProject(info));
-    await expect(swatches(page)).toHaveCount(6);
-    await expectHex(page, 3, "#5039B0");
-    const m = await page.locator('[data-marker="3"] .marker__ring').boundingBox();
-    const at = await screenPoint(page, PATCH[6]);
-    if (!m) throw new Error("no marker box");
-    expect(Math.abs(m.x + m.width / 2 - at.x)).toBeLessThanOrEqual(2);
-  });
-
-  test("Undo removes the added swatch and restores the replaced one; Redo reapplies", async ({
-    page,
-  }, info) => {
+  test("Undo removes the added swatch; Redo reapplies", async ({ page }, info) => {
     const phone = isPhoneProject(info);
     await page.goto(demo());
     await tool(page).click();
@@ -113,13 +95,6 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
     await expect(swatches(page)).toHaveCount(6);
     await page.locator("header").getByRole("button", { name: /^Redo/ }).click();
     await expect(swatches(page)).toHaveCount(7);
-    await expectHex(page, 7, "#D4527F");
-
-    await swatches(page).nth(6).click();
-    await page.getByRole("button", { name: "Replace swatch 7" }).click();
-    await pick(page, PATCH[6], phone);
-    await expectHex(page, 7, "#5039B0");
-    await undoButton(page).click();
     await expectHex(page, 7, "#D4527F");
   });
 
@@ -141,7 +116,7 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
     await expect(tool(page)).toHaveAttribute("aria-pressed", "false");
   });
 
-  test("disabled at 12 in Add mode: a click adds nothing and the hint says why", async ({
+  test("at 12 the Eyedropper is disabled with the limit note and a click adds nothing", async ({
     page,
   }, info) => {
     await page.goto(demo("tab=palette"));
@@ -152,16 +127,41 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
     await expect(swatches(page)).toHaveCount(12);
     // The "+" tile is on the Palette tab below 1024 px, the image on the Source tab (decision 32).
     await showTab(page, "Source");
-    await tool(page).click();
-    await expect(page.getByTestId("marker-hint")).toContainText("12");
+    await expect(tool(page)).toHaveAttribute("aria-disabled", "true");
+    await expect(page.getByTestId("marker-hint")).toHaveText("A palette holds at most 12 colors.");
+    await expect(tool(page)).toHaveAccessibleDescription("A palette holds at most 12 colors.");
+    // aria-disabled keeps it focusable; Playwright treats it as disabled, so force the click.
+    await tool(page).click({ force: true });
+    await expect(tool(page)).toHaveAttribute("aria-pressed", "false");
     await pick(page, PATCH[4], isPhoneProject(info));
     await page.waitForTimeout(300);
     await expect(swatches(page)).toHaveCount(12);
-    // Replace still works.
-    await page.getByRole("button", { name: /^Replace swatch/ }).click();
+    await expect(page.getByRole("button", { name: /^Replace swatch/ })).toHaveCount(0);
+  });
+
+  test("picking the 12th color turns the eyedropper off", async ({ page }, info) => {
+    await page.goto(demo());
+    for (let i = 0; i < 5; i += 1) {
+      await addTile(page).click();
+      await page.getByRole("menuitem", { name: "Type a color" }).click();
+    }
+    await expect(swatches(page)).toHaveCount(11);
+    await tool(page).click();
     await pick(page, PATCH[4], isPhoneProject(info));
-    await expectHex(page, 12, "#D4527F");
     await expect(swatches(page)).toHaveCount(12);
+    await expect(tool(page)).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("there is no Replace mode: a pick with swatch 3 selected still adds", async ({
+    page,
+  }, info) => {
+    await page.goto(demo());
+    await tool(page).click();
+    await expect(page.getByRole("button", { name: /^Replace swatch/ })).toHaveCount(0);
+    await pick(page, PATCH[6], isPhoneProject(info));
+    await expect(swatches(page)).toHaveCount(7);
+    await expectHex(page, 3, "#14386B");
+    await expectHex(page, 7, "#5039B0");
   });
 
   test("a press on a marker samples; it doesn't drag the marker", async ({ page }, info) => {
@@ -184,15 +184,11 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
     await expect(swatches(page).nth(5)).toHaveAttribute("data-origin", "extracted");
   });
 
-  test("the + tile's Pick from image starts the eyedropper in Add mode", async ({ page }) => {
+  test("the + tile's Pick from image starts the eyedropper ", async ({ page }) => {
     await page.goto(demo("tab=palette"));
     await addTile(page).click();
     await page.getByRole("menuitem", { name: "Pick from image" }).click();
     await expect(tool(page)).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByRole("button", { name: "Replace swatch 3" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
   });
 
   test("phone: a tap with the loupe works and the page doesn't scroll during the press", async ({

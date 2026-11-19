@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hexToOklab, oklchToHex } from "../../src/color/convert";
 import { createSwatch, MAX_SWATCHES } from "../../src/palette/model";
-import { addPicked, pointFromWell, replaceWithPick } from "../../src/state/eyedropper";
+import { addPicked, pointFromWell } from "../../src/state/eyedropper";
 import { LOUPE_SIZE, loupePosition } from "../../src/ui/Loupe";
 
 const lab = hexToOklab("#D4527F");
@@ -51,25 +51,25 @@ describe("addPicked (decision D11)", () => {
   });
 });
 
-describe("replaceWithPick (decision D11)", () => {
-  it("sets color and point, picks and pins, and keeps what it can reset to", () => {
-    const extracted = { color: { l: 0.5, c: 0.1, h: 10 }, point: { x: 0.1, y: 0.1 } };
-    const list = base(3).map((s, i) => (i === 1 ? { ...s, extracted } : s));
-    const point = { x: 0.102, y: 0.185 };
-    const next = replaceWithPick(list, "s1", lab, point);
-    const swatch = next[1];
-    expect(swatch && oklchToHex(swatch.color)).toBe("#D4527F");
-    expect(swatch?.point).toEqual(point);
-    expect(swatch?.origin).toBe("picked");
-    expect(swatch?.pinned).toBe(true);
-    expect(swatch?.extracted).toBe(extracted);
-    expect(next[0]).toBe(list[0]);
-    expect(next[2]).toBe(list[2]);
+describe("startEyedropper (decision 38)", () => {
+  it("turns the eyedropper on, and not at 12 colors", async () => {
+    const { startEyedropper } = await import("../../src/state/eyedropper");
+    const { eyedropperMode, palette } = await import("../../src/state/signals");
+    palette.value = base(MAX_SWATCHES);
+    eyedropperMode.value = "off";
+    startEyedropper();
+    expect(eyedropperMode.value).toBe("off");
+    palette.value = base(3);
+    startEyedropper();
+    expect(eyedropperMode.value).toBe("add");
   });
 
-  it("returns the list unchanged for an unknown id", () => {
-    const list = base(2);
-    expect(replaceWithPick(list, "nope", lab, { x: 0, y: 0 })).toBe(list);
+  it("a pick always adds: the picked swatch is pinned, not locked, and nothing is replaced", () => {
+    const list = base(3);
+    const next = addPicked(list, lab, { x: 0.1, y: 0.2 });
+    expect(next).toHaveLength(4);
+    expect(next.slice(0, 3)).toEqual(list);
+    expect(next[3]).toMatchObject({ origin: "picked", pinned: true, locked: false });
   });
 });
 

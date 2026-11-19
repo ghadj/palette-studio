@@ -1104,6 +1104,61 @@ fieldset {
 }
 
 /* Working state (spec 6.3): the previous result dims; a progress bar shows after about 300 ms. */
+/*
+ * A swatch sits in a cell so the selected one can carry its Remove button (decision 38). The button's
+ * hit area is --hit square (44 px on phones), centered near the corner and reaching 12 px past the
+ * swatch's top and right edges, so it covers as little of the swatch as it can; the visible chip is
+ * small. It stays clear of the neighbours' presses and of the reorder press on the rest of the swatch.
+ */
+.swatch-cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.swatch-cell > .swatch {
+  flex: 1;
+  min-width: 0;
+}
+
+.swatch-remove {
+  position: absolute;
+  top: calc(var(--space-3) * -1);
+  right: calc(var(--space-3) * -1);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hit);
+  height: var(--hit);
+}
+
+.swatch-remove__chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.swatch-remove__chip svg {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+
+.swatch-remove:focus-visible {
+  outline: none;
+}
+
+.swatch-remove:focus-visible .swatch-remove__chip {
+  outline: var(--stroke-selected) solid var(--color-accent);
+  outline-offset: var(--stroke-selected);
+}
+
 .swatch-strip[data-busy] {
   opacity: 0.6;
   transition: opacity var(--duration-fast) var(--ease-out);

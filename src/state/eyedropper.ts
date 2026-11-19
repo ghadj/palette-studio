@@ -1,12 +1,12 @@
 /**
- * The eyedropper's pure parts (spec 3.2 "Eyedropper", 3.7; M3 decisions 5c and D11): mapping a
- * position in the image well to a point on the image, and the two palette changes a pick makes.
- * A picked swatch is pinned, like a dragged marker.
+ * The eyedropper's pure parts (spec 3.2 "Eyedropper", 3.7; M3 decisions 5c, 38 and D11): mapping a
+ * position in the image well to a point on the image, and the palette change a pick makes. A pick
+ * always adds a swatch, pinned like a dragged marker; dragging a marker updates a swatch (T15).
  */
-import { type Oklab, oklabToOklch } from "../color/convert";
-import { addSwatch, createSwatch } from "../palette/model";
+import type { Oklab } from "../color/convert";
+import { addSwatch, canAdd, createSwatch } from "../palette/model";
 import type { ImagePoint, Swatch } from "../types";
-import { eyedropperMode, viewSettings } from "./signals";
+import { eyedropperMode, palette as paletteSignal, viewSettings } from "./signals";
 
 interface WellView {
   x: number;
@@ -30,28 +30,14 @@ export function pointFromWell(
   };
 }
 
-/** Adds a picked, locked swatch with its point at the end; unchanged at 12. */
+/** Adds a picked, pinned swatch with its point at the end; unchanged at 12. */
 export function addPicked(palette: Swatch[], color: Oklab, point: ImagePoint): Swatch[] {
   return addSwatch(palette, createSwatch(color, { origin: "picked", pinned: true, point }));
 }
 
-/** Retargets a swatch to a picked color and point, and locks it. `extracted` is kept for reset. */
-export function replaceWithPick(
-  palette: Swatch[],
-  id: string,
-  color: Oklab,
-  point: ImagePoint,
-): Swatch[] {
-  if (!palette.some((s) => s.id === id)) return palette;
-  return palette.map((s) =>
-    s.id === id
-      ? { ...s, color: oklabToOklch(color), point, origin: "picked" as const, pinned: true }
-      : s,
-  );
-}
-
-/** Starts the eyedropper in Add mode, from the "+" tile's "Pick from image" (decision 5b). */
+/** Starts the eyedropper, from the "+" tile's "Pick from image" (decision 5b). Not at 12. */
 export function startEyedropper(): void {
+  if (!canAdd(paletteSignal.peek())) return;
   if (viewSettings.peek().mode !== "image") {
     viewSettings.value = { ...viewSettings.peek(), mode: "image" };
   }

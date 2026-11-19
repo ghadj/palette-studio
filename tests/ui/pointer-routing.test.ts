@@ -16,7 +16,7 @@ describe("image well pointer routing (plan M3-T2)", () => {
 
   it("pan and pinch ignore every pointerdown while the eyedropper is on", () => {
     expect(panIgnores(target(), "add")).toBe(true);
-    expect(panIgnores(target(), "replace")).toBe(true);
+    expect(panIgnores(target(), "add")).toBe(true);
     expect(panIgnores(null, "add")).toBe(true);
   });
 

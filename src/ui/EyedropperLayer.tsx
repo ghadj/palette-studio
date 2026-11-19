@@ -1,43 +1,34 @@
 /**
- * The eyedropper's layer over the image well (spec 3.2 "Eyedropper", 3.7; M3 decisions 5c and
+ * The eyedropper's layer over the image well (spec 3.2 "Eyedropper", 3.7; M3 decisions 5c, 38 and
  * D11). While `eyedropperMode` is on, the well's pan and pinch ignore every pointerdown (see
  * `pointerRouting.ts`), so this layer takes them: a press shows the loupe, a move updates it and
- * release samples the working master through the worker's `sample` (spec 7.4). In Add mode the
- * pick becomes a new picked, pinned swatch with its point; in Replace mode it retargets the
- * selected swatch. Each pick is one undo step. Esc cancels a press in progress, or else turns the
- * eyedropper off. Nothing here uses the browser's EyeDropper API (spec 6.1).
+ * release samples the working master through the worker's `sample` (spec 7.4). A pick always adds
+ * a new picked, pinned swatch with its point, as one undo step; there is no Replace mode, since
+ * dragging a marker updates a swatch (decision 38). At 12 swatches the eyedropper can't add, so it
+ * turns off and its button is disabled with the limit note. Esc cancels a press in progress, or
+ * else turns the eyedropper off. Nothing here uses the browser's EyeDropper API (spec 6.1).
  *
- * Also here: `EyedropperHint`, the hint row under the image with the "Replace swatch N" chip.
+ * Also here: `EyedropperHint`, the hint row under the image.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { oklabToHex } from "../color/convert";
 import { imageClient } from "../extract/client";
-import { canAdd, FULL_MESSAGE, selectedSwatch } from "../palette/model";
-import { addPicked, pointFromWell, replaceWithPick } from "../state/eyedropper";
+import { canAdd, FULL_MESSAGE } from "../palette/model";
+import { addPicked, pointFromWell } from "../state/eyedropper";
 import { commit } from "../state/history";
 import {
   eyedropperMode,
   imageMessage,
   imageView,
   palette,
-  selectedSwatchId,
   selectSwatch,
   viewSettings,
 } from "../state/signals";
-import type { ImagePoint, SampleRadius, SampleStat } from "../types";
+import type { ImagePoint } from "../types";
 import { Loupe, type LoupePixels } from "./Loupe";
 
-/** What a pick does now: add a swatch, or retarget the selected one (decision 5c). */
-type Target = { kind: "add" } | { kind: "replace"; id: string };
-
-/** Replace mode needs a selected swatch; without one a pick adds. */
-function currentTarget(): Target {
-  const selected = selectedSwatchId.value;
-  if (eyedropperMode.value === "replace" && selectedSwatch(palette.value, selected)) {
-    return { kind: "replace", id: selected as string };
-  }
-  return { kind: "add" };
-}
+/** The id of the hint that says why the eyedropper is off at 12 (its button points to it). */
+export const EYEDROPPER_NOTE_ID = "eyedropper-note";
 
 interface Press {
   pointerId: number;
@@ -61,14 +52,13 @@ export function EyedropperLayer() {
   const frame = useRef(0);
   const mode = eyedropperMode.value;
   const inImageView = viewSettings.value.mode === "image";
-  const target = currentTarget();
-  const full = target.kind === "add" && !canAdd(palette.value);
+  const full = !canAdd(palette.value);
   const on = mode !== "off" && inImageView;
 
-  // The eyedropper belongs to the Image view, and goes away with the well.
+  // The eyedropper belongs to the Image view, goes away with the well, and can't add at 12.
   useEffect(() => {
-    if (mode !== "off" && !inImageView) eyedropperMode.value = "off";
-  }, [mode, inImageView]);
+    if (mode !== "off" && (!inImageView || full)) eyedropperMode.value = "off";
+  }, [mode, inImageView, full]);
   useEffect(
     () => () => {
       eyedropperMode.value = "off";
@@ -109,13 +99,6 @@ export function EyedropperLayer() {
 
   if (!on) return null;
 
-  /** Radius and statistic: the retargeted swatch's own, or the defaults for a new one. */
-  const settingsFor = (): { radius: SampleRadius; stat: SampleStat } => {
-    const t = currentTarget();
-    const swatch = t.kind === "replace" ? palette.peek().find((s) => s.id === t.id) : undefined;
-    return { radius: swatch?.sampleRadius ?? "auto", stat: swatch?.sampleStat ?? "mean" };
-  };
-
   const locate = (event: PointerEvent) => {
     const el = layer.current as HTMLDivElement;
     const rect = el.getBoundingClientRect();
@@ -125,8 +108,7 @@ export function EyedropperLayer() {
   };
 
   const sampleNow = async (point: ImagePoint) => {
-    const { radius, stat } = settingsFor();
-    return imageClient().sample(point, radius, stat);
+    return imageClient().sample(point, "auto", "mean");
   };
 
   /** Samples for the loupe, at most once per animation frame; a reply for an older press is dropped. */
@@ -195,7 +177,6 @@ export function EyedropperLayer() {
     event.preventDefault();
     const { at, point } = locate(event);
     const done = { ...current, at, point };
-    const t = currentTarget();
     session.current += 1;
     const mine = session.current;
     if (frame.current) cancelAnimationFrame(frame.current);
@@ -207,14 +188,11 @@ export function EyedropperLayer() {
       // Esc, or a new press, during the sample: leave the palette alone.
       if (session.current !== mine) return;
       const list = palette.peek();
-      const next =
-        t.kind === "replace"
-          ? replaceWithPick(list, t.id, color, done.point)
-          : addPicked(list, color, done.point);
+      const next = addPicked(list, color, done.point);
       if (next === list) return;
       palette.value = next;
-      if (t.kind === "add") selectSwatch(next[next.length - 1]?.id ?? null);
-      commit(t.kind === "add" ? "Add picked color" : "Replace color");
+      selectSwatch(next[next.length - 1]?.id ?? null);
+      commit("Add picked color");
     } catch {
       imageMessage.value = { kind: "error", text: "The color couldn't be picked. Try again." };
     }
@@ -242,12 +220,19 @@ export function EyedropperLayer() {
 
 /**
  * The hint row under the image (ui-contract column 1 item 3). With the eyedropper on it says what a
- * pick does, and offers the "Replace swatch N" chip to retarget the selected swatch (decision 5c).
+ * pick does; at 12 swatches it gives the limit note instead (decision 38).
  */
 export function EyedropperHint() {
   const list = palette.value;
   const mode = eyedropperMode.value;
   if (viewSettings.value.mode !== "image") return null;
+  if (!canAdd(list)) {
+    return (
+      <p class="hint" role="status" id={EYEDROPPER_NOTE_ID} data-testid="marker-hint">
+        {FULL_MESSAGE}
+      </p>
+    );
+  }
   if (mode === "off") {
     return list.length > 0 ? (
       <p class="hint" role="status" data-testid="marker-hint">
@@ -255,32 +240,9 @@ export function EyedropperHint() {
       </p>
     ) : null;
   }
-  const selected = selectedSwatchId.value;
-  const index = list.findIndex((s) => s.id === selected);
-  const target = currentTarget();
-  const text =
-    target.kind === "replace"
-      ? `Pick a color to replace swatch ${index + 1}`
-      : !canAdd(list)
-        ? `${FULL_MESSAGE} Replace a swatch instead.`
-        : "Pick a color from the image to add it";
   return (
-    <div class="hint-row">
-      <p class="hint" data-testid="marker-hint">
-        {text}
-      </p>
-      {index >= 0 && (
-        <button
-          type="button"
-          class="chip"
-          aria-pressed={target.kind === "replace"}
-          onClick={() => {
-            eyedropperMode.value = target.kind === "replace" ? "add" : "replace";
-          }}
-        >
-          {`Replace swatch ${index + 1}`}
-        </button>
-      )}
-    </div>
+    <p class="hint" data-testid="marker-hint">
+      Pick a color from the image to add it
+    </p>
   );
 }

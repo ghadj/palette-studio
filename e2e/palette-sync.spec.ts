@@ -81,12 +81,11 @@ test.describe("palette sync (desktop)", () => {
     await undo.click();
     await expect.poll(() => hasMap(page)).toBe(true);
 
-    // A Replace pick with the eyedropper.
+    // An eyedropper pick adds a swatch, so the map no longer fits.
     await page.getByRole("button", { name: "Eyedropper" }).click();
-    await page.getByRole("button", { name: "Replace swatch 3" }).click();
     const at = await screenOf(page, PATCH6);
     await page.mouse.click(at.x, at.y);
-    await expect(strip(page).nth(2)).toHaveAttribute("aria-label", /#5039B0$/);
+    await expect(strip(page).nth(6)).toHaveAttribute("aria-label", /#5039B0$/);
     expect(await noMap(page)).toBe(true);
     await undo.click();
     await expect.poll(() => hasMap(page)).toBe(true);
