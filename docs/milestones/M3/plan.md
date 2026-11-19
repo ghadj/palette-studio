@@ -505,7 +505,12 @@ Rules that hold for every task:
     - "the threshold clamps to 0.01 to 0.10"
   - `tests/extract/client-views.test.ts`: "a second request with the same key is served from the cache (no recompute)".
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+  - Note: the worker keeps one cached view per mode (the last Palette view and the last Values view), so memory stays bounded at display size; a new image clears it. The key holds only what a view depends on: the version and mode, plus the palette hexes and dither for the Palette view, or the bands for the Values view. So a palette change doesn't recompute the Values view. `viewKey` is in `views.ts`.
+  - Note: the Palette view compares and draws each color by its hex (as the strip shows it), so an out-of-gamut swatch draws as its clamped hex, and the hex cache key is exact.
+  - Note: a view request carries no extraction settings, so "opaque" means alpha of at least 128, the default alpha cutoff (spec 2.4). Other pixels are drawn transparent and left out of the shares.
+  - Note: the dither test's "50% gray" is the gray at OKLab L 0.5 (`#636363`), since the error diffuses in OKLab.
+  - Note: `tests/extract/client-reserved.test.ts` now expects `view` to resolve; `sample` and `place` still expect "not built" until T10. Unit tests read PNGs with a small decoder, `tests/image/decode-png.ts`.
 
 ### M3-T12: Markers on the image, the link to swatches, show/hide, loupe component
 - Files:

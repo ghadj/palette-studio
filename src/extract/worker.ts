@@ -21,7 +21,7 @@ import {
   resample,
   SAMPLE_WINDOW_HALF,
 } from "../image/tiers";
-import { paletteView, valuesView } from "../image/views";
+import { type DrawnView, paletteView, valuesView, viewKey } from "../image/views";
 import type {
   ExtractionSettings,
   ImagePoint,
@@ -46,6 +46,8 @@ let master: AnyCanvas | null = null;
 let analysis: { key: string; image: AnalysisImage } | null = null;
 /** The master at display size, for the image views (spec 3.8), by image version. */
 let viewSource: { version: number; image: AnalysisImage } | null = null;
+/** The last drawn Palette and Values views, one each, by their `viewKey` (spec 3.8, M3-T11). */
+const viewCache = new Map<DrawnViewMode, { key: string; drawn: DrawnView }>();
 
 function canDraw(): boolean {
   try {
@@ -67,6 +69,7 @@ async function prepare(jobId: number, bitmap: ImageBitmap): Promise<void> {
   master = next;
   analysis = null;
   viewSource = null;
+  viewCache.clear();
   const display = resample(master, displaySize(master.width, master.height), "smooth", create);
   const bitmapOut = await createImageBitmap(display);
   display.width = 0;
@@ -203,7 +206,11 @@ function viewImage(version: number, pixels: PixelBuffer | null): AnalysisImage {
   return viewSource.image;
 }
 
-/** Draws the Palette or Values view (spec 3.8). M3-T11 adds its cache around this. */
+/**
+ * Draws the Palette or Values view (spec 3.8), or reuses the last one drawn for the same image
+ * version, mode, palette hexes, bands and dither, so switching views never recomputes or
+ * extracts. Each reply gets its own copy of the pixels, since the cached ones stay here.
+ */
 function view(
   jobId: number,
   version: number,
@@ -214,10 +221,26 @@ function view(
   pixels: PixelBuffer | null,
 ): void {
   const image = viewImage(version, pixels);
-  const drawn = mode === "palette" ? paletteView(image, colors, dither) : valuesView(image, bands);
+  const key = viewKey(version, mode, colors, bands, dither);
+  let drawn = viewCache.get(mode)?.key === key ? viewCache.get(mode)?.drawn : undefined;
+  if (!drawn) {
+    drawn = mode === "palette" ? paletteView(image, colors, dither) : valuesView(image, bands);
+    viewCache.set(mode, { key, drawn });
+  }
   const { width, height, shares, bandShares } = drawn;
-  const data = drawn.data.buffer;
-  scope.postMessage({ type: "viewed", jobId, width, height, data, shares, bandShares }, [data]);
+  const data = drawn.data.slice().buffer;
+  scope.postMessage(
+    {
+      type: "viewed",
+      jobId,
+      width,
+      height,
+      data,
+      shares: [...shares],
+      bandShares: [...bandShares],
+    },
+    [data],
+  );
 }
 
 scope.addEventListener("message", (event) => {
