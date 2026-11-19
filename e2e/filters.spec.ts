@@ -205,7 +205,8 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
   }) => {
     const row = page.locator("[data-testid=filters-row]:visible");
     await expect(row).not.toHaveAttribute("open", "");
-    // Order: Working space, then Filters, then Advanced (M2 decision 2b).
+    // Order: Preset above Algorithm (M2 decision 2a), then Working space, Filters and Advanced
+    // (M2 decision 2b).
     const order = await page
       .locator("[data-testid=setting-rows]:visible")
       .first()
@@ -217,7 +218,8 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
             "",
         ),
       );
-    expect(order.slice(0, 5)).toEqual([
+    expect(order.slice(0, 6)).toEqual([
+      "Preset",
       "Algorithm",
       "Colors",
       "Working space",

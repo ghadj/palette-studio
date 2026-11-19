@@ -7,7 +7,7 @@
  * times. Valid values in range commit while typing; on blur or Enter, out-of-range values are
  * clamped.
  */
-import { useState } from "preact/hooks";
+import { useLayoutEffect, useState } from "preact/hooks";
 
 /** Parses "0.05", "0,05", ".5" or "1": a finite number, or null. */
 export function parseDecimal(raw: string): number | null {
@@ -53,6 +53,15 @@ export function DecimalField({
   const clamp = (n: number) => Math.min(max, Math.max(min, n));
   const inRange = (n: number | null): n is number => n !== null && n >= min && n <= max;
   const shown = formatDecimal(value, decimals);
+  // A change from elsewhere, such as a preset, replaces a draft that no longer matches it. A
+  // layout effect runs with the render, before the next input event; a deferred effect could
+  // run after the user has typed again and drop that new draft.
+  useLayoutEffect(() => {
+    setText((t) => {
+      const n = t === null ? null : parseDecimal(t);
+      return t !== null && (n === null || round(n) !== value) ? null : t;
+    });
+  }, [value]);
   return (
     <input
       id={id}

@@ -35,6 +35,14 @@ test.describe("mockup state (mockup-state.md)", () => {
     await expect(select.locator("option:checked")).toBeEnabled();
   });
 
+  test("Preset reads Balanced", async ({ page }) => {
+    await page.goto(demo());
+    const select = page.locator("#setting-preset:visible");
+    await expect(select).toHaveValue("balanced");
+    await expect(select).toBeEnabled();
+    await expect(select.locator("option:checked")).toHaveText("Balanced");
+  });
+
   test("swatch 3 has the selected outline", async ({ page }) => {
     await page.goto(demo());
     for (const theme of ["light", "dark"] as const) {

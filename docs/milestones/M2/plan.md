@@ -390,7 +390,14 @@ Every task keeps `?demo=mockup` working without storage access. Every task that 
     - "the Preset select is keyboard operable and 44 px at phone width"
   - `e2e/mockup-state.spec.ts` › "Preset reads Balanced".
 - Done when: tests pass; studio-desktop, source-phone and studio-tablet review shots are regenerated (the Preset row changes them).
-- [ ] Done
+- [ ] Done (code, unit tests, lint, typecheck and build pass; the e2e run and the review page are still to run, see the last note)
+  - Note: the ignore dark and light preset fields are the toggles only. Their thresholds aren't in decision 11's list, so a preset keeps them, and `matchPreset` ignores them. It also ignores T9's ignore background and spatial weighting, and every other field a preset keeps.
+  - Note: numbers match within 1e-9, so values the decimal fields commit (such as 0.6) still match. Each preset has its own algorithm, so at most one matches.
+  - Note: the Custom option is listed, disabled, only while no preset matches, as the Algorithm select does for an unavailable algorithm. Choosing a preset replaces the whole settings object once, so it re-extracts once.
+  - Note: `e2e/filters.spec.ts` "the Filters row starts collapsed after Working space" now expects Preset before Algorithm (decision 2a). `e2e/presets.spec.ts` adds "the Preset row sits above Algorithm and starts at Balanced" and "the Algorithm select follows a preset". The keyboard test focuses the select directly in WebKit, which tabs only to some form controls by default (as `zoom.spec.ts` does), and uses type-ahead elsewhere after Tab.
+  - Note: `ui-contract.md` still lists "Algorithm, Colors, Working space" for the Image view rows. The Preset row goes to design review (decision 2a); the contract wasn't edited.
+  - Note: Playwright browsers couldn't launch in the T12 worktree (Chromium's mach-port check-in fails and WebKit aborts, inside and outside the sandbox), so the e2e suite and `npm run visual:review` haven't run on this commit yet.
+  - Note: on milestone/M2 (with T9 and T13), "changing Colors after Dominant shows Custom" failed: the Colors field kept its typed draft "8" after the preset set 6, because a draft was only dropped on blur. The integer field and `DecimalField` now drop a draft that no longer matches a value changed from elsewhere. They do it in a layout effect: a deferred `useEffect` could run after the user had typed again and drop the new draft, which made the T7 test "decimal fields step with the arrow keys and clamp on commit" read 0.00 instead of 1.00 under load in the full run. The targeted e2e specs (filters, presets, mockup-state, extract, theme-content) then passed in chromium, phone-chromium and phone-webkit; `npm run visual:review` is still to run.
 
 ### M2-T13: Cluster map engine (worker)
 - Files:

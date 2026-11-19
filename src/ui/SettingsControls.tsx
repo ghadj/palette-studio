@@ -1,14 +1,22 @@
 /**
- * The extraction settings under the image (spec 2.4; M1 decision 5): Algorithm, Colors (slider and
+ * The extraction settings under the image (spec 2.4; M1 decision 5): Preset (spec 2.5; M2 decisions
+ * 2a and 11), Algorithm, Colors (slider and
  * number field) and Working space, then the collapsed Filters row (M2-T8) and the collapsed
  * Advanced row (spec 6.6 rule 2) with Sample size, Resampling, Seed with Randomize, Iterations,
  * Restarts, Histogram bits, Merge threshold, Distance metric, Population vs. vividness, Spatial
  * weighting (M2-T9), Keep one outlier and Sort (M2-T7). Every change re-extracts live (spec 1, 7.4).
  */
 import { ChevronDown, ChevronRight } from "lucide-preact";
-import { useState } from "preact/hooks";
+import { useLayoutEffect, useState } from "preact/hooks";
 import { type SettingKey, settingApplies, settingNote } from "../extract/applicability";
 import { AVAILABLE_ALGORITHMS } from "../extract/pipeline";
+import {
+  applyPreset,
+  matchPreset,
+  PRESET_IDS,
+  PRESET_LABELS,
+  type PresetMatch,
+} from "../extract/presets";
 import { clampColors, MAX_COLORS, MIN_COLORS } from "../state/defaults";
 import { backgroundNotFound, initialOpenRows, settings } from "../state/signals";
 import type {
@@ -145,6 +153,12 @@ function NumberField({
     const n = Number(raw.trim());
     return raw.trim() !== "" && Number.isInteger(n) && n >= min && n <= max ? n : null;
   };
+  // A change from elsewhere, such as a preset, replaces a draft that no longer matches it. A
+  // layout effect runs with the render, before the next input event; a deferred effect could
+  // run after the user has typed again and drop that new draft.
+  useLayoutEffect(() => {
+    setText((t) => (t !== null && parse(t) !== value ? null : t));
+  }, [value]);
   const onInput = (event: Event) => {
     const raw = (event.currentTarget as HTMLInputElement).value;
     setText(raw);
@@ -210,8 +224,28 @@ export function SettingsControls() {
       disabled: true,
     });
   }
+  // The Preset row names the preset the settings match, or reads "Custom" (M2 decision 11). Custom
+  // is listed only then, and can't be chosen.
+  const presetMatch = matchPreset(s);
+  const presets: Array<Option<PresetMatch>> = PRESET_IDS.map((id) => ({
+    value: id,
+    label: PRESET_LABELS[id],
+  }));
+  if (presetMatch === "custom") {
+    presets.push({ value: "custom", label: PRESET_LABELS.custom, disabled: true });
+  }
   return (
     <div class="setting-rows" data-testid="setting-rows">
+      <SettingRow label="Preset" htmlFor="setting-preset">
+        <Select
+          id="setting-preset"
+          value={presetMatch}
+          options={presets}
+          onChange={(v) => {
+            if (v !== "custom") settings.value = applyPreset(settings.peek(), v);
+          }}
+        />
+      </SettingRow>
       <SettingRow label="Algorithm" htmlFor="setting-algorithm">
         <Select
           id="setting-algorithm"
