@@ -55,7 +55,12 @@ export const M1_SCREENS: readonly Screen[] = [
     viewport: DESKTOP,
     device: "desktop",
   },
-  { name: "pixel-filters-phone", path: "./?demo=mockup&rows=filters", viewport: PHONE, device: "phone" },
+  {
+    name: "pixel-filters-phone",
+    path: "./?demo=mockup&rows=filters",
+    viewport: PHONE,
+    device: "phone",
+  },
   // M2-T14: swatch 3's cluster map over the image (mockup-state `cluster=3`). The Palette tab
   // with the Cluster map toggle is palette-phone above.
   {
