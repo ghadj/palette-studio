@@ -442,7 +442,7 @@ Rules that hold for every task:
     - "phone: opens as a sheet"
     - "strip colors are identical in light and dark"
 - Done when: tests pass.
-- [ ] Done
+- [x] Done. Note: "strips update after an adjustment" edits the swatch through the HEX field (T3), since the Adjustments panel is T6; it is desktop-only because the sheet covers the editor on phones.
 
 ### M3-T10: Marker placement and patch sampling (engine)
 - Files:
