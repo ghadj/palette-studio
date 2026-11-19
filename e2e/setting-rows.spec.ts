@@ -7,7 +7,7 @@ import { demo, hasHorizontalScroll } from "./helpers/app";
 import { measure, openRows } from "./helpers/rows";
 
 const ALGORITHMS = ["balanced", "exact", "swatch-roles", "kmeans"] as const;
-const WIDTHS = [1280, 1024, 820, 320] as const;
+const WIDTHS = [1280, 1024, 820, 390, 320] as const;
 
 for (const width of WIDTHS) {
   for (const algorithm of ALGORITHMS) {
@@ -34,6 +34,23 @@ for (const width of WIDTHS) {
         expect(apart, `${r.name}: label group overlaps its value`).toBe(true);
       }
       expect(await hasHorizontalScroll(page)).toBe(false);
+      // No text is clipped, and a wrapped row's value sits fully below its label group.
+      const clipped = await page.evaluate(() =>
+        [...document.querySelectorAll(".setting-row__label, .setting-row__note")]
+          .filter((el) => (el as HTMLElement).getClientRects().length > 0)
+          .filter((el) => el.scrollWidth > el.clientWidth + 1)
+          .map((el) => el.textContent),
+      );
+      expect(clipped).toEqual([]);
+      for (const r of rows) {
+        if (!r.value || r.value.top < r.group.bottom - 0.5) continue; // one line, checked above
+        expect(r.value.top, `${r.name}: wrapped value`).toBeGreaterThanOrEqual(
+          r.group.bottom - 0.5,
+        );
+        expect(r.value.right, `${r.name}: wrapped value is right-aligned`).toBeGreaterThanOrEqual(
+          r.row.right - 1,
+        );
+      }
     });
   }
 }

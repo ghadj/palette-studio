@@ -724,6 +724,7 @@ fieldset {
   cursor: default;
 }
 
+/* Label and note keep their natural width until the row wraps; then they may wrap themselves. */
 .setting-row__label-group {
   display: flex;
   flex: 1 1 auto;
@@ -744,6 +745,13 @@ fieldset {
   align-items: center;
   justify-content: flex-end;
   margin-left: auto;
+}
+
+/* Phone and tablet: 44 px controls get space above and below (M2 decision 21). */
+@media (max-width: 1023.98px) {
+  .setting-row {
+    padding: var(--space-2) 0;
+  }
 }
 
 /*
@@ -956,6 +964,13 @@ fieldset {
   color: var(--color-text);
   list-style: none;
   cursor: pointer;
+}
+
+@media (max-width: 1023.98px) {
+  .chevron-row__summary {
+    min-height: calc(var(--touch-target) + 2 * var(--space-2));
+    padding: var(--space-2) 0;
+  }
 }
 
 .chevron-row__summary::-webkit-details-marker {
