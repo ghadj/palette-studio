@@ -44,7 +44,7 @@ for (const size of SIZES) {
     });
 
     const targets = [
-      ["a pinned swatch", "[data-testid=strip-dock] [data-swatch]:nth-child(3)"],
+      ["a pinned swatch", "[data-testid=strip-dock] .swatch-cell:nth-child(3) [data-swatch]"],
       ["a header button", "header .project-button"],
       ["the active tab", ".tabbar [role=tab][aria-selected=true]"],
     ] as const;

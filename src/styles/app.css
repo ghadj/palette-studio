@@ -694,8 +694,9 @@ fieldset {
   position: sticky;
   top: calc(var(--header-height) + env(safe-area-inset-top));
   z-index: 5;
-  margin: calc(-1 * var(--space-2)) 0;
-  padding: var(--space-2) 0;
+  /* Room above the swatches for the Remove X, which reaches --space-3 past their top edge (decision 38). */
+  margin: calc(-1 * var(--space-3)) 0;
+  padding: var(--space-3) 0;
   background: var(--color-surface);
 }
 

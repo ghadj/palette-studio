@@ -366,11 +366,13 @@ test.describe("Remove button on the selected swatch (M3 decision 38)", () => {
 
   test("keyboard: Tab from the selected swatch reaches the X; Enter removes; Delete and Backspace on a swatch remove it", async ({
     page,
+    browserName,
   }, info) => {
     test.skip(isPhoneProject(info), "keyboard");
     await page.goto(demo());
     await swatches(page).nth(2).focus();
-    await page.keyboard.press("Tab");
+    // WebKit's Tab skips buttons unless Alt is held.
+    await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
     await expect(remove(page)).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(swatches(page)).toHaveCount(5);

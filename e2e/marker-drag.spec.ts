@@ -41,6 +41,24 @@ async function center(locator: Locator): Promise<Pt> {
   return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
 }
 
+/**
+ * Where to press a marker: the ring's center, or, when the zoom pill covers that (decision 41, the
+ * demo's marker 3 sits beneath it at Fit), the marker's own lowest edge that the pill leaves free.
+ */
+async function gripOf(marker: Locator): Promise<{ grip: Pt; shift: Pt }> {
+  return marker.evaluate((el) => {
+    const ring = (el.querySelector(".marker__ring") ?? el).getBoundingClientRect();
+    const box = el.getBoundingClientRect();
+    const cx = ring.x + ring.width / 2;
+    const cy = ring.y + ring.height / 2;
+    if (document.elementFromPoint(cx, cy)?.closest("[data-marker]") === el)
+      return { grip: { x: cx, y: cy }, shift: { x: 0, y: 0 } };
+    // The drag keeps the grab offset, so the drop point shifts by the same amount.
+    const grip = { x: box.x + box.width / 2, y: box.bottom - 4 };
+    return { grip, shift: { x: grip.x - cx, y: grip.y - cy } };
+  });
+}
+
 /** Where an image point is on screen. */
 async function onScreen(page: Page, p: Pt): Promise<Pt> {
   const b = await image(page).boundingBox();
@@ -109,8 +127,9 @@ async function fire(target: Locator, type: PointerType, id: number, at: Pt, kind
  * Drags marker `n` to a point on screen with the project's pointer: the mouse on desktop, real
  * touches on Chromium phones, synthetic touch events in WebKit.
  */
-async function dragMarker(page: Page, project: string, n: number, to: Pt) {
-  const from = await center(marker(page, n).locator(".marker__ring"));
+async function dragMarker(page: Page, project: string, n: number, target: Pt) {
+  const { grip: from, shift } = await gripOf(marker(page, n));
+  const to = { x: target.x + shift.x, y: target.y + shift.y };
   const steps = path(from, to, 12);
   if (project === "phone-chromium") {
     await cdpTouches(page, [
@@ -135,6 +154,10 @@ test.describe("dragging a marker (spec 3.7)", () => {
   test("dragging marker 3 onto patch 5 makes swatch 3 #1E8A2E, picked and pinned; Undo restores it all", async ({
     page,
   }, info) => {
+    // On a 412 px phone the zoom pill covers marker 3 entirely at Fit (decision 41), so a real touch
+    // can't reach it: use a tablet width, where the marker's lower edge is free.
+    if (info.project.name === "phone-chromium")
+      await page.setViewportSize({ width: 820, height: 1180 });
     await page.goto(demo());
     const before = {
       hex: await hexOf(page, 3),
@@ -183,8 +206,9 @@ test.describe("dragging a marker (spec 3.7)", () => {
   }, info) => {
     test.skip(isPhoneProject(info), "mouse");
     await page.goto(demo());
-    const from = await center(marker(page, 3).locator(".marker__ring"));
-    const to = await onScreen(page, POINTS[4] as Pt);
+    const { grip: from, shift } = await gripOf(marker(page, 3));
+    const target = await onScreen(page, POINTS[4] as Pt);
+    const to = { x: target.x + shift.x, y: target.y + shift.y };
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
     for (const p of path(from, to, 10).slice(1)) await page.mouse.move(p.x, p.y);
@@ -208,8 +232,9 @@ test.describe("dragging a marker (spec 3.7)", () => {
   test("Esc mid-drag restores everything and records no step", async ({ page }, info) => {
     test.skip(isPhoneProject(info), "keyboard and mouse");
     await page.goto(demo());
-    const from = await center(marker(page, 3).locator(".marker__ring"));
-    const to = await onScreen(page, POINTS[4] as Pt);
+    const { grip: from, shift } = await gripOf(marker(page, 3));
+    const target = await onScreen(page, POINTS[4] as Pt);
+    const to = { x: target.x + shift.x, y: target.y + shift.y };
     const startPoint = await pointOf(page, 3);
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
@@ -290,8 +315,10 @@ test.describe("dragging a marker (spec 3.7)", () => {
     page,
   }, info) => {
     test.skip(info.project.name !== "phone-chromium", "CDP touch");
+    // The zoom pill covers marker 3 on a 412 px phone (decision 41): use a tablet width.
+    await page.setViewportSize({ width: 820, height: 1180 });
     await page.goto(demo());
-    const from = await center(marker(page, 3).locator(".marker__ring"));
+    const { grip: from } = await gripOf(marker(page, 3));
     const box = await well(page).boundingBox();
     if (!box) throw new Error("no box");
     const f2 = { x: box.x + box.width * 0.3, y: box.y + box.height * 0.6 };
@@ -402,11 +429,11 @@ test.describe("touch (spec 6.1 'Gestures', M2 decision 15h)", () => {
     expect(await page.evaluate(() => document.documentElement.scrollHeight > innerHeight)).toBe(
       true,
     );
-    // Drag marker 3 down and left with a finger.
-    const from = await center(marker(page, 3).locator(".marker__ring"));
+    // Drag marker 1 (marker 3 is under the zoom pill on a phone, decision 41) down and left with a finger.
+    const { grip: from } = await gripOf(marker(page, 1));
     const to = { x: from.x - 60, y: from.y + 80 };
     const scrollY = await page.evaluate(() => window.scrollY);
-    const el = marker(page, 3);
+    const el = marker(page, 1);
     const steps = path(from, to, 10);
     if (info.project.name === "phone-chromium") {
       await cdpTouches(page, [
@@ -419,11 +446,11 @@ test.describe("touch (spec 6.1 'Gestures', M2 decision 15h)", () => {
       for (const p of steps.slice(1)) await fire(el, "pointermove", 1, p);
       await fire(el, "pointerup", 1, to);
     }
-    await expect(swatch(page, 3)).toHaveAttribute("data-origin", "picked");
+    await expect(swatch(page, 1)).toHaveAttribute("data-origin", "picked");
     expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
-    const moved = await pointOf(page, 3);
-    expect(moved.x).toBeLessThan(0.769);
-    expect(moved.y).toBeGreaterThan(0.167);
+    const moved = await pointOf(page, 1);
+    expect(moved.x).toBeLessThan(0.204);
+    expect(moved.y).toBeGreaterThan(0.519);
     expect(await view(page)).toEqual({ scale: 1, x: 0, y: 0 });
 
     if (info.project.name === "phone-chromium") {

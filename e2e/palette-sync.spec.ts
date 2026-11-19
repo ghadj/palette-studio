@@ -23,10 +23,20 @@ async function screenOf(page: Page, p: { x: number; y: number }) {
 }
 
 async function dragMarker3To(page: Page, to: { x: number; y: number }) {
-  const ring = await marker(page, 3).locator(".marker__ring").boundingBox();
-  if (!ring) throw new Error("no marker");
-  const from = { x: ring.x + ring.width / 2, y: ring.y + ring.height / 2 };
-  const at = await screenOf(page, to);
+  // The zoom pill covers the ring's center at Fit (decision 41): press the marker's free lower edge.
+  const { from, shift } = await marker(page, 3).evaluate((el) => {
+    const ring = (el.querySelector(".marker__ring") ?? el).getBoundingClientRect();
+    const box = el.getBoundingClientRect();
+    const cx = ring.x + ring.width / 2;
+    const cy = ring.y + ring.height / 2;
+    if (document.elementFromPoint(cx, cy)?.closest("[data-marker]") === el)
+      return { from: { x: cx, y: cy }, shift: { x: 0, y: 0 } };
+    // The drag keeps the grab offset, so the drop point shifts by the same amount.
+    const grip = { x: box.x + box.width / 2, y: box.bottom - 4 };
+    return { from: grip, shift: { x: grip.x - cx, y: grip.y - cy } };
+  });
+  const target = await screenOf(page, to);
+  const at = { x: target.x + shift.x, y: target.y + shift.y };
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   await page.mouse.move((from.x + at.x) / 2, (from.y + at.y) / 2, { steps: 6 });
