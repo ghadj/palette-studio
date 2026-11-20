@@ -4,6 +4,7 @@ import { deltaEOK } from "../src/color/delta-e";
 import { GRAYSCALE_RED, STUDIO_BACKDROP } from "../tools/fixture-colors";
 import { fixture } from "./helpers/files";
 import { isSheetLayout, openRow } from "./helpers/rows";
+import { sheetSettled } from "./helpers/sheet";
 
 // Pixel filters (spec 2.1 step 3, 2.4; M2 decisions 2b, 3 and 18).
 
@@ -250,6 +251,8 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto("./?demo=mockup&rows=filters");
     await expect(page.locator("#setting-ignore-dark:visible")).toBeVisible();
+    // At 320 px Filters is a drawer (decision 34); measure its resting geometry, not the slide-in.
+    await sheetSettled(page);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
