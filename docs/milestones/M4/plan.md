@@ -416,7 +416,8 @@ Rules that hold for every task:
     - "320 px: no horizontal scroll, and the end handles' hit areas are inside the viewport"
     - "Chromium: a 1 s drag has no long task over 50 ms" (7.7, 60 fps)
 - Done when: tests pass, and nothing depends on hover.
-- [ ] Done
+- [x] Done. Notes:
+  - The bar is taller (70 px) so the midpoint diamonds hang below the track and never cover a click that adds a stop. A mirrored bar shows no diamonds (its segments are copies). Reverse and mirror map back to stored positions (`toStoredPosition`). The bar is a `fieldset`, for a group role that biome accepts.
 
 ### M4-T8: Stop row (the selected stop)
 - Files:

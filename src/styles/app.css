@@ -2669,12 +2669,17 @@ fieldset {
 .stop-bar {
   position: relative;
   display: flex;
-  align-items: center;
-  height: var(--touch-target);
-  margin-inline: var(--space-3);
+  align-items: flex-start;
+  /* The track sits in the top 44 px; the midpoint diamonds hang below it, so a click on the track never lands on one. */
+  height: calc(var(--touch-target) * 3 / 2 + var(--space-1));
+  /* Half a touch target, so the hit areas of the end handles stay inside the column. */
+  margin-inline: calc(var(--touch-target) / 2);
+  touch-action: pan-y;
+  cursor: copy;
 }
 
 .stop-bar__track {
+  margin-top: calc((var(--touch-target) - var(--space-3)) / 2);
   width: 100%;
   height: var(--space-3);
   border: var(--stroke) solid var(--color-border);
@@ -2683,13 +2688,35 @@ fieldset {
 
 .stop-handle {
   position: absolute;
-  top: 50%;
+  top: calc(var(--touch-target) / 2);
   width: calc(var(--space-1) * 5);
   height: calc(var(--space-1) * 5);
   border: var(--stroke-selected) solid var(--marker-ring-outer);
   border-radius: var(--radius-pill);
   box-shadow: 0 0 0 var(--stroke) var(--marker-ring-inner);
   transform: translate(-50%, -50%);
+  z-index: 2;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+
+/* The 44 px hit area, round like the handle's ring so it doesn't cover the bar beside it. */
+.stop-handle::before,
+.stop-diamond::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  transform: translate(-50%, -50%);
+}
+
+.stop-handle[data-dragging] {
+  cursor: grabbing;
 }
 
 .stop-handle[data-selected] {
@@ -2697,7 +2724,34 @@ fieldset {
   box-shadow: 0 0 0 var(--stroke) var(--marker-ring-outer);
 }
 
-/* M4-T7 styles go here. */
+/* The midpoint diamond: a 44 px hit area around a small rotated square. */
+.stop-diamond {
+  position: absolute;
+  top: calc(var(--touch-target) + var(--space-1));
+  z-index: 1;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.stop-diamond__mark {
+  width: var(--space-3);
+  height: var(--space-3);
+  background: var(--color-surface);
+  border: var(--stroke-selected) solid var(--color-text);
+  transform: rotate(45deg);
+}
+
+.stop-diamond[data-dragging] .stop-diamond__mark {
+  border-color: var(--color-accent);
+}
 /* ---- end M4-T7 ---- */
 
 /* ---- M4-T8 stop row (StopDetails.tsx) ---- */
