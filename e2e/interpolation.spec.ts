@@ -163,6 +163,7 @@ test.describe("Interpolation row and options (M4-T9)", () => {
     if (phone) await sheetSettled(page);
     const alpha = page.getByRole("spinbutton", { name: "Alpha", exact: true });
     await alpha.fill("50");
+    await alpha.press("Enter");
     await expect(alpha).toHaveValue("50");
     if (phone) {
       await page.keyboard.press("Escape");

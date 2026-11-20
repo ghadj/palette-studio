@@ -32,6 +32,9 @@ async function closeSheet(page: Page, info: Parameters<typeof isPhoneProject>[0]
   if (!isPhoneProject(info)) return;
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  // The sheet gives focus back to its row after it leaves the DOM; a chip focused before that
+  // would lose it again, and the next key would go to the row.
+  await expect(page.locator(".chevron-row__button:focus")).toHaveCount(1);
 }
 
 test.describe("Type chips and Geometry (M4-T6)", () => {

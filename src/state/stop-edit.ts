@@ -16,7 +16,7 @@ import {
 } from "../gradient/model";
 import type { GradientStop } from "../types";
 import { editStops, effectiveStops, selectStop } from "./gradient";
-import { gradientPreview, palette, selectedStopId } from "./signals";
+import { palette, selectedStopId } from "./signals";
 
 export type PositionUnit = "%" | "px";
 
@@ -124,10 +124,8 @@ export function removeSelectedStop(): boolean {
   return true;
 }
 
-/** The width a px position is measured against: the Custom size, else the rendered preview. */
+/** The width a px position is measured against: the rendered preview. */
 export function previewWidth(): number {
-  const settings = gradientPreview.peek();
-  if (settings.aspect === "custom") return settings.customSize.w;
   const el = document.querySelector<HTMLElement>("[data-testid=gradient-preview]");
   return el?.clientWidth ?? 0;
 }

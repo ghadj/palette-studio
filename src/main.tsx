@@ -20,12 +20,10 @@ import {
   activeTab,
   activeView,
   demoMode,
-  gradientPreview,
   imageSrc,
   imageView,
   initialLoupe,
   initialOpenRows,
-  initialThemeMenu,
   loadProject,
   selectedStopId,
   selectedSwatchId,
@@ -55,9 +53,6 @@ if (mockup) {
     activeView.value = state.activeView;
     imageView.value = centered(parseMockupZoom(window.location.search), { width: 1, height: 1 });
     initialOpenRows.value = state.openRows;
-    // The gradient preview options are view state; `menu=theme` opens the menu.
-    gradientPreview.value = state.preview;
-    initialThemeMenu.value = state.themeMenuOpen;
     // `image=<view>` and `loupe=<n>` (plan D20). The view is view state, never in undo (3.6).
     viewSettings.value = { ...viewSettings.peek(), mode: parseMockupImage(window.location.search) };
     initialLoupe.value = parseMockupLoupe(window.location.search);

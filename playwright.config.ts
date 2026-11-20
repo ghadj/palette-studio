@@ -6,7 +6,7 @@ const port = Number(process.env.E2E_PORT ?? 4173);
 const baseURL = `http://localhost:${port}${base}`;
 
 // Functional tests live in e2e/*.spec.ts; e2e/visual holds the screenshot projects.
-const functional = { testIgnore: /visual\// };
+const functional = { testIgnore: /visual\/|perf\.spec/ };
 
 export default defineConfig({
   testDir: "e2e",
@@ -31,6 +31,8 @@ export default defineConfig({
     { name: "firefox", ...functional, use: { ...devices["Desktop Firefox"] } },
     { name: "phone-webkit", ...functional, use: { ...devices["iPhone 13"] } },
     { name: "phone-chromium", ...functional, use: { ...devices["Pixel 7"] } },
+    // Timing checks run alone: `npm run e2e:perf` gives this project one worker (e2e/perf.spec.ts).
+    { name: "perf", testMatch: /perf\.spec/, use: { ...devices["Desktop Chrome"] } },
     {
       name: "visual-review",
       testMatch: /visual\/review\.spec\.ts/,

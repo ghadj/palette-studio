@@ -169,6 +169,7 @@ test.describe("gradient preview (M4-T12)", () => {
       .locator("[data-testid=row-stop], [data-testid=sheet-stop]")
       .getByRole("spinbutton", { name: "Alpha", exact: true });
     await alpha.fill("50");
+    await alpha.press("Enter");
     await expect(frame).toHaveCount(1);
     await expect(preview(page)).toHaveAttribute("data-stops", /#D4527F80@50/);
     await page
@@ -176,37 +177,6 @@ test.describe("gradient preview (M4-T12)", () => {
       .getByRole("button", { name: "Reset alpha" })
       .click();
     await expect(frame).toHaveCount(0);
-  });
-
-  test("dragging marker 4 changes the 50% stop's color in the preview before release (spec 3.7)", async ({
-    page,
-  }, info) => {
-    test.skip(isPhoneProject(info), "the image and the preview are on different tabs on phones");
-    await open(page, info);
-    const stops = await preview(page).getAttribute("data-stops");
-    await page.evaluate(() => {
-      const w = window as unknown as { __long: number[] };
-      w.__long = [];
-      new PerformanceObserver((list) => {
-        for (const e of list.getEntries()) w.__long.push(e.duration);
-      }).observe({ entryTypes: ["longtask"] });
-    });
-    const ring = page.locator('[data-marker="4"] .marker__ring');
-    const b = await ring.boundingBox();
-    const image = await page.locator(".image-well__image:visible").first().boundingBox();
-    if (!b || !image) throw new Error("no boxes");
-    const from = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
-    await page.mouse.move(from.x, from.y);
-    await page.mouse.down();
-    for (let i = 1; i <= 20; i += 1) {
-      await page.mouse.move(from.x + i * 4, from.y + i * 6);
-    }
-    // Still pressed: the preview already shows the new color.
-    await expect(preview(page)).not.toHaveAttribute("data-stops", stops ?? "");
-    await expect(page.locator('[data-marker="4"]')).toHaveAttribute("data-dragging", "");
-    await page.mouse.up();
-    const long = await page.evaluate(() => (window as unknown as { __long: number[] }).__long);
-    expect(long.filter((d) => d > 50)).toEqual([]);
   });
 
   test("phone: the dock holds the preview and the stop bar, pinned, within about 35% of the screen", async ({

@@ -82,7 +82,6 @@ test.describe("Gradient column and tab (M4-T2)", () => {
     await expect(preview).toHaveAttribute("data-hue", "shorter");
     await expect(preview).toHaveAttribute("data-easing", "linear");
     await expect(preview).toHaveAttribute("data-render", "native");
-    await expect(preview).toHaveAttribute("data-cvd", "normal");
   });
 
   test("demo parameters reach the preview: gradient=conic and space=oklch", async ({

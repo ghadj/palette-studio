@@ -105,6 +105,7 @@ test.describe("Stop row (M4-T8)", () => {
   test("alpha 50% gives #D4527F80, as one step", async ({ page }) => {
     await open(page);
     await alpha(page).fill("50");
+    await alpha(page).press("Enter");
     await expect(preview(page)).toHaveAttribute("data-stops", "#1DB07A@0,#D4527F80@50,#5039B0@100");
     await expect(technique(page)).toHaveText("Custom");
     await scope(page).getByRole("button", { name: "Reset alpha" }).click();
@@ -120,6 +121,7 @@ test.describe("Stop row (M4-T8)", () => {
     await expect(mid).toHaveValue("50");
     await expect(scope(page).getByRole("button", { name: "Reset midpoint" })).toHaveCount(0);
     await mid.fill("30");
+    await mid.press("Enter");
     await expect(preview(page)).toHaveAttribute(
       "data-stops",
       "#1DB07A@0,#D4527F@50,~30,#5039B0@100",
@@ -215,10 +217,53 @@ test.describe("Stop row (M4-T8)", () => {
 
   test("copy icon copies the stop's HEX", async ({ page, context }, info) => {
     test.skip(info.project.name.includes("webkit"), "clipboard permissions");
-    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    // Only Chromium knows the clipboard permissions; elsewhere the copy runs on the click alone.
+    if (info.project.name.includes("chromium")) {
+      await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    }
     await open(page);
     await scope(page).getByRole("button", { name: "Copy HEX value" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Copied #D4527F" })).toBeVisible();
+  });
+
+  test("Alpha and Midpoint commit on Enter, blur or an arrow step, not per keystroke (one undo step)", async ({
+    page,
+  }) => {
+    await open(page);
+    const undoDepth = async () => {
+      // Undoing once must restore the starting stops only if the whole edit was one step.
+      await undo(page);
+      return preview(page).getAttribute("data-stops");
+    };
+    // Typing "50" over "100" is one commit: nothing changes until Enter.
+    await alpha(page).click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("50");
+    await expect(preview(page)).toHaveAttribute("data-stops", STOPS);
+    await page.keyboard.press("Enter");
+    await expect(preview(page)).toHaveAttribute("data-stops", /#D4527F80@50/);
+    expect(await undoDepth()).toBe(STOPS);
+    // Blur commits.
+    await alpha(page).click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("30");
+    await expect(preview(page)).toHaveAttribute("data-stops", STOPS);
+    await alpha(page).evaluate((el) => (el as HTMLElement).blur());
+    await expect(preview(page)).toHaveAttribute("data-stops", /#D4527F4D@50/);
+    // An arrow key commits at once, one step per press.
+    await alpha(page).focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(preview(page)).toHaveAttribute("data-stops", /#D4527F4[0-9A-F]@50/);
+    // Midpoint: typed "30" waits for Enter, then is one step.
+    const mid = scope(page).getByRole("spinbutton", { name: "Midpoint", exact: true });
+    const before = await preview(page).getAttribute("data-stops");
+    await mid.click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("30");
+    await expect(preview(page)).toHaveAttribute("data-stops", before ?? "");
+    await page.keyboard.press("Enter");
+    await expect(preview(page)).toHaveAttribute("data-stops", /~30/);
+    expect(await undoDepth()).toBe(before);
   });
 
   test("phone: fields are 16 px with inputmode=decimal; the HEX field has autocorrect off; the sheet sits below the dock", async ({
@@ -269,6 +314,7 @@ test.describe("Stop row (M4-T8)", () => {
     await hexField(page).fill("#FF0000");
     await hexField(page).press("Enter");
     await alpha(page).fill("50");
+    await alpha(page).press("Enter");
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

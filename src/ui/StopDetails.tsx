@@ -296,6 +296,7 @@ function StopContent() {
           value={alphaPercent}
           min={0}
           max={100}
+          deferred
           onChange={(v) => setSelectedAlpha(v / 100)}
           onDragStart={begin}
           onDragEnd={() => end()}
@@ -321,6 +322,7 @@ function StopContent() {
             value={hintPercent}
             min={1}
             max={99}
+            deferred
             onChange={(v) => setSelectedHint(v / 100)}
             onDragStart={begin}
             onDragEnd={() => end()}

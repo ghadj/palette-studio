@@ -6,24 +6,12 @@ import {
   oklchToHex,
   oklchToOklab,
 } from "../../src/color/convert";
-import { bake } from "../../src/gradient/bake";
-import { bakedCss, clearSupportsCache, nativeCss } from "../../src/gradient/css";
+import { bakedCss, clearSupportsCache } from "../../src/gradient/css";
 import { makeStop } from "../../src/gradient/model";
 import { createSwatch } from "../../src/palette/model";
-import {
-  DEFAULT_ADJUSTMENTS,
-  DEFAULT_GRADIENT,
-  DEFAULT_GRADIENT_PREVIEW,
-} from "../../src/state/defaults";
+import { DEFAULT_ADJUSTMENTS, DEFAULT_GRADIENT } from "../../src/state/defaults";
 import { colorAt, render } from "../../src/state/gradient-render";
-import { resolvedStops } from "../../src/state/gradient-stops";
-import {
-  adjustments,
-  compareBefore,
-  gradient,
-  gradientPreview,
-  palette,
-} from "../../src/state/signals";
+import { adjustments, compareBefore, gradient, palette } from "../../src/state/signals";
 import type { Gradient } from "../../src/types";
 
 const value = (hex: string) => ({ kind: "value" as const, color: hexToOklch(hex), from: null });
@@ -44,7 +32,6 @@ beforeEach(() => {
   );
   adjustments.value = { ...DEFAULT_ADJUSTMENTS };
   compareBefore.value = false;
-  gradientPreview.value = { ...DEFAULT_GRADIENT_PREVIEW };
   gradient.value = custom([
     ["#1DB07A", 0],
     ["#D4527F", 0.5],
@@ -112,21 +99,6 @@ describe("render state (spec 4.5; plan D10)", () => {
     expect(render.value.outOfGamut).toBe(true);
     gradient.value = { ...gradient.value, space: "oklab" };
     expect(render.value.outOfGamut).toBe(false);
-  });
-
-  it("compareCss renders the compare space, natively or baked", () => {
-    vi.stubGlobal("CSS", { supports: () => true });
-    gradientPreview.value = { ...DEFAULT_GRADIENT_PREVIEW, compare: "oklch" };
-    expect(render.value.compareCss).toBe(nativeCss(resolvedStops.value, gradient.value, "oklch"));
-    clearSupportsCache();
-    vi.stubGlobal("CSS", { supports: () => false });
-    gradient.value = { ...gradient.value };
-    const g = gradient.value;
-    expect(render.value.compareCss).toBe(
-      bakedCss(bake(resolvedStops.value, { ...g, space: "oklch" }).stops, g),
-    );
-    gradientPreview.value = { ...DEFAULT_GRADIENT_PREVIEW };
-    expect(render.value.compareCss).toBeNull();
   });
 
   it("no stops: no CSS", () => {

@@ -2,12 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { hexToOklab } from "../../src/color/convert";
 import { fitView } from "../../src/image/viewport";
 import { createSwatch } from "../../src/palette/model";
-import {
-  DEFAULT_ADJUSTMENTS,
-  DEFAULT_GRADIENT,
-  DEFAULT_GRADIENT_PREVIEW,
-  DEFAULT_SETTINGS,
-} from "../../src/state/defaults";
+import { DEFAULT_ADJUSTMENTS, DEFAULT_GRADIENT, DEFAULT_SETTINGS } from "../../src/state/defaults";
 import { effectiveStops } from "../../src/state/gradient";
 import {
   begin,
@@ -27,7 +22,6 @@ import {
   adjustments,
   compareBefore,
   gradient,
-  gradientPreview,
   imageView,
   markersVisible,
   palette,
@@ -48,7 +42,6 @@ describe("history (spec 3.6; plan Q3a, D16)", () => {
     settings.value = { ...DEFAULT_SETTINGS };
     gradient.value = { ...DEFAULT_GRADIENT };
     selectedStopId.value = null;
-    gradientPreview.value = { ...DEFAULT_GRADIENT_PREVIEW };
     clear();
   });
 
@@ -213,17 +206,14 @@ describe("history (spec 3.6; plan Q3a, D16)", () => {
     expect(gradient.value.type).toBe("conic");
   });
 
-  it("undo leaves selectedStopId and gradientPreview unchanged", () => {
+  it("undo leaves selectedStopId unchanged", () => {
     gradient.value = { ...gradient.value, type: "radial" };
     commit("Gradient type");
     const stopId = effectiveStops.value[1]?.id ?? "";
     expect(stopId).not.toBe("");
     selectedStopId.value = stopId;
-    const preview = { ...DEFAULT_GRADIENT_PREVIEW, aspect: "16:9" as const };
-    gradientPreview.value = preview;
     undo();
     expect(selectedStopId.value).toBe(stopId);
-    expect(gradientPreview.value).toBe(preview);
     redo();
     expect(selectedStopId.value).toBe(stopId);
   });

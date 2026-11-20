@@ -129,7 +129,10 @@ test("closing unlocks the page and keeps its position", async ({ page }, info) =
     expect(await scrollY(page), "the page scrolls again").toBeGreaterThan(open);
   } else {
     await page.evaluate(() => window.scrollBy(0, 100));
-    expect(await scrollY(page), "the page scrolls again").toBeGreaterThan(open);
+    // The scroll lands on a later frame under load, so wait for it instead of reading at once.
+    await expect
+      .poll(() => scrollY(page), { message: "the page scrolls again" })
+      .toBeGreaterThan(open);
   }
 });
 

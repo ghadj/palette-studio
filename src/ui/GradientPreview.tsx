@@ -15,13 +15,13 @@
  *   not opaque, P in percent) with `~H` hint entries for midpoints off 50%, such as
  *   `#1DB07A@0,~30,#D4527F@50,#5039B0@100`
  * - `data-type`, `data-angle`, `data-space`, `data-hue`, `data-easing`, `data-render` (`native` or
- *   `baked`) and `data-cvd`
+ *   `baked`)
  */
 import { stopHex } from "../gradient/css";
 import type { ResolvedStop } from "../gradient/model";
 import { render } from "../state/gradient-render";
 import { resolvedStops } from "../state/gradient-stops";
-import { gradient, gradientPreview } from "../state/signals";
+import { gradient } from "../state/signals";
 
 const num = (n: number): string => String(Math.round(n * 1000) / 1000);
 
@@ -55,7 +55,6 @@ export function GradientPreview() {
           data-hue={g.hue}
           data-easing={g.easing.kind}
           data-render={mode}
-          data-cvd={gradientPreview.value.cvd}
           style={css ? { background: css } : undefined}
         />
       </div>

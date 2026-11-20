@@ -314,6 +314,7 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
                 data-user-content=""
                 data-swatch-id={swatch.id}
                 data-origin={swatch.origin}
+                data-population={swatch.population.toFixed(4)}
                 data-dragging={swatch.id === dragging ? "" : undefined}
                 aria-label={`${swatchLabel(swatches, swatch.id)}, ${hex}`}
                 aria-description={

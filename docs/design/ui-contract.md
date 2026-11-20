@@ -214,6 +214,8 @@ Not drawn. Follow spec 6.1: the phone layout, wider. The phone header, one panel
 | Menu popover | `--color-surface`, `--color-border`, `--radius-swatch` | open, item focus |
 | Toast | inverse surface and text, action in `--color-accent-inverse` | shown |
 
+Rows in a list sit flush with one divider between them. An expanded chevron row ends with its last setting row's divider: no padding or second line below it, and no gap before the next row (M4-T14). Setting rows and chevron rows in the same column read as one list.
+
 Focus is always visible: a 2 px accent ring with a small offset.
 
 ## Intended deviations from the mockups

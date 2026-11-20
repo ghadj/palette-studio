@@ -5,15 +5,12 @@
  * `rows`, `image` and `loupe` (plan D20); the others are ignored until their milestone.
  */
 import { hexToOklab, hexToOklch } from "../color/convert";
-import type { CvdType } from "../color/cvd";
 import { buildStops } from "../gradient/sources";
 import { createSwatch } from "../palette/model";
 import type {
-  GradientPreviewSettings,
   GradientType,
   ImageViewMode,
   InterpolationSpace,
-  PreviewAspect,
   Project,
   Tab,
   TechniqueKind,
@@ -22,7 +19,6 @@ import type {
 import {
   DEFAULT_ADJUSTMENTS,
   DEFAULT_GRADIENT,
-  DEFAULT_GRADIENT_PREVIEW,
   DEFAULT_VIEW_SETTINGS,
   SCHEMA_VERSION,
   SPEC_DEFAULT_SETTINGS,
@@ -77,18 +73,8 @@ export interface MockupGradientParams {
   type: GradientType | null;
   /** `space=<space>`: the interpolation space. */
   space: InterpolationSpace | null;
-  /** `compare=<space>`: compare mode with that space. */
-  compare: InterpolationSpace | null;
-  /** `overlay=on`: the text check. */
-  overlay: boolean;
-  /** `cvd=<type>`: the vision simulation. */
-  cvd: CvdType | null;
-  /** `aspect=1:1|16:9|9:16|4:3|banner`. */
-  aspect: Exclude<PreviewAspect, "free" | "custom"> | null;
   /** `technique=<kind>`: that technique with its defaults. */
   technique: TechniqueKind | null;
-  /** `menu=theme`: the theme menu open. */
-  menu: boolean;
 }
 
 const GRADIENT_TYPES: readonly GradientType[] = ["linear", "radial", "conic"];
@@ -104,8 +90,6 @@ const SPACES: readonly InterpolationSpace[] = [
   "hwb",
   "xyz",
 ];
-const CVD_TYPES: readonly CvdType[] = ["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
-const ASPECTS = ["1:1", "16:9", "9:16", "4:3", "banner"] as const;
 const TECHNIQUES: readonly TechniqueKind[] = [
   "palette-order",
   "sorted",
@@ -119,12 +103,7 @@ const TECHNIQUES: readonly TechniqueKind[] = [
 const NO_GRADIENT_PARAMS: MockupGradientParams = {
   type: null,
   space: null,
-  compare: null,
-  overlay: false,
-  cvd: null,
-  aspect: null,
   technique: null,
-  menu: false,
 };
 
 function option<T extends string>(value: string | null, options: readonly T[]): T | null {
@@ -136,12 +115,7 @@ export function parseMockupGradient(search: string): MockupGradientParams {
   return {
     type: option(params.get("gradient"), GRADIENT_TYPES),
     space: option(params.get("space"), SPACES),
-    compare: option(params.get("compare"), SPACES),
-    overlay: params.get("overlay") === "on",
-    cvd: option(params.get("cvd"), CVD_TYPES),
-    aspect: option(params.get("aspect"), ASPECTS),
     technique: option(params.get("technique"), TECHNIQUES),
-    menu: params.get("menu") === "theme",
   };
 }
 
@@ -162,10 +136,6 @@ export interface MockupState {
   activeView: View;
   activeTab: Tab;
   openRows: MockupRow[];
-  /** Gradient preview options, from `compare`, `overlay`, `cvd` and `aspect` (view state). */
-  preview: GradientPreviewSettings;
-  /** True when `menu=theme` opens the theme menu. */
-  themeMenuOpen: boolean;
 }
 
 const VIEWS: readonly View[] = ["studio", "materials"];
@@ -256,14 +226,6 @@ export function buildMockupState(
     activeView: params?.view ?? "studio",
     activeTab: params?.tab ?? "source",
     openRows: [...(params?.rows ?? [])],
-    preview: {
-      ...DEFAULT_GRADIENT_PREVIEW,
-      aspect: options.aspect ?? DEFAULT_GRADIENT_PREVIEW.aspect,
-      compare: options.compare,
-      overlay: { ...DEFAULT_GRADIENT_PREVIEW.overlay, on: options.overlay },
-      cvd: options.cvd ?? DEFAULT_GRADIENT_PREVIEW.cvd,
-    },
-    themeMenuOpen: options.menu,
   };
 }
 

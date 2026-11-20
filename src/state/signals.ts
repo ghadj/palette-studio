@@ -10,7 +10,6 @@ import type {
   ExtractionSettings,
   EyedropperMode,
   Gradient,
-  GradientPreviewSettings,
   ImageMeta,
   Project,
   Swatch,
@@ -22,7 +21,6 @@ import {
   clampColors,
   DEFAULT_ADJUSTMENTS,
   DEFAULT_GRADIENT,
-  DEFAULT_GRADIENT_PREVIEW,
   DEFAULT_SETTINGS,
   DEFAULT_VIEW_SETTINGS,
   SCHEMA_VERSION,
@@ -105,7 +103,6 @@ export const imageView = signal<ImageView>(fitView());
 /** The selected gradient stop (plan T1): view state, never in undo (3.6). */
 export const selectedStopId = signal<string | null>(null);
 /** Gradient preview options (4.4, plan D22): view state, not saved, never in undo. */
-export const gradientPreview = signal<GradientPreviewSettings>({ ...DEFAULT_GRADIENT_PREVIEW });
 
 /** The swatch whose card or marker is hovered, linking the two (3.7). */
 export const hoveredSwatchId = signal<string | null>(null);
@@ -122,9 +119,6 @@ export const demoMode = signal(false);
  * ("ramp") open as bottom sheets instead (plan D20).
  */
 export const initialOpenRows = signal<readonly string[]>([]);
-
-/** True when the theme menu starts open: the mockup state's `menu=theme` parameter (M4 plan D28). */
-export const initialThemeMenu = signal(false);
 
 /**
  * The palette index of the swatch whose marker shows the loupe at load: the mockup state's

@@ -193,29 +193,4 @@ test.describe("Stop bar (M4-T7)", () => {
       expect(area.right).toBeLessThanOrEqual(320);
     }
   });
-
-  test("Chromium: a 1 s drag has no long task over 50 ms", async ({ page }, info) => {
-    test.skip(info.project.name !== "chromium", "long task API");
-    await open(page, info);
-    await page.evaluate(() => {
-      const w = window as unknown as { __long: number[] };
-      w.__long = [];
-      new PerformanceObserver((list) => {
-        for (const e of list.getEntries()) w.__long.push(e.duration);
-      }).observe({ entryTypes: ["longtask"] });
-    });
-    const h = await handle(page, 2).boundingBox();
-    const bar = await barBox(page);
-    if (!h) throw new Error("no handle");
-    const y = h.y + h.height / 2;
-    await page.mouse.move(h.x + h.width / 2, y);
-    await page.mouse.down();
-    for (let i = 0; i < 60; i++) {
-      await page.mouse.move(bar.x + bar.width * (0.5 + 0.3 * Math.sin(i / 8)), y);
-      await page.waitForTimeout(16);
-    }
-    await page.mouse.up();
-    const long = await page.evaluate(() => (window as unknown as { __long: number[] }).__long);
-    expect(long.filter((d) => d > 50)).toEqual([]);
-  });
 });

@@ -646,7 +646,8 @@ Shrunk by decision 68: the Preview row, text check, lowest contrast and vision w
   - Lint, typecheck, unit tests, e2e and build all pass.
   - The bundle stays within 150 kB gzip; record the size.
   - `npm run visual:review` writes every shot.
-- [ ] Done
+- Note: the three new files are `e2e/undo-gradient-all.spec.ts`, `e2e/gradient-flow.spec.ts` and `e2e/layout-m4-sheets.spec.ts` (the M4 sheets at four widths and both themes; `layout.spec.ts` itself is untouched). Also done: rows in an expanded group end with one divider and no gap (`.chevron-row__content:has(.setting-row:last-child)`, `.row-list` in the Gradient column; `e2e/gradient-rows-gap.spec.ts`, `e2e/row-groups-gap.spec.ts`); Alpha and Midpoint fields commit on Enter, blur or an arrow step (`NumberField` `deferred`); the Preview leftovers and the `compare`, `overlay`, `cvd`, `aspect` and `menu=theme` demo parameters are gone; the two long-task tests moved to `e2e/perf.spec.ts` (project `perf`, `npm run e2e:perf`, a CI step); the chips test waits for the sheet's focus return; the Export drawer starts at the header's measured bottom edge; the filters test reads each swatch's population from the strip's `data-population` (share of the kept pixels). Bundle: 98.02 kB gzip of 150 kB. Docs D1 to D14 are consistent.
+- [x] Done
 
 ### M4-T15: Remove the cluster map (user request; decision 69)
 - Departs from spec 2.6 (the cluster map) and spec 6.1 ("No hover"'s Cluster map toggle).

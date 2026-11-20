@@ -1315,7 +1315,7 @@ fieldset {
 
 .export-drawer__panel {
   position: absolute;
-  top: calc(var(--header-height) + var(--stroke));
+  top: var(--export-top, var(--header-height));
   right: 0;
   bottom: 0;
   display: flex;
@@ -1564,6 +1564,12 @@ fieldset {
   border-top: var(--stroke) solid var(--color-divider);
 }
 
+/* The Gradient column's setting rows and chevron rows read as one list: the first block's last
+   divider is the only line between them. */
+.row-list > .chevron-rows {
+  border-top: 0;
+}
+
 /* A button version of the summary: it keeps the summary's padding and touch text size (M2 F4, F7). */
 .chevron-row__button {
   width: 100%;
@@ -1578,6 +1584,17 @@ fieldset {
 .chevron-row__content {
   padding: var(--space-2) 0 var(--space-3);
   border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+/* A group that ends with a setting row ends with that row's divider: no padding or second line
+   below it (user report, M4-T14). A group that ends in a chart keeps its own closing line. */
+.chevron-row__content:has(.setting-row:last-child) {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.chevron-row__content:has(.setting-row:last-child) > :last-child {
+  padding-bottom: 0;
 }
 
 /* The editor's HEX, Lock and Ramp row (ui-contract column 2 item 4). */

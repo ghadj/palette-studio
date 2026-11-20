@@ -1,11 +1,4 @@
-import type {
-  Adjustments,
-  ExtractionSettings,
-  Gradient,
-  GradientPreviewSettings,
-  Technique,
-  ViewSettings,
-} from "../types";
+import type { Adjustments, ExtractionSettings, Gradient, Technique, ViewSettings } from "../types";
 
 /** Stays 1 until project files exist (M5). */
 export const SCHEMA_VERSION = 1;
@@ -116,12 +109,3 @@ export const DEFAULT_GRADIENT: Readonly<Gradient> = Object.freeze({
   custom: false,
   stops: [] as Gradient["stops"],
 } as Gradient);
-
-/** Free aspect, no compare, no text check, normal vision (plan D22). */
-export const DEFAULT_GRADIENT_PREVIEW: Readonly<GradientPreviewSettings> = Object.freeze({
-  aspect: "free",
-  customSize: Object.freeze({ w: 1200, h: 600 }),
-  compare: null,
-  overlay: Object.freeze({ on: false, color: "white" }),
-  cvd: "normal",
-});

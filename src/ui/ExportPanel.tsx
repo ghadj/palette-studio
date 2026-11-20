@@ -182,6 +182,9 @@ function Drawer({ onClose }: { onClose: () => void }) {
     const opener = document.getElementById(EXPORT_BUTTON_ID);
     const onDialogClose = () => close.current();
     el.addEventListener("close", onDialogClose);
+    // The drawer starts at the header's real bottom edge, whatever height the header has.
+    const header = document.querySelector("header");
+    if (header) el.style.setProperty("--export-top", `${header.getBoundingClientRect().bottom}px`);
     if (!el.open) el.showModal();
     el.querySelector<HTMLElement>(".export-drawer__close")?.focus({ preventScroll: true });
     return () => {

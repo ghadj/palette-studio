@@ -37,14 +37,17 @@ export function GradientPanel({ variant }: { variant: "desktop" | "phone" }) {
             <StopBar />
           </GradientDock>
           <GradientTypeChips />
-          <div class="setting-rows" data-testid="gradient-rows">
-            <InterpolationRow />
-            <TechniqueRows />
-          </div>
-          <div class="chevron-rows" data-testid="gradient-chevron-rows">
-            <InterpolationOptionsRow />
-            <StopRow />
-            <GeometryRow />
+          {/* One list: the panel's gap and the second block's top border would split it. */}
+          <div class="row-list">
+            <div class="setting-rows" data-testid="gradient-rows">
+              <InterpolationRow />
+              <TechniqueRows />
+            </div>
+            <div class="chevron-rows" data-testid="gradient-chevron-rows">
+              <InterpolationOptionsRow />
+              <StopRow />
+              <GeometryRow />
+            </div>
           </div>
         </>
       )}

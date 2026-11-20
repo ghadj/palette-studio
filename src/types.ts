@@ -2,7 +2,6 @@
  * Shared types (spec 7.5). Export preferences arrive in later milestones.
  */
 import type { Oklch } from "./color/convert";
-import type { CvdType } from "./color/cvd";
 import type { DistanceMetric } from "./color/delta-e";
 
 export type { Oklab, Oklch } from "./color/convert";
@@ -304,19 +303,6 @@ export interface Gradient {
    */
   custom: boolean;
   stops: GradientStop[];
-}
-
-export type PreviewAspect = "free" | "1:1" | "16:9" | "9:16" | "4:3" | "banner" | "custom";
-
-/** Gradient preview options (spec 4.4): view state, not saved and not in undo (plan D22). */
-export interface GradientPreviewSettings {
-  aspect: PreviewAspect;
-  /** Pixels, 16 to 8192 per side, for the Custom aspect. */
-  customSize: { w: number; h: number };
-  /** A second space to show beside the main one, or null. */
-  compare: InterpolationSpace | null;
-  overlay: { on: boolean; color: "white" | "black" | string };
-  cvd: "normal" | CvdType;
 }
 
 /**

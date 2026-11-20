@@ -4,7 +4,6 @@
  * - `render.css`: native CSS with the `in <space>` clause where the browser supports it, else CSS
  *   from the baked stops; also baked when premultiplied alpha is off and a stop has alpha (D10).
  * - `render.barCss`: the same gradient as a left-to-right linear one, for the stop bar (D27).
- * - `render.compareCss`: the compare preview in its own space (D22), native or baked the same way.
  * - `render.baked` and `render.outOfGamut`: the gradient is always baked, because the Gamut row
  *   (D12), the vision simulation (M4-T12) and the text check (M4-T13) read the baked stops, whatever
  *   the preview draws.
@@ -19,15 +18,13 @@ import { bakedCss, nativeCss, previewMode } from "../gradient/css";
 import type { ResolvedStop } from "../gradient/model";
 import type { Gradient } from "../types";
 import { resolvedStops } from "./gradient-stops";
-import { gradient, gradientPreview } from "./signals";
+import { gradient } from "./signals";
 
 export interface GradientRender {
   /** The CSS for the main preview; null with no stops. */
   css: string | null;
   /** The same gradient, linear at 90°, for the stop bar (plan D27); null with no stops. */
   barCss: string | null;
-  /** The CSS for the compare preview in its own space (plan D22); null when compare is off. */
-  compareCss: string | null;
   /** The baked stops (always computed, see the file comment); null with no stops. */
   baked: BakedStop[] | null;
   /** True when interpolation left sRGB, so the Gamut row shows (plan D12). */
@@ -56,7 +53,6 @@ function memoBake(): (stops: readonly ResolvedStop[], g: Gradient) => BakeResult
   };
 }
 const bakeMain = memoBake();
-const bakeCompare = memoBake();
 
 /** The bar's gradient: linear, left to right along the stop axis (plan D27). */
 const barGradient = (g: Gradient): Gradient => ({
@@ -81,30 +77,18 @@ const main = computed(() => {
   };
 });
 
-const compare = computed(() => {
-  const space = gradientPreview.value.compare;
-  const stops = resolvedStops.value;
-  if (!space || stops.length === 0) return null;
-  const g = gradient.value;
-  const other: Gradient = { ...g, space };
-  return previewMode(stops, other) === "native"
-    ? nativeCss(stops, other)
-    : bakedCss(bakeCompare(stops, other).stops, g);
-});
-
 export const render = computed<GradientRender>(() => {
   const m = main.value;
   if (!m) {
     return {
       css: null,
       barCss: null,
-      compareCss: null,
       baked: null,
       outOfGamut: false,
       mode: "native",
     };
   }
-  return { ...m, compareCss: compare.value };
+  return m;
 });
 
 /**
