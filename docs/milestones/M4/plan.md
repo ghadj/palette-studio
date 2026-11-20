@@ -272,7 +272,12 @@ Rules that hold for every task:
 - Done when:
   - Tests pass.
   - The bundle grows by under 12 kB gzip for the culori modes (informational).
-- [ ] Done
+- [x] Done. Notes:
+  - The culori modes are registered in a new `src/gradient/spaces.ts` (`toSpace`, `fromSpace`, `hueIndex`). `interpolate.ts` also exports `mixer(a, b, options)`, which converts the stops once and returns `(t) => OklabAlpha`, for the bake, and `fixHues`. `easing.ts` also exports `cubicBezier`.
+  - Powerless hue (D11) uses the CSS Color 4 sample-code thresholds: OKLCH chroma ≤ 4e-6, CIELCh ≤ 0.0015. Achromatic inputs become exact gray HSL and HWB coordinates, because culori turns #FFFFFF into hsl(324 −125% 100%). Chromium's own thresholds couldn't be checked offline; T12's native-against-baked test is the check.
+  - The sRGB midpoints #800080 and #808080 are ties (127.5 rounded half up). The OKLab round trip lands within 1e-12 of 127.5, so those tests check the channel values to 1e-6, not the HEX strings. ease-in(0.5) is 0.315357, so the easing tests use |Δ| < 1e-4, not `toBeCloseTo(…, 4)`.
+  - Bezier x1 and x2 are clamped to 0 to 1 (D7). The solver works in s to 1e-10. Where the curve is flat in x, y is good to 1e-5, which is the double-precision limit there.
+  - Nothing in the app imports these modules until T10, so the main bundle doesn't change yet. Bundled with `convert.ts` (esbuild, minified, gzip -9), they add about 2.6 kB gzip: from 7.9 to 10.6 kB, under the 12 kB budget.
 
 ### M4-T4: Ordering techniques and subsets (Opus)
 - Files:
