@@ -2905,7 +2905,128 @@ fieldset {
 /* ---- end M4-T9 ---- */
 
 /* ---- M4-T11 technique rows (TechniqueRows.tsx, ImageSampleThumb.tsx) ---- */
-/* M4-T11 styles go here. */
+/* The Colors chips (Picked) and the Derived From chips: 44 px fills; the pressed or chosen ones
+   have the accent border, the others are dimmed, so state is never color alone. */
+.technique-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.technique-chip {
+  flex: 0 0 auto;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+  opacity: 0.4;
+}
+
+.technique-chip[aria-pressed="true"],
+.technique-chip[aria-checked="true"] {
+  border: var(--stroke-selected) solid var(--color-accent);
+  opacity: 1;
+}
+
+.technique-note {
+  margin: 0;
+  padding: var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+/* The Image sample thumbnail: the image, the scan drawn on it, dots at the sample points. Its
+   height is capped at four touch targets. The handles overflow it, so their 44 px reach the edge. */
+.sample-thumb-row {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.sample-thumb {
+  position: relative;
+  width: min(100%, calc(var(--touch-target) * 4 / var(--sample-aspect, 1)));
+  aspect-ratio: 1 / var(--sample-aspect, 1);
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-input);
+}
+
+.sample-thumb[data-busy] {
+  opacity: 0.8;
+}
+
+.sample-thumb__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-input);
+  object-fit: fill;
+}
+
+.sample-thumb__lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sample-thumb__line,
+.sample-thumb__ring {
+  fill: none;
+  stroke: var(--marker-ring-outer);
+  stroke-width: var(--stroke-selected);
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 1px var(--marker-ring-inner));
+}
+
+.sample-dot {
+  position: absolute;
+  width: var(--space-2);
+  height: var(--space-2);
+  background: var(--marker-ring-outer);
+  border: var(--stroke) solid var(--marker-ring-inner);
+  border-radius: var(--radius-pill);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* A line endpoint: a 44 px target around a small ring, as the stop handles are. */
+.sample-handle {
+  position: absolute;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  transform: translate(-50%, -50%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+  z-index: 2;
+}
+
+.sample-handle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--space-1) * 5);
+  height: calc(var(--space-1) * 5);
+  border: var(--stroke-selected) solid var(--marker-ring-outer);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 0 var(--stroke) var(--marker-ring-inner);
+  transform: translate(-50%, -50%);
+}
+
+.sample-handle:focus-visible::before {
+  border-color: var(--color-accent);
+}
 /* ---- end M4-T11 ---- */
 
 /* ---- M4-T12 gradient preview (GradientPreview.tsx) ---- */

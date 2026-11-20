@@ -576,7 +576,8 @@ Rules that hold for every task:
   - "unpicking down to 1 swatch is refused, with the note"
   - "phone: every chip and handle is 44 px; the demo makes no storage access"
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+  - Note: the Technique select adds a disabled "Custom" option while Custom, and a visually hidden `technique-value` span keeps T7's testid. Population-weighted is tested for shape (first 0, last 100, increasing, not even), not exact positions. A parameter change that doesn't change a live technique records nothing. A technique edit that causes a scan is committed once its colors land (one step); a scan after a new image with an empty history is not an undo step. `TechniqueRows` selects the first stop when none is selected (T8 follow-up). The Alpha/Midpoint commit-on-Enter follow-up is left for T14 (it needs `StopDetails.tsx` and `Slider.tsx`).
 
 ### M4-T12: Gradient preview
 - Files:
