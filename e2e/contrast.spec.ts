@@ -132,7 +132,9 @@ test.describe("close pairs (spec 3.5)", () => {
       "aria-description",
       /Very close to swatch 3/,
     );
-    await expect(page.getByTestId("close-announce")).toHaveText("Some colors are very close.");
+    await expect(page.getByTestId("close-announce")).toHaveText(
+      "Some colors are very close: swatches 1 and 3.",
+    );
     // The demo never saves, so a reload starts from the pair-free mockup palette again.
     await page.reload();
     await expect(mark(page)).toHaveCount(0);

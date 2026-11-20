@@ -60,6 +60,9 @@ export function BottomSheet({
     // Below the pinned swatch strip, when the page has one (M3 decision 35).
     const undock = dockSheetBelowStrip(el);
     if (!el.open) el.showModal();
+    // Focus starts on Close, not on the title-bar action (Duplicate swatch), so an immediate Enter
+    // can't change the palette.
+    el.querySelector<HTMLElement>(".bottom-sheet__close")?.focus({ preventScroll: true });
     return () => {
       undock();
       el.removeEventListener("close", onDialogClose);

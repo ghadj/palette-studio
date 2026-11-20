@@ -107,7 +107,7 @@ test("the adjusted line has its own copy icon; the field's icon copies the shown
   const shown = (
     (await details(page).getByTestId("swatch-after-adjustments").textContent()) ?? ""
   ).match(/#[0-9A-F]{6}/)?.[0];
-  const button = details(page).getByRole("button", { name: "Copy adjusted HEX" });
+  const button = details(page).getByRole("button", { name: "Copy adjusted HEX value" });
   const box = await button.boundingBox();
   expect(box?.height ?? 0).toBeGreaterThanOrEqual(32);
   await button.click();

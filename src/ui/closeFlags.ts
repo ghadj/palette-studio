@@ -39,12 +39,16 @@ export function closeFlags(): CloseFlags {
   return { kind: partners.size > 0 ? kind : null, partners };
 }
 
+/** "swatch 2" or "swatches 1, 2 and 4", from 0-based indexes. */
+export function swatchList(indexes: readonly number[]): string {
+  const list = indexes.map((i) => i + 1);
+  return list.length === 1
+    ? `swatch ${list[0]}`
+    : `swatches ${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
+}
+
 /** "close in value to swatch 2" or "very close to swatches 1 and 4", for a swatch's description. */
 export function closeDescription(kind: CloseKind, partners: readonly number[]): string {
-  const list = partners.map((i) => i + 1);
-  const names =
-    list.length === 1
-      ? `swatch ${list[0]}`
-      : `swatches ${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
+  const names = swatchList(partners);
   return kind === "value" ? `Close in value to ${names}` : `Very close to ${names}`;
 }

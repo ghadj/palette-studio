@@ -169,7 +169,9 @@ test.describe("Values view (spec 3.8)", () => {
     if (!bar || !l) throw new Error("no boxes");
     expect(l.y - (bar.y + bar.height)).toBeGreaterThanOrEqual(-1);
     expect(l.y - (bar.y + bar.height)).toBeLessThanOrEqual(24);
-    await expect(page.getByTestId("close-announce")).toHaveText("Some colors are close in value.");
+    await expect(page.getByTestId("close-announce")).toHaveText(
+      "Some colors are close in value: swatches 1 and 2.",
+    );
     if (isPhoneProject(info)) {
       // On phones the legend pins with the strip (M2 decision 19).
       await expect(page.locator("[data-testid=strip-dock] [data-testid=close-legend]")).toHaveCount(
@@ -200,6 +202,19 @@ test.describe("Values view (spec 3.8)", () => {
     await field.press("Enter");
     // Swatches 1 and 4 differ by about 0.046 (mockup-state.md), so swatch 4 is flagged too.
     await expect(page.locator("[data-testid=close-flag]:visible")).toHaveCount(3);
+  });
+
+  test("the live region re-announces when the flagged set changes within the same kind", async ({
+    page,
+  }) => {
+    await openView(page, "values");
+    const live = page.getByTestId("close-announce");
+    await expect(live).toHaveText("Some colors are close in value: swatches 1 and 2.");
+    const field = page.locator("#view-close-in-value:visible");
+    await field.fill("0.10");
+    await field.press("Enter");
+    await expect(live).not.toHaveText("Some colors are close in value: swatches 1 and 2.");
+    await expect(live).toContainText("Some colors are close in value: swatches 1");
   });
 
   test("6 swatches: the '+' tile is on the swatches' row, (decision 29)", async ({

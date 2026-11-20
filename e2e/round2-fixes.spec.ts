@@ -205,3 +205,16 @@ test.describe("editor HEX copy icon (decision 50)", () => {
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
   });
 });
+
+test("the Swatch drawer opens with focus on Close, so Enter cannot duplicate (decision 48)", async ({
+  page,
+}, info) => {
+  test.skip(!isPhoneProject(info) && info.project.name !== "chromium", "phone layout");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(demo("tab=palette&rows=swatch"));
+  await sheetSettled(page);
+  await expect(page.getByRole("dialog").getByRole("button", { name: "Close" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(swatches(page)).toHaveCount(6);
+});

@@ -381,7 +381,7 @@ function ValueFields({ swatch, output }: { swatch: Swatch; output: Swatch }) {
             type="button"
             class="icon-pill copy-icon"
             data-testid="copy-adjusted"
-            aria-label="Copy adjusted HEX"
+            aria-label="Copy adjusted HEX value"
             onClick={() => void copySelected(output.color, "hex")}
           >
             <Copy aria-hidden="true" size={18} strokeWidth={1.5} />

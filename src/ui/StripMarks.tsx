@@ -8,7 +8,7 @@
  * flagged swatches changes (spec 6.3).
  */
 import type { ComponentChildren } from "preact";
-import { closeFlags } from "./closeFlags";
+import { closeFlags, swatchList } from "./closeFlags";
 
 export function StripMarks({
   closePairs = true,
@@ -20,11 +20,13 @@ export function StripMarks({
 }) {
   const { kind, partners } = closeFlags();
   const shown = kind === "value" || (kind === "color" && closePairs) ? kind : null;
+  // The sentence names the flagged swatches, so it changes (and is re-announced) when the set does.
+  const which = shown ? `: ${swatchList([...partners.keys()].sort((a, b) => a - b))}.` : "";
   const sentence =
     shown === "value"
-      ? "Some colors are close in value."
+      ? `Some colors are close in value${which}`
       : shown === "color"
-        ? "Some colors are very close."
+        ? `Some colors are very close${which}`
         : "";
   return (
     <div
