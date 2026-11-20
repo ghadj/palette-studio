@@ -43,16 +43,21 @@ if (typeof document !== "undefined") {
   );
 }
 
-/** The section to open on, from where the user is (decision 56); null keeps the last one. */
+/**
+ * The section to open on, from where the user is (decision 56; M4 plan D26: Gradient from the
+ * Gradient tab or column 3); null keeps the last one.
+ */
 export function contextSection(layout: Layout): ExportSection | null {
   const mode = viewSettings.peek().mode;
   const viewed = mode === "palette" || mode === "values";
   if (layout === "phone") {
     if (activeTab.peek() === "palette") return "palette";
+    if (activeTab.peek() === "gradient") return "gradient";
     if (activeTab.peek() === "source" && viewed) return "image";
     return null;
   }
   if (lastColumn === "palette") return "palette";
+  if (lastColumn === "gradient") return "gradient";
   if (lastColumn === "source" && viewed) return "image";
   return null;
 }
@@ -142,7 +147,12 @@ function SectionBody({ section }: { section: ExportSection }) {
         </>
       );
     case "gradient":
-      return <Soon label="Gradient formats" detail="CSS, SVG and more." />;
+      return (
+        <Soon
+          label="Gradient formats"
+          detail="CSS, Tailwind, SVG, images, JSON and a stop sheet."
+        />
+      );
     case "image":
       return (
         <Soon

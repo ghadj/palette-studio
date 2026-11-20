@@ -134,6 +134,9 @@ export const demoMode = signal(false);
  */
 export const initialOpenRows = signal<readonly string[]>([]);
 
+/** True when the theme menu starts open: the mockup state's `menu=theme` parameter (M4 plan D28). */
+export const initialThemeMenu = signal(false);
+
 /**
  * The palette index of the swatch whose marker shows the loupe at load: the mockup state's
  * `loupe=<n>` parameter (plan D20). Null for none. M3-T12's Loupe reads it.

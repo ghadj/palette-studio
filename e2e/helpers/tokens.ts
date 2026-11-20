@@ -18,7 +18,9 @@ export const MIN_TOUCH = 44;
 export function colorTokenNames(): string[] {
   const css = readFileSync(resolve(process.cwd(), "src/styles/tokens.css"), "utf8");
   const names = new Set<string>();
-  for (const [, name] of css.matchAll(/(--(?:color|marker|grid-line)-[a-z-]+)\s*:/g)) {
+  for (const [, name] of css.matchAll(
+    /(--(?:color|marker|grid-line|surround|checker)-[a-z-]+)\s*:/g,
+  )) {
     if (name) names.add(name);
   }
   return [...names];

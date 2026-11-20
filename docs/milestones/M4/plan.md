@@ -233,7 +233,15 @@ Rules that hold for every task:
 - Done when:
   - Tests pass.
   - T3 to T13 can each be done without touching a registry, a design doc, `GradientPanel.tsx`, `messages.ts`, `src/state/gradient.ts` or another task's file.
-- [ ] Done
+- [x] Done. Notes:
+  - Each chevron-row panel exports its row wrapper (`InterpolationOptionsRow`, `StopRow`, `GeometryRow`, `PreviewRow`) beside its content component, so T6, T8, T9 and T13 can add the badge and reset-all to `ChevronRow` without editing `GradientPanel.tsx`. `ChevronRow` gained an optional `sheetTitle` (D29).
+  - `GradientDock` shares `usePinnedDock.ts`; `StripDock` is unchanged except for `data-dock`.
+  - The seams `sources.ts` calls are `orderedStops(technique, swatches)` and `distinctSwatches(swatches, count)` (`order.ts`), `derivedStops(technique, palette)` (`derive.ts`) and `sampledStops(technique, palette)` (`image-sample.ts`). T4 and T5 keep those signatures and build their planned functions under them. The engine stubs use the planned names (`mix`, `easingFn`, `hintWarp`, `sampleAt`, `bake`, `nativeCss`, `bakedCss`, `simulateBaked`, `lowestContrast`).
+  - `colorAt(position)` returns an `Oklch`. `src/gradient/labels.ts` holds the shared names.
+  - The ring request is `ring(center, r0, r1)`, with radii as fractions of the image width; it reads the master at display size, like `view`. `ringMean` is in `src/image/ring.ts`.
+  - The gradient demo parameters are parsed by `parseMockupGradient`, apart from `parseMockupParams`, whose result shape existing tests pin; `main.tsx` passes both to `buildMockupState`.
+  - `e2e/helpers/tokens.ts` now also reads `--surround-*` and `--checker-*` from `tokens.css` (the same discovery as `--marker-*`); no allowed list gained a value.
+  - The gradient dock's `top` and gutter rules sit after its base rule in the M4-T2 section, since a media rule placed earlier in `app.css` loses to it by source order.
 
 ### M4-T3: Interpolation in ten spaces, hue methods, premultiplied alpha, easing and hints (Opus)
 - Files:

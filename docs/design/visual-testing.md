@@ -35,7 +35,7 @@ A failure names the element (a selector path) and the value that isn't a token. 
 | library-desktop | `?demo=mockup&library=menu` | 1280 × 800 | `07-library-light.png`, `08-library-dark.png` |
 | source-phone | `?demo=mockup&tab=source` | 390 × 844 | `09`, `10` (left phone) |
 | palette-phone | `?demo=mockup&tab=palette` | 390 × 844 | contract text (not drawn) |
-| gradient-phone | `?demo=mockup&tab=gradient` | 390 × 844 | `09`, `10` (middle phone) |
+| gradient-phone | `?demo=mockup&tab=gradient` | 390 × 844 | `09`, `10` (middle phone; the angle is whatever the state holds, D1; the pinned preview, D12) |
 | materials-phone | `?demo=mockup&tab=materials` | 390 × 844 | `09`, `10` (right phone) |
 | values-grid-phone | `?demo=mockup&image=values&grid=on` | 390 × 844 | `11`, `12` (left phone) |
 | palette-view-phone | `?demo=mockup&image=palette` | 390 × 844 | `11`, `12` (middle phone) |
@@ -65,8 +65,26 @@ A failure names the element (a selector path) and the value that isn't a token. 
 | ramp-sheet-phone | `?demo=mockup&tab=palette&rows=ramp` | 390 × 844 | contract text (not drawn): the Ramp sheet |
 | contrast-sheet-phone | `?demo=mockup&tab=palette&rows=contrast` | 390 × 844 | contract text (not drawn): the Contrast sheet |
 | cvd-sheet-phone | `?demo=mockup&tab=palette&rows=cvd` | 390 × 844 | contract text (not drawn): the CVD sheet |
+| interp-options-desktop | `?demo=mockup&rows=interpolation&space=oklch` | 1280 × 1280 | contract text (not drawn): the Interpolation options row open in place, in OKLCH so Hue shows (M4 plan Q4) |
+| gradient-stop-desktop | `?demo=mockup&rows=stop` | 1280 × 1280 | contract text (not drawn): the Stop row open (M4 plan D29) |
+| gradient-geometry-desktop | `?demo=mockup&rows=geometry` | 1280 × 1280 | contract text (not drawn): the Geometry row for a linear gradient (spec 4.3) |
+| gradient-radial-desktop | `?demo=mockup&gradient=radial&rows=geometry` | 1280 × 1280 | contract text (not drawn): the Geometry row for a radial gradient |
+| gradient-preview-desktop | `?demo=mockup&rows=preview` | 1280 × 1280 | contract text (not drawn): the Preview row open (spec 4.4, 6.2) |
+| gradient-check-desktop | `?demo=mockup&overlay=on&cvd=deuteranopia&rows=preview` | 1280 × 1280 | contract text (not drawn): the text check and the deuteranopia simulation |
+| gradient-technique-desktop | `?demo=mockup&technique=image-sample` | 1280 × 1280 | contract text (not drawn): the Image sample parameter rows and thumbnail (M4 plan D18) |
+| gradient-conic-desktop | `?demo=mockup&gradient=conic` | 1280 × 800 | `01`, `02` (layout only: the mockup draws a linear gradient, D1) |
+| gradient-compare-desktop | `?demo=mockup&compare=oklch` | 1280 × 800 | contract text (not drawn): compare mode (spec 4.4) |
+| gradient-surround-desktop | `?demo=mockup&surround=mid-gray&aspect=1:1` | 1280 × 800 | contract text (not drawn): a mid-gray surround and a 1:1 preview (spec 6.2) |
+| surround-menu-desktop | `?demo=mockup&menu=theme` | 1280 × 800 | contract text (not drawn): the theme menu's Surround group |
+| interp-options-sheet-phone | `?demo=mockup&tab=gradient&rows=interpolation&space=oklch` | 390 × 844 | contract text (not drawn): the Interpolation options drawer below the pinned preview (D12) |
+| stop-sheet-phone | `?demo=mockup&tab=gradient&rows=stop` | 390 × 844 | contract text (not drawn): the Stop drawer |
+| geometry-sheet-phone | `?demo=mockup&tab=gradient&rows=geometry` | 390 × 844 | contract text (not drawn): the Geometry drawer |
+| preview-sheet-phone | `?demo=mockup&tab=gradient&rows=preview` | 390 × 844 | contract text (not drawn): the Preview drawer |
+| gradient-compare-phone | `?demo=mockup&tab=gradient&compare=oklch` | 390 × 844 | contract text (not drawn): compare mode in the pinned dock |
+| gradient-technique-phone | `?demo=mockup&tab=gradient&technique=image-sample` | 390 × 844 | contract text (not drawn): the Image sample rows and thumbnail |
+| gradient-tablet | `?demo=mockup&tab=gradient` | 820 × 1180 | contract text (not drawn): the Gradient tab at tablet width |
 
-Each shot is taken in light and dark, by setting the browser's color scheme. A shot joins the list in the milestone that builds its screen: the image views and grid in M3 and M5, the library in M5, the Materials view and filters with Part 2. M3 registered all of its shots in its first UI task (M3-T2); each now shows its built screen.
+Each shot is taken in light and dark, by setting the browser's color scheme. A shot joins the list in the milestone that builds its screen: the image views and grid in M3 and M5, the library in M5, the Materials view and filters with Part 2. M3 registered all of its shots in its first UI task (M3-T2); each now shows its built screen. M4 did the same in M4-T2 for the gradient shots, which show each task's stub until it lands.
 
 ### Running it
 

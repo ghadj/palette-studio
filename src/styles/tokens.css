@@ -49,6 +49,15 @@
   --grid-line-dark: #161616;
   --grid-line-light: #ffffff;
 
+  /* The gradient preview's surround (spec 6.2): fixed in both themes, like the marker rings. "Match theme" uses --color-surface-sunken. */
+  --surround-mid-gray: #777777;  /* CIELAB L* 50 */
+  --surround-white: #ffffff;
+  --surround-black: #000000;
+
+  /* The checkerboard under a gradient with alpha, in 8 px cells: fixed, never themed */
+  --checker-light: #ffffff;
+  --checker-dark: #cccccc;
+
   /* Type (spec 6.4). No web fonts (spec 7.8). */
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;

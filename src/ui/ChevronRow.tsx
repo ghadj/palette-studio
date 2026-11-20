@@ -81,10 +81,13 @@ export function ChevronRow({
   label,
   testId,
   sheetAction,
+  sheetTitle,
   summaryExtra,
   badge,
   children,
 }: {
+  /** The bottom sheet's title when it differs from the label, such as "Stop 2 of 3" (M4 plan D29). */
+  sheetTitle?: string | undefined;
   /** An icon button for the sheet's title bar, below 1024 px only (M3 decision 48). */
   sheetAction?: ComponentChildren;
   /**
@@ -140,7 +143,7 @@ export function ChevronRow({
       </div>
       <RowContent
         id={id}
-        title={label}
+        title={sheetTitle ?? label}
         open={open}
         onClose={() => setOpen(false)}
         regionId={regionId}

@@ -764,6 +764,7 @@ fieldset {
       var(--header-height) +
       env(safe-area-inset-top) +
       var(--strip-dock-height, 0px) +
+      var(--dock-height, 0px) +
       var(--space-2)
     );
     scroll-padding-bottom: calc(
@@ -786,7 +787,11 @@ fieldset {
 /* From 1024 px the strip pins at the top of column 2's scroll container (M3 decision 45). */
 @media (min-width: 1024px) {
   .column__scroll {
-    scroll-padding-top: calc(var(--strip-dock-height, 0px) + var(--space-2));
+    scroll-padding-top: calc(
+      var(--strip-dock-height, 0px) +
+      var(--dock-height, 0px) +
+      var(--space-2)
+    );
   }
 
   .strip-dock {
@@ -802,7 +807,8 @@ fieldset {
   }
 }
 
-.strip-dock[data-stuck] {
+.strip-dock[data-stuck],
+.gradient-dock[data-stuck] {
   box-shadow: 0 var(--stroke) 0 var(--color-border);
 }
 
@@ -2595,3 +2601,127 @@ fieldset {
     column-gap: var(--space-2);
   }
 }
+
+/*
+ * ==== M4 ====
+ * One labelled section per M4 UI task (plan M4-T2, "Parallel execution"). Each task adds its rules
+ * only inside its own section, below its "styles go here" line, so parallel branches touch
+ * separate hunks. Don't reformat or reorder the sections. The rules a stub needs are the first
+ * lines of its task's section; the task replaces them.
+ */
+
+/* ---- M4-T2 gradient dock (GradientDock.tsx, GradientPanel.tsx) ---- */
+/*
+ * The preview's pinned container (plan Q2; ui-contract D12), as .strip-dock is for the swatch
+ * strip: sticky under the header below 1024 px (the rule below covers the gutters)
+ * and at the top of column 3's scroll container from 1024 px. Opaque, with a divider while pinned
+ * (the data-stuck rule beside .strip-dock[data-stuck]). It writes --dock-height.
+ */
+.gradient-dock {
+  position: sticky;
+  top: calc(var(--header-height) + env(safe-area-inset-top));
+  z-index: 5;
+  margin: calc(-1 * var(--space-2)) 0;
+  padding: var(--space-2) 0;
+  background: var(--color-surface);
+}
+
+/* Where the shell fills the screen the dock also covers the gutters (keep 640px equal to
+   .shell--phone's max-width, as for .strip-dock), and from 1024 px it pins at the top of column 3's
+   scroll container. Both come after the base rule, which wins by source order otherwise. */
+@media (max-width: 640px) {
+  .gradient-dock {
+    margin-inline: calc(-1 * var(--space-4));
+    padding-inline: var(--space-4);
+  }
+}
+
+@media (min-width: 1024px) {
+  .gradient-dock {
+    top: calc(-1 * var(--space-1));
+  }
+}
+
+/* ---- end M4-T2 ---- */
+
+/* ---- M4-T6 type chips and geometry (GradientTypeChips.tsx, GeometryPanel.tsx, AngleDial.tsx) ---- */
+.gradient-types .segment {
+  flex: 1 1 0;
+}
+
+/* M4-T6 styles go here. */
+/* ---- end M4-T6 ---- */
+
+/* ---- M4-T7 stop bar (StopBar.tsx) ---- */
+/* The bar is inset so the handles at 0% and 100% stay inside the column. */
+.stop-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: var(--touch-target);
+  margin-inline: var(--space-3);
+}
+
+.stop-bar__track {
+  width: 100%;
+  height: var(--space-3);
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.stop-handle {
+  position: absolute;
+  top: 50%;
+  width: calc(var(--space-1) * 5);
+  height: calc(var(--space-1) * 5);
+  border: var(--stroke-selected) solid var(--marker-ring-outer);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 0 var(--stroke) var(--marker-ring-inner);
+  transform: translate(-50%, -50%);
+}
+
+.stop-handle[data-selected] {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 var(--stroke) var(--marker-ring-outer);
+}
+
+/* M4-T7 styles go here. */
+/* ---- end M4-T7 ---- */
+
+/* ---- M4-T8 stop row (StopDetails.tsx) ---- */
+/* M4-T8 styles go here. */
+/* ---- end M4-T8 ---- */
+
+/* ---- M4-T9 interpolation row and options (InterpolationRow.tsx, InterpolationOptions.tsx) ---- */
+/* M4-T9 styles go here. */
+/* ---- end M4-T9 ---- */
+
+/* ---- M4-T11 technique rows (TechniqueRows.tsx, ImageSampleThumb.tsx) ---- */
+/* M4-T11 styles go here. */
+/* ---- end M4-T11 ---- */
+
+/* ---- M4-T12 gradient preview (GradientPreview.tsx) ---- */
+/* About 2:1 at full width (plan D22), at most 30% of the screen tall below 1024 px (plan Q2). */
+.gradient-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+@media (max-width: 1023.98px) {
+  .gradient-preview {
+    max-height: 30dvh;
+  }
+}
+
+/* M4-T12 styles go here. */
+/* ---- end M4-T12 ---- */
+
+/* ---- M4-T13 preview row, text check, surround (PreviewPanel.tsx, TextOverlay.tsx) ---- */
+/* M4-T13 styles go here. */
+/* ---- end M4-T13 ---- */
+
+/* ---- end M4 ---- */

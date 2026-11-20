@@ -10,6 +10,7 @@ import { redo, undo } from "./state/history";
 import {
   buildMockupState,
   parseMockupCluster,
+  parseMockupGradient,
   parseMockupImage,
   parseMockupLoupe,
   parseMockupParams,
@@ -21,13 +22,16 @@ import {
   activeTab,
   activeView,
   demoMode,
+  gradientPreview,
   imageSrc,
   imageView,
   initialLoupe,
   initialOpenRows,
+  initialThemeMenu,
   loadProject,
   selectedStopId,
   selectedSwatchId,
+  surround,
   viewSettings,
 } from "./state/signals";
 import { initTheme } from "./state/theme";
@@ -43,7 +47,7 @@ installFocusClearance();
 // The mockup state loads its fixture directly and never touches storage (mockup-state.md, spec 5.5).
 const mockup = parseMockupParams(window.location.search);
 if (mockup) {
-  const state = buildMockupState(mockup);
+  const state = buildMockupState(mockup, parseMockupGradient(window.location.search));
   batch(() => {
     demoMode.value = true;
     loadProject(state.project, state.name);
@@ -54,6 +58,10 @@ if (mockup) {
     activeView.value = state.activeView;
     imageView.value = centered(parseMockupZoom(window.location.search), { width: 1, height: 1 });
     initialOpenRows.value = state.openRows;
+    // The gradient preview options and the surround are view state; `menu=theme` opens the menu.
+    gradientPreview.value = state.preview;
+    surround.value = state.surround;
+    initialThemeMenu.value = state.themeMenuOpen;
     // `image=<view>` and `loupe=<n>` (plan D20). The view is view state, never in undo (3.6).
     viewSettings.value = { ...viewSettings.peek(), mode: parseMockupImage(window.location.search) };
     initialLoupe.value = parseMockupLoupe(window.location.search);

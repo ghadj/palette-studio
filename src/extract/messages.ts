@@ -1,7 +1,7 @@
 /**
  * Messages between the UI thread and the image worker (spec 7.1 "Workers", 7.4). M3-T2 reserves
  * `sample`, `place` and `view` and the `extracted` reply's `points`, so M3-T10 and M3-T11 build
- * them without changing this file.
+ * them without changing this file. M4-T2 reserves `ring` the same way, for M4-T5.
  */
 import type { Oklab } from "../color/convert";
 import type { MasterWindow } from "../image/tiers";
@@ -98,6 +98,20 @@ export type ToWorker =
       /** The user's alpha cutoff, 0 to 255 (spec 2.4). */
       alphaCutoff: number;
       pixels: PixelBuffer | null;
+    }
+  /**
+   * The mean color of an annulus of the working master (plan D18, M4-T5): `center` and the radii
+   * `r0` and `r1` are normalized, the radii as fractions of the image's width. It reads the master
+   * at display size, so `version` and `pixels` work as for `view`.
+   */
+  | {
+      type: "ring";
+      jobId: number;
+      version: number;
+      center: ImagePoint;
+      r0: number;
+      r1: number;
+      pixels: PixelBuffer | null;
     };
 
 export type FromWorker =
@@ -141,4 +155,6 @@ export type FromWorker =
       shares: number[];
       bandShares: number[];
     }
+  /** The annulus' mean color in OKLab. */
+  | { type: "ringed"; jobId: number; color: Oklab }
   | { type: "error"; jobId: number; message: string };

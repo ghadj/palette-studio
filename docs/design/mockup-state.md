@@ -17,8 +17,17 @@ A fixed demo state that reproduces the mockups' content, so screenshots of the r
 | `filters` | `all`, `medium` | Phone only: opens the Filters sheet in the All brands or By medium scope | `13` |
 | `cluster` | `1` to `6` | Shows that swatch's cluster map over the image, as hovering or focusing the swatch does (spec 2.6, M2 decisions 13 and 14b) | not drawn |
 | `zoom` | `2`, `4`, `8` | Opens the image at that zoom, centered on the image (M2 decision 15g). Zoom is view state, so nothing stores it | not drawn |
-| `rows` | `filters`, `advanced`, `swatch`, `adjustments`, `ramp`, `contrast`, `cvd`, or several comma-separated | Opens chevron rows: Filters and Advanced under the image (M2); Swatch, Adjustments, Contrast and CVD in the Palette column, and the editor's Ramp panel (M3, plan D20). On desktop they expand in place; on phones and tablets the M3 ones open as bottom sheets, which show on the Palette tab (`tab=palette`) | not drawn |
+| `rows` | `filters`, `advanced`, `swatch`, `adjustments`, `ramp`, `contrast`, `cvd`, `interpolation`, `stop`, `geometry`, `preview`, or several comma-separated | Opens chevron rows: Filters and Advanced under the image (M2); Swatch, Adjustments, Contrast and CVD in the Palette column, and the editor's Ramp panel (M3, plan D20); Interpolation options, Stop, Geometry and Preview in the Gradient column (M4). On desktop they expand in place; on phones and tablets the M3 and M4 ones open as bottom sheets, which show on their tab (`tab=palette`, `tab=gradient`) | not drawn |
 | `loupe` | `1` to `6` | Shows the loupe over that swatch's marker, as during a drag (spec 3.7, M3 plan D20) | not drawn |
+| `gradient` | `linear` (default), `radial`, `conic` | Gradient type (M4) | not drawn |
+| `space` | an interpolation space: `srgb`, `srgb-linear`, `display-p3`, `lab`, `oklab` (default), `lch`, `oklch`, `hsl`, `hwb`, `xyz` | Interpolation space (M4) | not drawn |
+| `compare` | an interpolation space, such as `oklch` | Compare mode with that space (M4) | not drawn |
+| `overlay` | `on` | Text check on, with White text (M4) | not drawn |
+| `cvd` | `protanopia`, `deuteranopia`, `tritanopia`, `achromatopsia` | Vision simulation on the gradient preview (M4) | not drawn |
+| `aspect` | `1:1`, `16:9`, `9:16`, `4:3`, `banner` | Gradient preview aspect (M4) | not drawn |
+| `surround` | `mid-gray`, `white`, `black` | Gradient preview surround, for this page load only (M4) | not drawn |
+| `technique` | `palette-order`, `sorted`, `smooth-path`, `image-sample`, `derived`, `random`, `population` | Applies that technique with its defaults: Colors set to All; `image-sample` samples the default line on the fixture; `derived` uses swatch 3 (M4) | not drawn |
+| `menu` | `theme` | Opens the theme menu (M4) | not drawn |
 | `theme` | `light`, `dark` | Overrides the theme for this page load only | all |
 
 Rules:
@@ -64,6 +73,12 @@ Swatch 3 is selected, so its marker and swatch show as selected.
 - Stops linked to swatch 2 at 0%, swatch 4 at 50% and swatch 6 at 100%.
 - Interpolation OKLab; the technique field shows Smooth path.
 - The 50% stop is selected.
+- Geometry (M4): angle 90°, ellipse, farthest-corner, center 50% 50%, conic start 0°, reverse and mirror off.
+- Interpolation options (M4): OKLab, so Hue stays Shorter and is hidden (OKLab isn't polar); premultiplied on, hidden because no stop has alpha; easing Linear; gamut Reduce chroma, hidden because everything is in gamut. The drawer shows only Easing, and its header has no badge.
+- Technique (M4): Smooth path, with Colors set to Picked: swatches 2, 4 and 6. The stops are the technique's output, not stored: the gradient is live, not Custom.
+- Stops (M4): swatch 2 at 0%, swatch 4 at 50% and swatch 6 at 100%, all linked, alpha 100%, midpoints 50%, unlocked. The 50% stop is selected.
+- Preview (M4): aspect Free (2:1), compare off, text check off (White text), Vision Normal, surround Match theme.
+- Expected native CSS: `linear-gradient(90deg in oklab, #1DB07A 0%, #D4527F 50%, #5039B0 100%)`. The preview's `data-stops` attribute reads `#1DB07A@0,#D4527F@50,#5039B0@100`: the resolved stops after reverse and mirror, as `HEX@percent` entries (8-digit HEX when a stop is not opaque), with `~percent` entries for midpoints other than 50%, such as `#1DB07A@0,~30,#D4527F@50,#5039B0@100`. The preview also carries `data-type`, `data-angle`, `data-space`, `data-hue`, `data-easing`, `data-render` (`native` or `baked`) and `data-cvd`.
 
 **Image views** (defaults unless the URL says otherwise): Image view, grid off, 5 bands, close-in-value threshold 0.03, Colors from Palette, dither off, 6 squares across, labels on.
 

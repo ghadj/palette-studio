@@ -6,9 +6,11 @@
  * M3-T2 reserves three requests whose handlers call modules later tasks build: `sample` and
  * `place` (spec 3.7; `src/image/sample.ts` and `src/extract/markers.ts`, M3-T10) and `view` (spec
  * 3.8; `src/image/views.ts`, M3-T11). Keep handler bodies thin, so T10 and T11 touch little here.
+ * M4-T2 reserves `ring` (`src/image/ring.ts`, M4-T5) the same way.
  */
 
 import type { Oklab } from "../color/convert";
+import { ringMean } from "../image/ring";
 import { autoRadius, CROP_SIZE, samplePatch } from "../image/sample";
 import {
   type AnyCanvas,
@@ -273,6 +275,19 @@ function view(
   );
 }
 
+/** The mean color of an annulus of the master at display size (M4-T5 builds `ringMean`). */
+function ring(
+  jobId: number,
+  version: number,
+  center: ImagePoint,
+  r0: number,
+  r1: number,
+  pixels: PixelBuffer | null,
+): void {
+  const color = ringMean(viewImage(version, pixels), center, r0, r1);
+  scope.postMessage({ type: "ringed", jobId, color });
+}
+
 scope.addEventListener("message", (event) => {
   const message = event.data;
   try {
@@ -305,6 +320,16 @@ scope.addEventListener("message", (event) => {
         view(m.jobId, m.version, m.mode, m.colors, m.bands, m.dither, m.alphaCutoff, m.pixels);
         return;
       }
+      case "ring":
+        ring(
+          message.jobId,
+          message.version,
+          message.center,
+          message.r0,
+          message.r1,
+          message.pixels,
+        );
+        return;
     }
   } catch (error) {
     if ("jobId" in message) {

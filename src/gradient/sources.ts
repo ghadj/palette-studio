@@ -7,7 +7,7 @@ import type { GradientStop, Swatch, Technique } from "../types";
 import { derivedStops } from "./derive";
 import { sampledStops } from "./image-sample";
 import { MAX_STOPS, swatchStops } from "./model";
-import { mostDistinct, orderedStops } from "./order";
+import { distinctSwatches, orderedStops } from "./order";
 
 /** Generated stops this close to a locked stop are dropped (plan D6). */
 export const LOCK_CLEARANCE = 0.01;
@@ -15,7 +15,7 @@ export const LOCK_CLEARANCE = 0.01;
 /** The swatches the palette-based techniques use (plan Q1b), in palette order. */
 export function techniqueSwatches(technique: Technique, palette: readonly Swatch[]): Swatch[] {
   const { mode, count, ids } = technique.colors;
-  if (mode === "distinct") return mostDistinct(palette, count);
+  if (mode === "distinct") return distinctSwatches(palette, count);
   if (mode === "picked") {
     const picked = palette.filter((s) => ids.includes(s.id));
     // Nothing picked, or the picks are gone: the whole palette.

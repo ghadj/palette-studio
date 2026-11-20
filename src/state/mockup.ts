@@ -5,12 +5,25 @@
  * `rows`, `image` and `loupe` (plan D20); the others are ignored until their milestone.
  */
 import { hexToOklab, hexToOklch } from "../color/convert";
+import type { CvdType } from "../color/cvd";
 import { buildStops } from "../gradient/sources";
 import { createSwatch } from "../palette/model";
-import type { ImageViewMode, Project, Tab, View } from "../types";
+import type {
+  GradientPreviewSettings,
+  GradientType,
+  ImageViewMode,
+  InterpolationSpace,
+  PreviewAspect,
+  Project,
+  Surround,
+  Tab,
+  TechniqueKind,
+  View,
+} from "../types";
 import {
   DEFAULT_ADJUSTMENTS,
   DEFAULT_GRADIENT,
+  DEFAULT_GRADIENT_PREVIEW,
   DEFAULT_VIEW_SETTINGS,
   SCHEMA_VERSION,
   SPEC_DEFAULT_SETTINGS,
@@ -37,7 +50,11 @@ export type MockupRow =
   | "adjustments"
   | "ramp"
   | "contrast"
-  | "cvd";
+  | "cvd"
+  | "interpolation"
+  | "stop"
+  | "geometry"
+  | "preview";
 const ROWS: readonly MockupRow[] = [
   "filters",
   "advanced",
@@ -46,7 +63,93 @@ const ROWS: readonly MockupRow[] = [
   "ramp",
   "contrast",
   "cvd",
+  "interpolation",
+  "stop",
+  "geometry",
+  "preview",
 ];
+
+/**
+ * The gradient parameters (M4 plan D28, mockup-state.md "Gradient"); each is null when absent or
+ * unknown. They are parsed apart from the others, as `parseMockupImage` is.
+ */
+export interface MockupGradientParams {
+  /** `gradient=linear|radial|conic`. */
+  type: GradientType | null;
+  /** `space=<space>`: the interpolation space. */
+  space: InterpolationSpace | null;
+  /** `compare=<space>`: compare mode with that space. */
+  compare: InterpolationSpace | null;
+  /** `overlay=on`: the text check. */
+  overlay: boolean;
+  /** `cvd=<type>`: the vision simulation. */
+  cvd: CvdType | null;
+  /** `aspect=1:1|16:9|9:16|4:3|banner`. */
+  aspect: Exclude<PreviewAspect, "free" | "custom"> | null;
+  /** `surround=mid-gray|white|black`, for this page load only. */
+  surround: Exclude<Surround, "theme"> | null;
+  /** `technique=<kind>`: that technique with its defaults. */
+  technique: TechniqueKind | null;
+  /** `menu=theme`: the theme menu open. */
+  menu: boolean;
+}
+
+const GRADIENT_TYPES: readonly GradientType[] = ["linear", "radial", "conic"];
+const SPACES: readonly InterpolationSpace[] = [
+  "srgb",
+  "srgb-linear",
+  "display-p3",
+  "lab",
+  "oklab",
+  "lch",
+  "oklch",
+  "hsl",
+  "hwb",
+  "xyz",
+];
+const CVD_TYPES: readonly CvdType[] = ["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
+const ASPECTS = ["1:1", "16:9", "9:16", "4:3", "banner"] as const;
+const SURROUNDS = ["mid-gray", "white", "black"] as const;
+const TECHNIQUES: readonly TechniqueKind[] = [
+  "palette-order",
+  "sorted",
+  "smooth-path",
+  "image-sample",
+  "derived",
+  "random",
+  "population",
+];
+
+const NO_GRADIENT_PARAMS: MockupGradientParams = {
+  type: null,
+  space: null,
+  compare: null,
+  overlay: false,
+  cvd: null,
+  aspect: null,
+  surround: null,
+  technique: null,
+  menu: false,
+};
+
+function option<T extends string>(value: string | null, options: readonly T[]): T | null {
+  return options.find((o) => o === value) ?? null;
+}
+
+export function parseMockupGradient(search: string): MockupGradientParams {
+  const params = new URLSearchParams(search);
+  return {
+    type: option(params.get("gradient"), GRADIENT_TYPES),
+    space: option(params.get("space"), SPACES),
+    compare: option(params.get("compare"), SPACES),
+    overlay: params.get("overlay") === "on",
+    cvd: option(params.get("cvd"), CVD_TYPES),
+    aspect: option(params.get("aspect"), ASPECTS),
+    surround: option(params.get("surround"), SURROUNDS),
+    technique: option(params.get("technique"), TECHNIQUES),
+    menu: params.get("menu") === "theme",
+  };
+}
 
 export interface MockupParams {
   view: View;
@@ -65,6 +168,12 @@ export interface MockupState {
   activeView: View;
   activeTab: Tab;
   openRows: MockupRow[];
+  /** Gradient preview options, from `compare`, `overlay`, `cvd` and `aspect` (view state). */
+  preview: GradientPreviewSettings;
+  /** From `surround`; "theme" by default. Never stored (spec 5.5). */
+  surround: Surround;
+  /** True when `menu=theme` opens the theme menu. */
+  themeMenuOpen: boolean;
 }
 
 const VIEWS: readonly View[] = ["studio", "materials"];
@@ -89,6 +198,7 @@ export function parseMockupParams(search: string): MockupParams | null {
 
 export function buildMockupState(
   params: MockupParams | null = { view: "studio", tab: "source", theme: null, rows: [] },
+  options: MockupGradientParams = NO_GRADIENT_PARAMS,
 ): MockupState {
   const palette = MOCKUP_SWATCHES.map(({ hex, point }, i) =>
     createSwatch(hexToOklab(hex), {
@@ -103,22 +213,36 @@ export function buildMockupState(
       extracted: { color: hexToOklch(hex), point: { ...point } },
     }),
   );
-  // Linear 90°, OKLab, Smooth path over swatches 2, 4 and 6; live, so its stops aren't stored.
+  // Linear 90°, OKLab, Smooth path over swatches 2, 4 and 6; live, so its stops aren't stored. The
+  // `technique` parameter swaps that for the technique's defaults (mockup-state.md).
+  const base = DEFAULT_GRADIENT.technique;
+  const technique = options.technique
+    ? {
+        ...base,
+        kind: options.technique,
+        // Derived stops are made from swatch 3 (mockup-state.md).
+        derive: { ...base.derive, from: palette[MOCKUP_SELECTED_INDEX]?.id ?? null },
+      }
+    : {
+        ...base,
+        kind: "smooth-path" as const,
+        colors: {
+          mode: "picked" as const,
+          count: base.colors.count,
+          ids: MOCKUP_GRADIENT_PICKS.flatMap((i) => palette[i]?.id ?? []),
+        },
+      };
   const gradient = {
     ...DEFAULT_GRADIENT,
-    technique: {
-      ...DEFAULT_GRADIENT.technique,
-      kind: "smooth-path" as const,
-      colors: {
-        mode: "picked" as const,
-        count: DEFAULT_GRADIENT.technique.colors.count,
-        ids: MOCKUP_GRADIENT_PICKS.flatMap((i) => palette[i]?.id ?? []),
-      },
-    },
+    type: options.type ?? DEFAULT_GRADIENT.type,
+    space: options.space ?? DEFAULT_GRADIENT.space,
+    technique,
   };
-  const selectedStop = buildStops(gradient.technique, palette).find(
-    (s) => s.position === MOCKUP_SELECTED_STOP_POSITION,
-  );
+  // The 50% stop, or the middle one when the technique has none there.
+  const stops = buildStops(gradient.technique, palette);
+  const selectedStop =
+    stops.find((s) => s.position === MOCKUP_SELECTED_STOP_POSITION) ??
+    stops[Math.floor(stops.length / 2)];
   return {
     name: MOCKUP_PROJECT_NAME,
     project: {
@@ -140,6 +264,15 @@ export function buildMockupState(
     activeView: params?.view ?? "studio",
     activeTab: params?.tab ?? "source",
     openRows: [...(params?.rows ?? [])],
+    preview: {
+      ...DEFAULT_GRADIENT_PREVIEW,
+      aspect: options.aspect ?? DEFAULT_GRADIENT_PREVIEW.aspect,
+      compare: options.compare,
+      overlay: { ...DEFAULT_GRADIENT_PREVIEW.overlay, on: options.overlay },
+      cvd: options.cvd ?? DEFAULT_GRADIENT_PREVIEW.cvd,
+    },
+    surround: options.surround ?? "theme",
+    themeMenuOpen: options.menu,
   };
 }
 

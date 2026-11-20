@@ -1,5 +1,6 @@
 import { Contrast, type LucideIcon, Moon, Sun } from "lucide-preact";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import { initialThemeMenu } from "../state/signals";
 import { setThemeChoice, type ThemeChoice, themeChoice } from "../state/theme";
 
 interface Option {
@@ -15,9 +16,16 @@ const OPTIONS: Option[] = [
   { value: "dark", label: "Dark", Icon: Moon },
 ];
 
+/** The mockup state's `menu=theme` opens the menu once, so a remount doesn't reopen it. */
+let menuConsumed = false;
+
 /** `pill`: the desktop pill with an outline. `icon`: a plain icon button, as in the phone header. */
 export function ThemeButton({ variant = "pill" }: { variant?: "pill" | "icon" }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(() => {
+    if (menuConsumed || !initialThemeMenu.peek()) return false;
+    menuConsumed = true;
+    return true;
+  });
   const wrapper = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const items = useRef<Array<HTMLButtonElement | null>>([]);
