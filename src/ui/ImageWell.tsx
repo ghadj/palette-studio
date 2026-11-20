@@ -30,7 +30,6 @@ import {
   imageSrc,
   imageView,
   masterThread,
-  surround,
 } from "../state/signals";
 import { DropZone } from "./DropZone";
 import { EyedropperLayer } from "./EyedropperLayer";
@@ -333,7 +332,6 @@ function ZoomableWell({
       {...attributes}
       ref={well}
       class="image-well image-well--image"
-      data-surround={surround.value}
       role="group"
       aria-label="Image view"
       aria-describedby="image-view-keys"

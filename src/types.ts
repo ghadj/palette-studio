@@ -319,9 +319,6 @@ export interface GradientPreviewSettings {
   cvd: "normal" | CvdType;
 }
 
-/** The preview's surround (spec 6.2, plan D23): an app setting, not part of the project. */
-export type Surround = "theme" | "mid-gray" | "white" | "black";
-
 /**
  * Spec 7.5. `palette` holds the base swatches; the adjusted palette is computed from them and
  * `adjustments`. The project's name belongs to its library entry (7.5, 5.5).

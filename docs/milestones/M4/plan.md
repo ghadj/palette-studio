@@ -609,7 +609,8 @@ Scope changed by decisions 67 and 68 (see "Decisions"): the stop bar is pinned i
   - The native-against-baked test is skipped on WebKit, where the two differ by up to 8/255 (measured); on Chromium the worst is 1/255.
   - For T14: the demo parameters `compare=`, `overlay=`, `cvd=` and `aspect=` are still parsed (`src/state/mockup.ts`, `tests/state/mockup.test.ts`, `GradientPreviewSettings`) but nothing reads them; remove them with `rows=preview` from the parser and the mockup-state doc if T14 wants it tidy. `data-cvd` stays on the preview and reads "normal".
 
-### M4-T13: Surround
+### M4-T13: Surround (removed by decision 70)
+Built, then removed in M4-T16 by decision 70. Everything below is history.
 Shrunk by decision 68: the Preview row, text check, lowest contrast and vision were removed by the user. Only the Surround control remains.
 - Files:
   - Surround (Q3):
@@ -653,6 +654,14 @@ Shrunk by decision 68: the Preview row, text check, lowest contrast and vision w
 - Kept: the pixel assignment that places markers (`src/extract/assign.ts`, was `cluster-map.ts`; M3-T10, T12), the demo's master preparation (now `src/state/mockup-master.ts`, for the image views), and the Palette view's share bar and legend (M3-T14).
 - Orphaned baselines (to remove through the baselines workflow): `cluster-map-{desktop,phone}-{light,dark}.png`. `swatch-*` baselines lose the Cluster map row and need regenerating.
 - Done when: lint, typecheck, unit tests, build and the full e2e suite pass.
+- [x] Done
+
+### M4-T16: Remove the surround feature (user request; decision 70)
+- Departs from spec 6.2's preview surround; supersedes Q3a to Q3c and T13.
+- Removed: the theme menu's Surround group (System, Light and Dark again, with the three-item keyboard behavior), `src/state/surround.ts`, `initSurround()`, `signals.surround`, the `palette-studio:surround` key, the `surround=` demo parameter, `data-surround` on the well and stage with their CSS, the `--surround-*` tokens and their discovery in `e2e/helpers/tokens.ts`, the screens and shots `gradient-surround-desktop` and `surround-menu-desktop`, and their tests.
+- Kept: the checkerboard behind transparency, and the `menu=theme` demo parameter (it opens the theme menu; no shot uses it now).
+- The preview's stage uses `--color-surface`.
+- Orphaned baselines (to remove through the baselines workflow): `gradient-surround-desktop-{light,dark}.png` and `surround-menu-desktop-{light,dark}.png`, if present. The gradient shots lose the stage's sunken background and need regenerating.
 - [x] Done
 
 ## Screens affected (UI work only)
@@ -949,3 +958,4 @@ Notes on spec conflicts, as the plan resolves them:
    - **Repeat length** (4.3) belongs to repeating gradients, which are M6.
    - **Feature budget (spec 6.6 rule 5)** is no longer at issue: Q4 B keeps the inline rows to the two drawn ones.
 - **Decision 69 (user, 2026-11-20): the cluster map is removed (task T15; departs from spec 2.6).** "Cluster map and highlighting on hover is already indirectly accessible through Palette view on source image... remove cluster map option and highlighting on hover completely, it just overcomplicates stuff." Removed: the hover and focus highlight over the image, the Cluster map toggle, the "x% of the image" share in the selection label (it is "Swatch N" again), the `cluster=` demo parameter and everything behind them. The Palette view's share bar and legend stay. Not an M5 task.
+- **Decision 70 (user, 2026-11-20): the surround is removed (task T16; departs from spec 6.2's preview surround).** "Remove the surround feature completely. It overcomplicates things." Supersedes Q3a to Q3c and T13. The theme menu is System, Light and Dark; the preview stage and the image well use the normal backgrounds; the checkerboard behind transparency stays.

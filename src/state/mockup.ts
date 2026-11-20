@@ -15,7 +15,6 @@ import type {
   InterpolationSpace,
   PreviewAspect,
   Project,
-  Surround,
   Tab,
   TechniqueKind,
   View,
@@ -86,8 +85,6 @@ export interface MockupGradientParams {
   cvd: CvdType | null;
   /** `aspect=1:1|16:9|9:16|4:3|banner`. */
   aspect: Exclude<PreviewAspect, "free" | "custom"> | null;
-  /** `surround=mid-gray|white|black`, for this page load only. */
-  surround: Exclude<Surround, "theme"> | null;
   /** `technique=<kind>`: that technique with its defaults. */
   technique: TechniqueKind | null;
   /** `menu=theme`: the theme menu open. */
@@ -109,7 +106,6 @@ const SPACES: readonly InterpolationSpace[] = [
 ];
 const CVD_TYPES: readonly CvdType[] = ["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
 const ASPECTS = ["1:1", "16:9", "9:16", "4:3", "banner"] as const;
-const SURROUNDS = ["mid-gray", "white", "black"] as const;
 const TECHNIQUES: readonly TechniqueKind[] = [
   "palette-order",
   "sorted",
@@ -127,7 +123,6 @@ const NO_GRADIENT_PARAMS: MockupGradientParams = {
   overlay: false,
   cvd: null,
   aspect: null,
-  surround: null,
   technique: null,
   menu: false,
 };
@@ -145,7 +140,6 @@ export function parseMockupGradient(search: string): MockupGradientParams {
     overlay: params.get("overlay") === "on",
     cvd: option(params.get("cvd"), CVD_TYPES),
     aspect: option(params.get("aspect"), ASPECTS),
-    surround: option(params.get("surround"), SURROUNDS),
     technique: option(params.get("technique"), TECHNIQUES),
     menu: params.get("menu") === "theme",
   };
@@ -170,8 +164,6 @@ export interface MockupState {
   openRows: MockupRow[];
   /** Gradient preview options, from `compare`, `overlay`, `cvd` and `aspect` (view state). */
   preview: GradientPreviewSettings;
-  /** From `surround`; "theme" by default. Never stored (spec 5.5). */
-  surround: Surround;
   /** True when `menu=theme` opens the theme menu. */
   themeMenuOpen: boolean;
 }
@@ -271,7 +263,6 @@ export function buildMockupState(
       overlay: { ...DEFAULT_GRADIENT_PREVIEW.overlay, on: options.overlay },
       cvd: options.cvd ?? DEFAULT_GRADIENT_PREVIEW.cvd,
     },
-    surround: options.surround ?? "theme",
     themeMenuOpen: options.menu,
   };
 }

@@ -34,7 +34,6 @@ import {
   selectedStopId,
   selectedSwatchId,
   settings,
-  surround,
   updateSwatch,
   viewSettings,
 } from "../../src/state/signals";
@@ -50,7 +49,6 @@ describe("history (spec 3.6; plan Q3a, D16)", () => {
     gradient.value = { ...DEFAULT_GRADIENT };
     selectedStopId.value = null;
     gradientPreview.value = { ...DEFAULT_GRADIENT_PREVIEW };
-    surround.value = "theme";
     clear();
   });
 
@@ -215,7 +213,7 @@ describe("history (spec 3.6; plan Q3a, D16)", () => {
     expect(gradient.value.type).toBe("conic");
   });
 
-  it("undo leaves selectedStopId, gradientPreview and surround unchanged", () => {
+  it("undo leaves selectedStopId and gradientPreview unchanged", () => {
     gradient.value = { ...gradient.value, type: "radial" };
     commit("Gradient type");
     const stopId = effectiveStops.value[1]?.id ?? "";
@@ -223,11 +221,9 @@ describe("history (spec 3.6; plan Q3a, D16)", () => {
     selectedStopId.value = stopId;
     const preview = { ...DEFAULT_GRADIENT_PREVIEW, aspect: "16:9" as const };
     gradientPreview.value = preview;
-    surround.value = "black";
     undo();
     expect(selectedStopId.value).toBe(stopId);
     expect(gradientPreview.value).toBe(preview);
-    expect(surround.value).toBe("black");
     redo();
     expect(selectedStopId.value).toBe(stopId);
   });

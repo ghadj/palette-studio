@@ -2982,7 +2982,7 @@ fieldset {
 
 /* ---- M4-T12 gradient preview (GradientPreview.tsx) ---- */
 /*
- * The stage holds the surround (plan D23, Q3a). The frame sets the aspect, 2:1 at full width (plan
+ * The stage is a plain panel. The frame sets the aspect, 2:1 at full width (plan
  * D22), and carries the checkerboard; the preview (data-user-content, never themed) fills it. On
  * phones the dock holds the preview and the stop bar within about 35% of the screen (decision 67):
  * the frame's height is capped at 35dvh less the stop bar and the paddings (104px, thirteen --space-2 units).
@@ -2990,19 +2990,7 @@ fieldset {
 .gradient-stage {
   padding: var(--space-2);
   border-radius: var(--radius-card);
-  background: var(--color-surface-sunken);
-}
-
-.gradient-stage[data-surround="mid-gray"] {
-  background: var(--surround-mid-gray);
-}
-
-.gradient-stage[data-surround="white"] {
-  background: var(--surround-white);
-}
-
-.gradient-stage[data-surround="black"] {
-  background: var(--surround-black);
+  background: var(--color-surface);
 }
 
 .gradient-frame {
@@ -3049,38 +3037,5 @@ fieldset {
 }
 
 /* ---- end M4-T12 ---- */
-
-/* ---- M4-T13 surround (ThemeButton.tsx, ImageWell.tsx) ---- */
-/* The surround behind the image (spec 6.2): the well's background only, never the image pixels. */
-.image-well[data-surround="mid-gray"] {
-  background: var(--surround-mid-gray);
-}
-
-.image-well[data-surround="white"] {
-  background: var(--surround-white);
-}
-
-.image-well[data-surround="black"] {
-  background: var(--surround-black);
-}
-
-/* The theme menu's two groups. */
-.menu-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.menu-group--surround {
-  margin-top: var(--space-1);
-  padding-top: var(--space-1);
-  border-top: var(--stroke) solid var(--color-border);
-}
-
-.menu-group__label {
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-/* ---- end M4-T13 ---- */
 
 /* ---- end M4 ---- */

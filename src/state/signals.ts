@@ -13,7 +13,6 @@ import type {
   GradientPreviewSettings,
   ImageMeta,
   Project,
-  Surround,
   Swatch,
   Tab,
   View,
@@ -107,8 +106,6 @@ export const imageView = signal<ImageView>(fitView());
 export const selectedStopId = signal<string | null>(null);
 /** Gradient preview options (4.4, plan D22): view state, not saved, never in undo. */
 export const gradientPreview = signal<GradientPreviewSettings>({ ...DEFAULT_GRADIENT_PREVIEW });
-/** The preview's surround (6.2, plan D23): an app setting like the theme, not in undo. */
-export const surround = signal<Surround>("theme");
 
 /** The swatch whose card or marker is hovered, linking the two (3.7). */
 export const hoveredSwatchId = signal<string | null>(null);

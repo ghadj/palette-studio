@@ -108,8 +108,8 @@ export const M1_SCREENS: readonly Screen[] = [
   ),
   // M4 (plan "Screens affected"), registered by M4-T2 so token and axe tests cover each screen from
   // the start. The tasks that build them fill them in; no task edits this list.
-  // Desktop: column 3's rows open in place (`rows=`), the gradient types, surround, the
-  // technique parameters and the theme menu's Surround group.
+  // Desktop: column 3's rows open in place (`rows=`), the gradient types and the
+  // technique parameters.
   ...(
     [
       ["interp-options-desktop", "rows=interpolation&space=oklch", TALL_DESKTOP],
@@ -118,8 +118,6 @@ export const M1_SCREENS: readonly Screen[] = [
       ["gradient-radial-desktop", "gradient=radial&rows=geometry", TALL_DESKTOP],
       ["gradient-technique-desktop", "technique=image-sample", TALL_DESKTOP],
       ["gradient-conic-desktop", "gradient=conic", DESKTOP],
-      ["gradient-surround-desktop", "surround=mid-gray", DESKTOP],
-      ["surround-menu-desktop", "menu=theme", DESKTOP],
     ] as const
   ).map(
     ([name, query, viewport]): Screen => ({

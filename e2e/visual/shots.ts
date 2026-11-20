@@ -292,22 +292,6 @@ export const M1_SHOTS: readonly Shot[] = [
       "Column 3 with the Conic chip selected. The mockup draws a linear gradient; compare the layout, not the type (D1).",
   },
   {
-    name: "gradient-surround-desktop",
-    path: "./?demo=mockup&surround=mid-gray",
-    viewport: DESKTOP,
-    mockup: null,
-    frame:
-      "Not drawn. The preview on a mid-gray surround (#777777), and the image well on the same surround (spec 6.2, plan Q3a).",
-  },
-  {
-    name: "surround-menu-desktop",
-    path: "./?demo=mockup&menu=theme",
-    viewport: DESKTOP,
-    mockup: null,
-    frame:
-      "Not drawn (contract 'Theme button behavior'). The theme menu open, with the Surround group under System, Light and Dark (plan Q3b).",
-  },
-  {
     name: "interp-options-sheet-phone",
     path: "./?demo=mockup&tab=gradient&rows=interpolation&space=oklch",
     viewport: PHONE,

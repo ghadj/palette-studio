@@ -69,8 +69,6 @@ A failure names the element (a selector path) and the value that isn't a token. 
 | gradient-radial-desktop | `?demo=mockup&gradient=radial&rows=geometry` | 1280 × 1280 | contract text (not drawn): the Geometry row for a radial gradient |
 | gradient-technique-desktop | `?demo=mockup&technique=image-sample` | 1280 × 1280 | contract text (not drawn): the Image sample parameter rows and thumbnail (M4 plan D18) |
 | gradient-conic-desktop | `?demo=mockup&gradient=conic` | 1280 × 800 | `01`, `02` (layout only: the mockup draws a linear gradient, D1) |
-| gradient-surround-desktop | `?demo=mockup&surround=mid-gray` | 1280 × 800 | contract text (not drawn): a mid-gray surround (spec 6.2) |
-| surround-menu-desktop | `?demo=mockup&menu=theme` | 1280 × 800 | contract text (not drawn): the theme menu's Surround group |
 | interp-options-sheet-phone | `?demo=mockup&tab=gradient&rows=interpolation&space=oklch` | 390 × 844 | contract text (not drawn): the Interpolation options drawer below the pinned preview (D12) |
 | stop-sheet-phone | `?demo=mockup&tab=gradient&rows=stop` | 390 × 844 | contract text (not drawn): the Stop drawer |
 | geometry-sheet-phone | `?demo=mockup&tab=gradient&rows=geometry` | 390 × 844 | contract text (not drawn): the Geometry drawer |
@@ -96,7 +94,7 @@ Work through the `ui-contract.md` section for that screen, region by region:
 - Hierarchy matches: strong versus muted text, which item carries the accent.
 - Selected states sit where the mockup state puts them.
 - Dark mode keeps the same content colors (spec 6.2): the image, swatches, gradients, paint chips and grid lines don't change with the theme.
-- Intended deviations D1 to D13 are applied, not flagged.
+- Intended deviations D1 to D14 are applied, not flagged.
 
 Report each difference with:
 - the shot

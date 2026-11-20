@@ -222,9 +222,9 @@ describe("M3 mockup parameters (plan D20, M3-T2)", () => {
 
 describe("mockup state gradient parameters (M4 plan D28)", () => {
   const all =
-    "?demo=mockup&gradient=conic&space=oklch&rows=interpolation,stop,geometry&compare=oklch&overlay=on&cvd=deuteranopia&aspect=16:9&surround=mid-gray&technique=image-sample&menu=theme";
+    "?demo=mockup&gradient=conic&space=oklch&rows=interpolation,stop,geometry&compare=oklch&overlay=on&cvd=deuteranopia&aspect=16:9&technique=image-sample&menu=theme";
 
-  it("parses gradient=conic, space=oklch, rows=interpolation,stop,geometry, compare=oklch, overlay=on, cvd=deuteranopia, aspect=16:9, surround=mid-gray, technique=image-sample, menu=theme", () => {
+  it("parses gradient=conic, space=oklch, rows=interpolation,stop,geometry, compare=oklch, overlay=on, cvd=deuteranopia, aspect=16:9, technique=image-sample, menu=theme", () => {
     expect(parseMockupGradient(all)).toEqual({
       type: "conic",
       space: "oklch",
@@ -232,7 +232,6 @@ describe("mockup state gradient parameters (M4 plan D28)", () => {
       overlay: true,
       cvd: "deuteranopia",
       aspect: "16:9",
-      surround: "mid-gray",
       technique: "image-sample",
       menu: true,
     });
@@ -248,7 +247,6 @@ describe("mockup state gradient parameters (M4 plan D28)", () => {
       overlay: { on: true, color: "white" },
       cvd: "deuteranopia",
     });
-    expect(state.surround).toBe("mid-gray");
     expect(state.themeMenuOpen).toBe(true);
     expect(state.openRows).toEqual(["interpolation", "stop", "geometry"]);
   });
@@ -265,7 +263,7 @@ describe("mockup state gradient parameters (M4 plan D28)", () => {
 
   it("ignores unknown values", () => {
     const params =
-      "?demo=mockup&gradient=mesh&space=cmyk&compare=x&overlay=off&cvd=none&aspect=2:1&surround=theme&technique=magic&menu=library&rows=nope";
+      "?demo=mockup&gradient=mesh&space=cmyk&compare=x&overlay=off&cvd=none&aspect=2:1&technique=magic&menu=library&rows=nope";
     expect(parseMockupGradient(params)).toEqual({
       type: null,
       space: null,
@@ -273,7 +271,6 @@ describe("mockup state gradient parameters (M4 plan D28)", () => {
       overlay: false,
       cvd: null,
       aspect: null,
-      surround: null,
       technique: null,
       menu: false,
     });
@@ -282,7 +279,6 @@ describe("mockup state gradient parameters (M4 plan D28)", () => {
     expect(state.project.gradient.space).toBe("oklab");
     expect(state.project.gradient.technique.kind).toBe("smooth-path");
     expect(state.preview.aspect).toBe("free");
-    expect(state.surround).toBe("theme");
     expect(state.openRows).toEqual([]);
   });
 

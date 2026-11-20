@@ -2,8 +2,7 @@
  * The gradient preview (ui-contract column 3 item 1; spec 4.4, 4.5, 6.2; plan M4-T12, D22, D23,
  * decision 68).
  *
- * - A stage with the surround behind it: `--color-surface-sunken` for Match theme, else the fixed
- *   `--surround-*` tokens (the setting is T13's control; it is only read here).
+ * - A stage in the normal panel background (the surround was removed by decision 70).
  * - The preview at one fixed aspect, 2:1 at full width. On phones its height is capped so the dock
  *   (preview and stop bar) stays within about 35% of the screen (decision 67).
  * - It draws `render.css` (native or baked, `data-render`). A checkerboard sits behind it only while
@@ -22,7 +21,7 @@ import { stopHex } from "../gradient/css";
 import type { ResolvedStop } from "../gradient/model";
 import { render } from "../state/gradient-render";
 import { resolvedStops } from "../state/gradient-stops";
-import { gradient, gradientPreview, surround } from "../state/signals";
+import { gradient, gradientPreview } from "../state/signals";
 
 const num = (n: number): string => String(Math.round(n * 1000) / 1000);
 
@@ -41,7 +40,7 @@ export function GradientPreview() {
   const { css, mode } = render.value;
   const checker = resolvedStops.value.some((s) => s.alpha < 1);
   return (
-    <div class="gradient-stage" data-testid="gradient-stage" data-surround={surround.value}>
+    <div class="gradient-stage" data-testid="gradient-stage">
       <div class="gradient-frame" data-checker={checker ? "" : undefined}>
         <div
           class="gradient-preview"

@@ -29,10 +29,8 @@ import {
   loadProject,
   selectedStopId,
   selectedSwatchId,
-  surround,
   viewSettings,
 } from "./state/signals";
-import { initSurround } from "./state/surround";
 import { initTheme } from "./state/theme";
 import { App } from "./ui/App";
 import { installFocusClearance } from "./ui/focusClearance";
@@ -41,7 +39,6 @@ import { registerShortcut } from "./ui/shortcuts";
 import { showToast } from "./ui/Toast";
 
 initTheme();
-initSurround();
 installFocusClearance();
 
 // The mockup state loads its fixture directly and never touches storage (mockup-state.md, spec 5.5).
@@ -58,9 +55,8 @@ if (mockup) {
     activeView.value = state.activeView;
     imageView.value = centered(parseMockupZoom(window.location.search), { width: 1, height: 1 });
     initialOpenRows.value = state.openRows;
-    // The gradient preview options and the surround are view state; `menu=theme` opens the menu.
+    // The gradient preview options are view state; `menu=theme` opens the menu.
     gradientPreview.value = state.preview;
-    surround.value = state.surround;
     initialThemeMenu.value = state.themeMenuOpen;
     // `image=<view>` and `loupe=<n>` (plan D20). The view is view state, never in undo (3.6).
     viewSettings.value = { ...viewSettings.peek(), mode: parseMockupImage(window.location.search) };

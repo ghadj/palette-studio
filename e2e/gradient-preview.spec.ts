@@ -143,7 +143,7 @@ test.describe("gradient preview (M4-T12)", () => {
     const shots: Buffer[] = [];
     for (const scheme of ["light", "dark"] as const) {
       await page.emulateMedia({ colorScheme: scheme });
-      await open(page, info, "surround=mid-gray");
+      await open(page, info);
       shots.push(await shot(preview(page)));
     }
     expect(await maxDifference(page, shots[0] as Buffer, shots[1] as Buffer)).toBe(0);
@@ -176,19 +176,6 @@ test.describe("gradient preview (M4-T12)", () => {
       .getByRole("button", { name: "Reset alpha" })
       .click();
     await expect(frame).toHaveCount(0);
-  });
-
-  test("surround=black: the stage is #000000 and the preview pixels don't change", async ({
-    page,
-  }, info) => {
-    await open(page, info);
-    const before = await shot(preview(page));
-    await open(page, info, "surround=black");
-    await expect(stage(page)).toHaveCSS("background-color", "rgb(0, 0, 0)");
-    expect(await maxDifference(page, before, await shot(preview(page)))).toBe(0);
-    await open(page, info, "surround=mid-gray");
-    await expect(stage(page)).toHaveCSS("background-color", "rgb(119, 119, 119)");
-    expect(await maxDifference(page, before, await shot(preview(page)))).toBe(0);
   });
 
   test("dragging marker 4 changes the 50% stop's color in the preview before release (spec 3.7)", async ({
