@@ -126,8 +126,8 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
     await settled(page);
     const after = await hexes(page);
     expect(after.slice(0, 2).sort()).toEqual([left, right].sort());
-    // At most one swatch stays near the backdrop color, and it is the enclosed patch: no larger
-    // than the patch's area. Its rank isn't checked: the resampled edges between the subject and
+    // At most one swatch stays near the backdrop color, and it is the enclosed patch: small (at most 5%
+    // of the kept pixels). Its rank isn't checked: the resampled edges between the subject and
     // the patch can form a swatch of their own, larger than the patch in Chromium and smaller in
     // Firefox, depending on the browser's downscale.
     const nearIndexes = after.flatMap((h, i) => (near(h) ? [i] : []));
@@ -136,13 +136,13 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
       const shares = await strip(page).evaluateAll((els) =>
         els.map((e) => Number(e.getAttribute("data-share"))),
       );
-      const { subject, patch } = STUDIO_BACKDROP;
-      // The patch's share of the kept pixels (the subject), allowing up to twice that for its
-      // blended edge at analysis size. A backdrop that was left in would be far larger.
-      const patchShare = (patch.width * patch.height) / (subject.width * subject.height);
+      // The near swatch is small next to the backdrop's own 75% share: at most 5% of the kept
+      // pixels. The bound is loose on purpose, since browsers resample the edges between the
+      // subject and the enclosed patch differently (Linux WebKit blends about 3x the patch's
+      // area into it). A backdrop left in would be far larger.
       const nearShare = shares[nearIndexes[0] ?? 0] ?? Number.NaN;
       expect(nearShare).toBeGreaterThan(0);
-      expect(nearShare).toBeLessThanOrEqual(2 * patchShare);
+      expect(nearShare).toBeLessThanOrEqual(0.05);
     }
     // A background was found, so no note shows.
     await expect(backgroundNote(page)).toHaveText("");
