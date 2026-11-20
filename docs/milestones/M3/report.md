@@ -109,3 +109,42 @@ Decisions 24 to 40, 42 and 43 were checked one by one and pass, except where not
 5. Closing a sheet doesn't restore the earlier scroll position.
 6. Performance: a 1024 px cluster map is built on every extraction and every "+"; measure against spec 7.7.
 7. Rule checks found nothing.
+
+---
+
+# M3 final evaluation (round 3, at 1173c82)
+
+Verdict: **FAIL**, on one regression introduced in M3-F15 (decision 46). The round-2 failure (a Swatch row edit applying adjustments twice) is fixed: an R + 1 edit with Lightness +0.1 now moves only R, with the adjustment applied once. Every other new decision (44 to 52) checks out.
+
+Checks:
+- lint (283 files), typecheck, unit tests (484), and the build (about 79.4 kB JS gzip)
+- e2e, 5 projects: 3405 passed, 339 skipped, 1 failed. The one failure is flaky: phone-webkit `extract.spec.ts:171` passes 5 out of 5 when rerun alone.
+- axe (360/360), tokens (1185/1185), and the review page (60/60)
+
+## Failure
+
+1. **The drawer lock blocks touch gestures inside sheets whose content doesn't scroll vertically** (decision 46; spec 3.5 and 6.1).
+   - Cause: `src/ui/sheetDock.ts:75-80` cancels every `touchmove` inside a `.bottom-sheet__body` that has no vertical overflow.
+   - On phones (390 to 430 px), the contrast matrix can't be panned sideways, so columns 5 and 6 can't be reached.
+   - On tablets (820 × 1180), sliders in the Adjustments, Filters and Advanced sheets jump to the touch point and don't follow the finger.
+   - Evidence is Chromium touch emulation, with and without the listener; iOS needs a device check.
+   - No test covers it.
+
+## Visual findings (minor)
+
+- **V-new-5:** "Advanced" sits below the fold at 1280 × 800 (carried over).
+- **Duplicate HEX elements:** with the Swatch row open there are two HEX fields, two "After adjustments" lines and two buttons both named "Copy adjusted HEX".
+- **Swatch drawer:** focus lands on "Duplicate swatch" when it opens, so an immediate Enter duplicates. The title reads "Swatch" (V9).
+- **Pinned desktop strip:** the "PALETTE" label scrolls away while the strip stays pinned.
+- **320 px:** the strip wraps 4 + 3 with the "+" tile.
+- **Carried over:** V5, V6, V8 and V9.
+
+## Notes
+
+1. Decisions 52 and 39/48d depart from the spec (3.8, 3.5, 3.2) and need the user's own confirmation. With dots only, a sighted user can't tell which swatches pair with which.
+2. The live sentence doesn't re-announce when the flagged set changes within the same kind.
+3. `src/ui/closeFlags.ts` has no unit tests.
+4. Three similar copy names exist, and two buttons share the name "Copy adjusted HEX".
+5. Stale wording: `ui-contract.md:143`, and the decision citation in the `sheetDock.ts` comment.
+6. Rule checks found nothing.
+7. Carried over: the marker ring color for a typed swatch, and the cluster-map cost.
