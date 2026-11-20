@@ -7,7 +7,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { demo } from "./helpers/app";
 import { sheetSettled } from "./helpers/sheet";
 
-test.beforeEach((_fixtures, info) => {
+test.beforeEach(({ browserName: _browser }, info) => {
   test.skip(info.project.name !== "phone-chromium", "CDP touch gestures");
 });
 
