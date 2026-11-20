@@ -3,12 +3,11 @@
  * - below 1024 px (phones, tablets and phones in landscape): one panel at a time with a bottom tab
  *   bar, the phone header and safe-area padding; on wide screens the panel is centered at a
  *   readable width. This departs on purpose, by the user's choice, from spec 6.1's two-column row.
- * - 1024 px and up: three equal columns plus the export drawer
+ * - 1024 px and up: three equal columns
  */
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { activeTab } from "../state/signals";
 import type { Tab } from "../types";
-import { ExportDrawer } from "./ExportDrawer";
 import { GradientPanel, MaterialsPanel } from "./GradientPanel";
 import { PalettePanel } from "./PalettePanel";
 import { SourcePanel } from "./SourcePanel";
@@ -99,7 +98,6 @@ export function Shell({ layout }: { layout: Layout }) {
             </div>
           </section>
         </div>
-        <ExportDrawer />
       </main>
     );
   }

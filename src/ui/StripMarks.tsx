@@ -7,17 +7,9 @@
  * listed (M3 decisions 51 and 52). A live region announces one general sentence when the set of
  * flagged swatches changes (spec 6.3).
  */
-import type { ComponentChildren } from "preact";
 import { closeFlags, swatchList } from "./closeFlags";
 
-export function StripMarks({
-  closePairs = true,
-  trailing,
-}: {
-  closePairs?: boolean;
-  /** A control right-aligned on the legend line (the phone Export button, M3 decision 53). */
-  trailing?: ComponentChildren;
-}) {
+export function StripMarks({ closePairs = true }: { closePairs?: boolean }) {
   const { kind, partners } = closeFlags();
   const shown = kind === "value" || (kind === "color" && closePairs) ? kind : null;
   // The sentence names the flagged swatches, so it changes (and is re-announced) when the set does.
@@ -40,7 +32,6 @@ export function StripMarks({
           <span>{shown === "value" ? "Close in value" : "Very close colors"}</span>
         </p>
       )}
-      {trailing && <span class="strip-marks__trailing">{trailing}</span>}
       <p class="visually-hidden" role="status" data-testid="close-announce">
         {sentence}
       </p>

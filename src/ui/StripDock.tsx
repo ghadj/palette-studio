@@ -14,18 +14,10 @@
  * Values view's own "Close in value" bracket.
  */
 import { useEffect, useRef } from "preact/hooks";
-import { ExportPaletteButton } from "./ExportPaletteButton";
 import { StripMarks } from "./StripMarks";
 import { SwatchStrip } from "./SwatchStrip";
 
-export function StripDock({
-  host,
-  exportButton = false,
-}: {
-  host: "source" | "palette";
-  /** Show the Export palette button on the legend line (phone Palette tab, M3 decision 53). */
-  exportButton?: boolean;
-}) {
+export function StripDock({ host }: { host: "source" | "palette" }) {
   const dock = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = dock.current;
@@ -70,10 +62,7 @@ export function StripDock({
     <div ref={dock} class="strip-dock" data-testid="strip-dock" data-host={host}>
       <SwatchStrip showAdd={palette} />
       {/* The strip's marks pin with it (M3-T2); the close-pair mark is the Palette tab's. */}
-      <StripMarks
-        closePairs={palette}
-        trailing={exportButton ? <ExportPaletteButton /> : undefined}
-      />
+      <StripMarks closePairs={palette} />
     </div>
   );
 }

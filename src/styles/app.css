@@ -107,8 +107,8 @@ fieldset {
 }
 
 /*
- * Desktop: the app fills the window. The columns take the space between the header and the export
- * drawer and scroll inside it, so the drawer and the footer stay at the bottom (fix L3).
+ * Desktop: the app fills the window. The columns take the space between the header and the footer
+ * and scroll inside it, so the footer stays at the bottom (fix L3).
  */
 .app--desktop {
   height: 100dvh;
@@ -1287,38 +1287,137 @@ fieldset {
   );
 }
 
-/* Export drawer (ui-contract "Export drawer"). Its top border stays inside the page gutters (L11). */
-.export-drawer {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0 var(--space-6);
-  border-top: var(--stroke) solid var(--color-divider);
+/* Export panel (M3 decision 56; ui-contract "Export panel"). From 1024 px a right-side drawer under
+   the header that overlays column 3; below that the bottom sheet holds the same sections. */
+.export-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: clip;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
 }
 
-.shell--desktop .export-drawer {
-  flex: none;
+.export-dialog::backdrop {
+  background: transparent;
 }
 
-.export-half {
+.export-dialog__scrim {
+  position: absolute;
+  inset: 0;
+}
+
+.export-drawer__panel {
+  position: absolute;
+  top: calc(var(--header-height) + var(--stroke));
+  right: 0;
+  bottom: 0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-6);
-  padding: var(--space-4) 0;
-}
-
-.export-half + .export-half {
-  padding-left: var(--space-6);
+  flex-direction: column;
+  gap: var(--space-4);
+  width: calc(var(--space-8) * 12);
+  max-width: 100%;
+  padding: var(--space-4);
+  overflow-y: auto;
   border-left: var(--stroke) solid var(--color-divider);
+  background: var(--color-surface);
+  animation: export-in var(--duration-slow) var(--ease-out);
 }
 
-.export-title {
-  font-size: var(--text-sm);
+@keyframes export-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .export-drawer__panel {
+    animation: none;
+  }
+}
+
+.export-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.export-drawer__title {
+  font-size: var(--text-md);
   font-weight: var(--weight-strong);
 }
 
-.export-formats {
+.export-drawer__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+}
+
+.export-tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+}
+
+.bottom-sheet__body > .export-tabs {
+  margin-top: var(--space-2);
+}
+
+.export-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: var(--hit);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
   color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.export-tab[aria-selected="true"] {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: var(--weight-strong);
+  box-shadow: 0 0 0 var(--stroke) var(--color-border);
+}
+
+.export-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+}
+
+.export-note,
+.export-item__detail {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.export-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.export-item__title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
 }
 
 /*
@@ -2024,34 +2123,11 @@ fieldset {
   box-shadow: 0 0 0 var(--stroke) var(--color-text);
 }
 
-/* The line under the strip: the legend on the left, the phone Export button on the right (M3
-   decision 53). The line is only as tall as its content. */
+/* The line under the strip: the legend. It is only as tall as its content. */
 .strip-marks {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
-}
-
-.strip-marks__trailing {
-  margin-left: auto;
-}
-
-.strip-export {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
-  color: var(--color-text);
-  font-size: var(--text-sm);
-}
-
-.strip-export:disabled {
-  color: var(--color-text-muted);
 }
 
 /* The legend under the strip: the corner dot, then what it means (M3 decisions 51, 52). */

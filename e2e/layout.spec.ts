@@ -6,7 +6,7 @@ import { sheetSettled } from "./helpers/sheet";
 import { checkTokens, describeFailures } from "./helpers/tokens";
 
 test.describe("responsive shell (spec 6.1)", () => {
-  test("1280×800: three equal columns (widths within 1 px) with a 16 px gutter and the export drawer below", async ({
+  test("1280×800: three equal columns (widths within 1 px) with a 16 px gutter and no export bar below", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "desktop viewport");
@@ -30,19 +30,17 @@ test.describe("responsive shell (spec 6.1)", () => {
     expect(a.y).toBeCloseTo(b.y, 0);
     expect(b.y).toBeCloseTo(c.y, 0);
 
-    const drawer = await box(page, "[data-testid=export-drawer]");
-    const tallest = Math.max(a.y + a.height, b.y + b.height, c.y + c.height);
-    expect(drawer.y).toBeGreaterThanOrEqual(tallest);
-    expect(drawer.x).toBeLessThanOrEqual(a.x + 1);
-    expect(drawer.x + drawer.width).toBeGreaterThanOrEqual(c.x + c.width - 1);
-    await expect(page.getByRole("heading", { name: "Palette export" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Gradient export" })).toBeVisible();
+    // No export bar under the columns: they reach the footer (M3 decision 56).
+    await expect(page.getByTestId("export-drawer")).toHaveCount(0);
+    const footer = await box(page, "footer");
+    const area = await box(page, ".columns");
+    expect(area.y + area.height).toBeCloseTo(footer.y, 0);
     // Desktop has no bottom tab bar.
     await expect(page.locator("[data-testid=tabbar]")).toHaveCount(0);
     expect(await hasHorizontalScroll(page)).toBe(false);
   });
 
-  test("desktop: the export drawer sits directly above the footer at the bottom of the window, with no gap", async ({
+  test("desktop: the columns sit directly above the footer at the bottom of the window, with no gap", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "desktop viewport");
@@ -53,17 +51,17 @@ test.describe("responsive shell (spec 6.1)", () => {
     ] as const) {
       await page.setViewportSize({ width, height });
       await page.goto(demo());
-      const drawer = await box(page, "[data-testid=export-drawer]");
+      const columns = await box(page, ".columns");
       const footer = await box(page, "footer");
       expect(footer.y + footer.height, `${width}×${height}`).toBeCloseTo(height, 0);
-      expect(drawer.y + drawer.height, `${width}×${height}`).toBeCloseTo(footer.y, 0);
+      expect(columns.y + columns.height, `${width}×${height}`).toBeCloseTo(footer.y, 0);
       expect(
         await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight),
       ).toBe(true);
     }
   });
 
-  test("desktop: a column taller than the window scrolls on its own between the header and the drawer (M3 decision 37)", async ({
+  test("desktop: a column taller than the window scrolls on its own between the header and the footer (M3 decision 37)", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "desktop viewport");
@@ -80,10 +78,9 @@ test.describe("responsive shell (spec 6.1)", () => {
     expect(sizes.overflow).toBe("auto");
     const header = await box(page, "header");
     const area = await box(page, ".columns");
-    const drawer = await box(page, "[data-testid=export-drawer]");
     const footer = await box(page, "footer");
     expect(area.y).toBeCloseTo(header.y + header.height, 0);
-    expect(area.y + area.height).toBeCloseTo(drawer.y, 0);
+    expect(area.y + area.height).toBeCloseTo(footer.y, 0);
     expect(footer.y + footer.height).toBeCloseTo(680, 0);
     // The page itself doesn't scroll; the column does, and the others stay where they are.
     expect(
@@ -153,9 +150,8 @@ test.describe("responsive shell (spec 6.1)", () => {
       ).toBeGreaterThanOrEqual(640);
       const columns = await box(page, ".columns");
       expect(columns.height).toBeCloseTo(atMinimum.height, 0);
-      const drawer = await box(page, "[data-testid=export-drawer]");
       const footer = await box(page, "footer");
-      expect(drawer.y + drawer.height).toBeCloseTo(footer.y, 0);
+      expect(columns.y + columns.height).toBeCloseTo(footer.y, 0);
       expect(footer.y + footer.height).toBeCloseTo(640, 0);
     }
   });

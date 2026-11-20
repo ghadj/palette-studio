@@ -3,6 +3,7 @@ import { fixture } from "./helpers/files";
 import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
 import { openRow } from "./helpers/rows";
 import { M1_SCREENS, THEMES } from "./helpers/screens";
+import { openExport } from "./helpers/sheet";
 import { checkTokens, describeFailures } from "./helpers/tokens";
 
 // Token conformance (visual-testing.md section 1). Fix failures with tokens; never widen the lists.
@@ -72,7 +73,10 @@ test.describe("token conformance @tokens", () => {
       await page.emulateMedia({ colorScheme: theme });
       await page.setViewportSize({ width: 1280, height: 800 });
       await page.goto("./?demo=mockup");
-      await page.getByRole("button", { name: "Share" }).click();
+      await page
+        .locator("header")
+        .getByRole("button", { name: /Harbor mural/ })
+        .click();
       await expect(page.getByTestId("toast-region")).toContainText("Coming in a later version");
       await page.getByRole("button", { name: /^Theme/ }).click();
       await expect(page.getByRole("menu")).toBeVisible();
@@ -149,7 +153,7 @@ test.describe("token conformance @tokens", () => {
       await page.emulateMedia({ colorScheme: theme });
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto("./?demo=mockup&tab=palette");
-      await page.getByRole("button", { name: "Export palette" }).click();
+      await openExport(page);
       await page.getByRole("button", { name: "Copy HEX" }).click();
       await expect(
         page.getByTestId("toast-region").getByRole("button", { name: "Download" }),

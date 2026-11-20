@@ -4,6 +4,7 @@ import { fixture } from "./helpers/files";
 import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
 import { openRow } from "./helpers/rows";
 import { M1_SCREENS, THEMES } from "./helpers/screens";
+import { openExport } from "./helpers/sheet";
 
 /** Axe judges contrast on what is painted, so let fades (such as the toast's) finish first. */
 const settled = (page: Page) =>
@@ -50,7 +51,7 @@ test.describe("accessibility @a11y", () => {
       await page.emulateMedia({ colorScheme: theme });
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto("./?demo=mockup&tab=palette");
-      await page.getByRole("button", { name: "Export palette" }).click();
+      await openExport(page);
       await page.getByRole("button", { name: "Copy HEX" }).click();
       await expect(page.getByRole("button", { name: "Dismiss" })).toBeVisible();
       await settled(page);
@@ -162,7 +163,10 @@ test.describe("accessibility @a11y", () => {
     for (const theme of THEMES) {
       await page.emulateMedia({ colorScheme: theme });
       await page.goto("./?demo=mockup");
-      await page.getByRole("button", { name: "Share" }).first().click();
+      await page
+        .locator("header")
+        .getByRole("button", { name: /Harbor mural/ })
+        .click();
       await page.getByRole("button", { name: /^Theme/ }).click();
       await expect(page.getByRole("menu")).toBeVisible();
       await settled(page);

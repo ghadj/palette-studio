@@ -35,11 +35,11 @@ test.describe("controls for later features (M1 decision 6)", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(demo());
     expect(await expectAllComingSoon(page, 44)).toBeGreaterThan(0);
-    // The project name and Share are still to come; the view bar keeps Image as the current view.
+    // The project name is still to come; the view bar keeps Image as the current view.
     const header = page.locator("header");
-    await expect(header.getByRole("button", { name: "Share" })).toHaveAttribute(
+    // Export is built (M3 decision 56): the header button opens the panel.
+    await expect(header.getByRole("button", { name: "Export", exact: true })).not.toHaveAttribute(
       "data-coming-soon",
-      "",
     );
     await expect(header.getByRole("button", { name: /Harbor mural/ })).toHaveAttribute(
       "data-coming-soon",

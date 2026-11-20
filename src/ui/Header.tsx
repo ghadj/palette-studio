@@ -1,13 +1,14 @@
 /**
- * The header (ui-contract "Header"). Desktop: app name, project name, view tabs, Undo, Redo, Share
+ * The header (ui-contract "Header"). Desktop: app name, project name, view tabs, Undo, Redo, Export
  * and the theme button. Below 1024 px: the project name, then icon buttons and the theme button.
  * Undo and Redo work (spec 3.6); the library, views and sharing arrive later, so those controls
  * show a toast (M1 decision 6).
  */
-import { ChevronDown, Redo2, Share, Undo2 } from "lucide-preact";
+import { ChevronDown, Download, Redo2, Undo2 } from "lucide-preact";
 import { canRedo, canUndo, redo, redoLabel, undo, undoLabel } from "../state/history";
 import { projectName } from "../state/signals";
 import { comingSoon } from "./comingSoon";
+import { EXPORT_BUTTON_ID, openExportFromHeader } from "./ExportPanel";
 import { ReplaceImageButton } from "./ReplaceImageButton";
 import type { Layout } from "./Shell";
 import { ThemeButton } from "./ThemeButton";
@@ -73,8 +74,14 @@ export function Header({ layout }: { layout: Layout }) {
           <ReplaceImageButton />
           <HistoryButton kind="undo" icon={false} />
           <HistoryButton kind="redo" icon={false} />
-          <button type="button" class="text-button" data-coming-soon="" onClick={comingSoon}>
-            Share
+          <button
+            type="button"
+            id={EXPORT_BUTTON_ID}
+            class="text-button"
+            aria-haspopup="dialog"
+            onClick={() => openExportFromHeader("desktop")}
+          >
+            Export
           </button>
           <ThemeButton variant="pill" />
         </div>
@@ -91,12 +98,13 @@ export function Header({ layout }: { layout: Layout }) {
         <HistoryButton kind="redo" icon />
         <button
           type="button"
+          id={EXPORT_BUTTON_ID}
           class="icon-button"
-          aria-label="Share"
-          data-coming-soon=""
-          onClick={comingSoon}
+          aria-label="Export"
+          aria-haspopup="dialog"
+          onClick={() => openExportFromHeader("phone")}
         >
-          <Share size={20} strokeWidth={1.5} aria-hidden="true" />
+          <Download size={20} strokeWidth={1.5} aria-hidden="true" />
         </button>
         <ThemeButton variant="icon" />
       </div>

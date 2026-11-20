@@ -27,7 +27,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: DESKTOP,
     mockup: { light: "01-studio-light.png", dark: "02-studio-dark.png" },
     frame:
-      "Whole frame. Column 2 has the chevron rows and the Lock and Ramp pills (M3-T2); markers, hint, L/C/H and HEX arrive in later M3 tasks, gradient controls in M4.",
+      "Whole frame. The header has Export where the mockup has Share, and there is no export bar under the columns (D10). Column 2 has the chevron rows and the Lock and Ramp pills (M3-T2); markers, hint, L/C/H and HEX arrive in later M3 tasks, gradient controls in M4.",
   },
   {
     // M2-T7. Taller than the other desktop shots, so the open Advanced rows fit in column 1

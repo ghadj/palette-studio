@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demo, isPhoneProject } from "./helpers/app";
+import { openExport } from "./helpers/sheet";
 
 /** Global adjustments and Compare (M3-T6; spec 3.3, 3.6; plan decisions 24, D16). Swatch 3 is selected. */
 
@@ -140,14 +141,14 @@ test.describe("adjustments (spec 3.3)", () => {
       browserName !== "chromium",
       "Playwright grants clipboard permissions in Chromium only",
     );
-    test.skip(isPhoneProject(info), "the export drawer is a desktop region");
+    test.skip(isPhoneProject(info), "the export panel check runs once, on desktop");
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.setViewportSize({ width: 1280, height: 800 });
     await open(page, info);
     await enter(page, "Hue rotate", "90");
     const hex = (await labelOf(page, 1))?.match(/#[0-9A-F]{6}/)?.[0];
     expect(hex).toBeTruthy();
-    await page.getByTestId("export-drawer").getByRole("button", { name: "Copy HEX" }).click();
+    await (await openExport(page)).getByRole("button", { name: "Copy HEX" }).click();
     const text = await page.evaluate(() => navigator.clipboard.readText());
     expect(text.split("\n")[0]).toBe(hex);
     expect(text).not.toContain("#E8693A");
