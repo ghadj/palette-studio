@@ -71,3 +71,41 @@ User sign-off: not yet (deferred by the user).
 7. `ramp()` keeps an out-of-gamut source unchanged as one of its steps.
 8. Rule checks found nothing: no network calls, no inline scripts, no literal colors, sizes or radii, no hover-only CSS, no locale formatting.
 9. The bundle grew from about 52 kB to 75.4 kB gzip.
+
+---
+
+# M3 re-evaluation (round 2, at b3bb44b)
+
+Verdict: **FAIL**, on one acceptance failure. Both round-1 failures are fixed. Everything automated passes:
+- lint (276 files), typecheck, unit tests (484), and the build (78.5 kB JS gzip)
+- full 5-project e2e: 3264 passed, 256 skipped, 0 failed, 0 flaky (16.5 min)
+- axe (360/360), tokens (1185/1185), and the review page (60/60)
+
+Decisions 24 to 40, 42 and 43 were checked one by one and pass, except where noted below.
+
+## Failure
+
+1. **A Swatch row edit while an adjustment is active applies the adjustment twice** (decision 24; spec 3.3 non-destructive; spec 3.2).
+   - Cause: the row's fields show the output color (`SwatchDetails.tsx:443`), and a commit then writes that value as the new base (`setExact`, `:341` and `:363`). The editor gets this right: it edits the base and shows an "After adjustments" line.
+   - Reproduce: set Lightness to 0.1, choose RGB in the Swatch row, change R by 1. Before: 47 84 137. After: 76 113 168. The editor's base L jumps from 0.345 to 0.446.
+   - No e2e test covers this case.
+
+## Visual findings (minor)
+
+- **V-new-1:** an empty 7th column in the phone Source strip (it counts the "+" cell even when it's hidden); the strip wraps 4 + 2 at 320 px. A real bug.
+- **V-new-2:** the zoom controls move to the left in the Palette and Values views.
+- **V-new-3:** the zoom buttons are ordered Out, In, Fit (decision 42 says Out, Fit, In).
+- **V-new-4:** the X chip covers the selected swatch's pin or lock badge.
+- **V-new-5:** the toolbar row pushes "Advanced" below the fold in column 1 at 1280 × 800.
+- **V-new-6:** at 12 swatches the disabled "+" takes a full row in the phone dock.
+- **Carried over:** V5 (L/C/H number fields on desktop), V6 (contrast matrix clipped), V8 (the open Ramp panel pushes rows down), V9 (sheet title).
+
+## Notes
+
+1. Duplicate can't be reached on touch devices (D key only). This goes against the user's principle and spec 6.6 rule 6.
+2. Other removals are covered: retargeting by marker drag, typing via "+" then HEX, delete via X or the Delete key.
+3. Focus is lost after Unpin, and after removing the last swatch on the phone Source tab.
+4. A typed-and-pinned swatch's marker ring shows the typed color, not the image color under its point.
+5. Closing a sheet doesn't restore the earlier scroll position.
+6. Performance: a 1024 px cluster map is built on every extraction and every "+"; measure against spec 7.7.
+7. Rule checks found nothing.
