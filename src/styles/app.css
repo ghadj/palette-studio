@@ -1989,6 +1989,12 @@ fieldset {
   padding: var(--space-2) 0;
 }
 
+/* The sheet body clips at its edges; room for the 4 px focus ring and the source tile's outline
+   keeps the first and last tiles' rings whole (M3-F28). */
+.bottom-sheet__body .ramp-panel {
+  padding-inline: var(--space-1);
+}
+
 .ramp-section {
   display: flex;
   flex-direction: column;
