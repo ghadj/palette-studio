@@ -5,6 +5,7 @@
  * image, so it never runs extraction (mockup-state.md).
  */
 import { batch, effect } from "@preact/signals";
+import { type Oklab, oklabToOklch } from "../color/convert";
 import { type Extraction, imageClient } from "../extract/client";
 import type { ClusterMap } from "../extract/cluster-map";
 import type { ExtractedColor } from "../extract/postprocess";
@@ -229,20 +230,47 @@ export function extractNewImage(): void {
   scheduler.runNow();
 }
 
+/** Finds a swatch's best-matching point; the worker's `place` by default. */
+type Placer = (colors: Oklab[], index: number) => Promise<ImagePoint | undefined>;
+/** Samples the patch at a point; the worker's `sample` by default. */
+type PatchSampler = (
+  point: ImagePoint,
+  radius: Swatch["sampleRadius"],
+  stat: Swatch["sampleStat"],
+) => Promise<{ color: Oklab }>;
+
+const workerPlace: Placer = async (colors, index) =>
+  (await imageClient().place(colors, [index], settings.peek()))[0];
+const workerSample: PatchSampler = (point, radius, stat) =>
+  imageClient().sample(point, radius, stat);
+
 /**
- * Place on image (spec 3.7 "Edge cases"): puts a marker for a swatch at its best-matching spot,
- * by the placement extraction uses. The point is stored on the swatch, so the markers show it; it
- * is one undo step. Resolves false when there is no image or the placement failed.
+ * Place on image (spec 3.7 "Edge cases"; decision 66): puts a marker for a swatch at its
+ * best-matching spot, by the placement extraction uses, then takes the image color there with the
+ * swatch's own sample radius and statistic, as a marker drag does. The point and the color are one
+ * undo step, and the swatch stays pinned. Resolves false, changing nothing, when there is no image
+ * or placing or sampling failed.
  */
-export async function placeOnImage(id: string): Promise<boolean> {
+export async function placeOnImage(
+  id: string,
+  place: Placer = workerPlace,
+  sample: PatchSampler = workerSample,
+): Promise<boolean> {
   const list = palette.peek();
   const index = list.findIndex((s) => s.id === id);
-  if (index < 0 || !imageAvailable()) return false;
+  const swatch = list[index];
+  if (!swatch || !imageAvailable()) return false;
   try {
-    const [point] = await imageClient().place(list.map(swatchOklab), [index], settings.peek());
+    const point = await place(list.map(swatchOklab), index);
+    if (!point) return false;
+    const result = await sample(point, swatch.sampleRadius, swatch.sampleStat);
     // Nothing lands over a palette that changed while the worker worked.
-    if (!point || palette.peek() !== list) return false;
-    palette.value = list.map((s) => (s.id === id ? { ...s, point } : s));
+    if (palette.peek() !== list) return false;
+    palette.value = list.map((s) =>
+      s.id === id
+        ? { ...s, point, color: oklabToOklch(result.color), origin: "picked", pinned: true }
+        : s,
+    );
     history.commit("Place on image");
     return true;
   } catch {

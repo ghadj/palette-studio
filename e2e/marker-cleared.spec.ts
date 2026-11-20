@@ -6,6 +6,13 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demo, isPhoneProject } from "./helpers/app";
 
+/** The fixture's patches (docs/design/mockup-state.md): marker point and image color. */
+const FIXTURE_PATCHES = [
+  { x: 0.769, y: 0.167, hex: "#14386B" },
+  { x: 0.889, y: 0.778, hex: "#1E8A2E" },
+  { x: 0.102, y: 0.185, hex: "#5039B0" },
+];
+
 const marker = (page: Page, n: number) => page.locator(`[data-marker="${n}"]`);
 const strip = (page: Page) =>
   page.locator("[data-testid=swatch-strip]:visible").first().locator("[data-swatch]");
@@ -78,11 +85,23 @@ test.describe("typed colors clear the marker (decision 65)", () => {
     await expect(marker(page, 3)).toHaveCount(0);
     await expect(place).toHaveCount(1);
 
-    // Place on image: a point again, at the best-matching spot (spec 3.7); the color stays as typed.
+    // Place on image (decision 66): a point again, and the image color at that marker, one undo step.
     await place.click();
     await expect(marker(page, 3)).toHaveCount(1);
     await expect(place).toHaveCount(0);
+    const label = (await marker(page, 3).getAttribute("aria-label")) ?? "";
+    const [, px, py] = label.match(/(\d+)%, (\d+)%/) ?? [];
+    const patch = FIXTURE_PATCHES.find(
+      (p) => Math.abs(p.x * 100 - Number(px)) < 2 && Math.abs(p.y * 100 - Number(py)) < 2,
+    );
+    expect(patch, `marker at ${label} sits on a fixture patch`).toBeTruthy();
+    await expect(strip(page).nth(2)).toHaveAttribute("aria-label", new RegExp(`${patch?.hex}$`));
+    await undo(page).click();
+    await expect(marker(page, 3)).toHaveCount(0);
     await expect(strip(page).nth(2)).toHaveAttribute("aria-label", /#1E8A2E$/);
+    await expect(place).toHaveCount(1);
+    await place.click();
+    await expect(marker(page, 3)).toHaveCount(1);
 
     // Edit again, then reset.
     await hex.fill("#8A1E2E");

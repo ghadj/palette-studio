@@ -6,7 +6,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const extract = vi.fn();
 const place = vi.fn();
-vi.mock("../../src/extract/client", () => ({ imageClient: () => ({ extract, place }) }));
+const sample = vi.fn();
+vi.mock("../../src/extract/client", () => ({
+  imageClient: () => ({ extract, place, sample }),
+}));
 
 const { extractNewImage, placeOnImage, startLiveExtraction } = await import(
   "../../src/state/extraction"
@@ -30,6 +33,7 @@ async function start(): Promise<void> {
   startLiveExtraction();
   extract.mockReset();
   place.mockReset();
+  sample.mockReset();
   displayImage.value = {} as ImageBitmap;
   settings.value = { ...settings.peek(), algorithm: "balanced", colors: 6 };
   extract.mockResolvedValueOnce(six(0.1, 0.2, 0.4, 0.6, 0.8, 0.9));
@@ -124,9 +128,11 @@ describe("Place on image (spec 3.7 edge cases)", () => {
     palette.value = palette.value.map((s) => (s === first ? { ...s, point: null } : s));
     history.commit("Remove point");
     place.mockResolvedValueOnce([point(0.7)]);
+    sample.mockResolvedValueOnce({ color: { l: 0.5, a: 0, b: 0 } });
     expect(await placeOnImage(first.id)).toBe(true);
     expect(place.mock.calls[0]?.[1]).toEqual([0]);
     expect(palette.value[0]?.point).toEqual(point(0.7));
+    expect(Math.round((palette.value[0]?.color.l ?? 0) * 100)).toBe(50);
     expect(history.undoLabel.value).toBe("Place on image");
     history.undo();
     expect(palette.value[0]?.point).toBeNull();
