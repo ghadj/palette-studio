@@ -397,6 +397,9 @@ fieldset {
   padding: var(--space-1);
   margin: calc(-1 * var(--space-1));
   overflow-y: auto;
+  /* The containing block for absolutely positioned content inside (visually-hidden captions and
+     legends, chevron extras): without it they sit against the page and stretch the document (F30). */
+  position: relative;
 }
 
 .panel {
@@ -768,6 +771,15 @@ fieldset {
       env(safe-area-inset-bottom) +
       var(--space-2)
     );
+  }
+}
+
+/* From 1024 px, with a window at least 640 px tall (fix L4's floor), the document never scrolls:
+   each column does (decision 37, F30). Shorter windows keep L4: the page scrolls instead. */
+@media (min-width: 1024px) and (min-height: 640px) {
+  html,
+  body {
+    overflow: hidden;
   }
 }
 
@@ -2076,7 +2088,8 @@ fieldset {
 
 .contrast-scroll {
   overflow-x: auto;
-  overscroll-behavior: contain;
+  /* Sideways only: a vertical wheel or swipe over the matrix must chain to the column or sheet (F30). */
+  overscroll-behavior-x: contain;
   max-width: 100%;
 }
 
