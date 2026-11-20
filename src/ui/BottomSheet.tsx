@@ -15,7 +15,7 @@
 import { X } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 import { useEffect, useId, useRef, useState } from "preact/hooks";
-import { dockSheetBelowStrip } from "./sheetDock";
+import { dockSheetBelowStrip, lockPage } from "./sheetDock";
 
 /** A downward swipe this far, in CSS px, closes the sheet; a shorter one springs back. */
 export const SWIPE_CLOSE_PX = 64;
@@ -27,6 +27,7 @@ export function BottomSheet({
   openerId,
   testId,
   action,
+  dock = true,
 }: {
   title: string;
   /** Called once the sheet has closed, however it was closed. */
@@ -40,6 +41,13 @@ export function BottomSheet({
   testId?: string;
   /** An icon button in the title bar, beside Close (M3 decision 48). */
   action?: ComponentChildren;
+  /**
+   * True for settings drawers (M3 decisions 35 and 59): the page scrolls to pin the swatch strip
+   * and the sheet starts below it, so the palette stays visible. False for a plain bottom sheet
+   * (Export, decision 62): the page doesn't move, and the sheet anchors to the viewport's bottom.
+   * Either way the page is locked while it is open (decision 46).
+   */
+  dock?: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -58,7 +66,7 @@ export function BottomSheet({
     const onDialogClose = () => close.current();
     el.addEventListener("close", onDialogClose);
     // Below the pinned swatch strip, when the page has one (M3 decision 35).
-    const undock = dockSheetBelowStrip(el);
+    const undock = dock ? dockSheetBelowStrip(el) : lockPage();
     if (!el.open) el.showModal();
     // Focus starts on Close, not on the title-bar action (Duplicate swatch), so an immediate Enter
     // can't change the palette.
@@ -69,7 +77,7 @@ export function BottomSheet({
       if (el.open) el.close();
       if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
-  }, [openerId]);
+  }, [openerId, dock]);
 
   const dismiss = () => dialog.current?.close();
 

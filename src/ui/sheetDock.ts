@@ -80,7 +80,7 @@ const OWN_GESTURE = ".contrast-scroll, input[type=range]";
  * cannot scroll that way: a vertical move there is cancelled, unless it starts in a horizontal
  * scroller or on a slider.
  */
-function lockPage(): () => void {
+export function lockPage(): () => void {
   const root = document.documentElement;
   root.classList.add("sheet-locked");
   let start: { x: number; y: number } | null = null;

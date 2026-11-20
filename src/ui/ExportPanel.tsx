@@ -236,7 +236,13 @@ export function ExportPanel({ layout }: { layout: Layout }) {
   };
   if (layout === "desktop") return <Drawer onClose={close} />;
   return (
-    <BottomSheet title="Export" onClose={close} openerId={EXPORT_BUTTON_ID} testId="export-panel">
+    <BottomSheet
+      title="Export"
+      onClose={close}
+      openerId={EXPORT_BUTTON_ID}
+      testId="export-panel"
+      dock={false}
+    >
       <Sections />
     </BottomSheet>
   );
