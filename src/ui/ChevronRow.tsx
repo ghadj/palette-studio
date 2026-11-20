@@ -81,10 +81,19 @@ export function ChevronRow({
   label,
   testId,
   sheetAction,
+  summaryExtra,
+  badge,
   children,
 }: {
   /** An icon button for the sheet's title bar, below 1024 px only (M3 decision 48). */
   sheetAction?: ComponentChildren;
+  /**
+   * Content in the header beside the toggle button, such as a reset icon (M3 decision 58). It sits
+   * outside the button, so a click on it doesn't open or close the row.
+   */
+  summaryExtra?: ComponentChildren;
+  /** A count shown after the label, with an accent dot; `name` is the button's accessible name. */
+  badge?: { count: number; name: string } | null;
   /** Names the row for the mockup state's `rows` parameter and test ids, such as "adjustments". */
   id: string;
   label: string;
@@ -99,18 +108,36 @@ export function ChevronRow({
   const regionId = `${base}-region`;
   return (
     <div class="chevron-row" data-row={id} data-testid={testId}>
-      <button
-        id={buttonId}
-        type="button"
-        class="chevron-row__summary chevron-row__button"
-        aria-expanded={open}
-        aria-controls={layout === "desktop" && open ? regionId : undefined}
-        aria-haspopup={layout === "phone" ? "dialog" : undefined}
-        onClick={() => setOpen(!open)}
-      >
-        <span>{label}</span>
-        <ChevronRight class="chevron-row__chevron" size={16} strokeWidth={1.5} aria-hidden="true" />
-      </button>
+      <div class="chevron-row__head">
+        <button
+          id={buttonId}
+          type="button"
+          class="chevron-row__summary chevron-row__button"
+          aria-expanded={open}
+          aria-controls={layout === "desktop" && open ? regionId : undefined}
+          aria-haspopup={layout === "phone" ? "dialog" : undefined}
+          aria-label={badge ? badge.name : undefined}
+          onClick={() => setOpen(!open)}
+        >
+          <span class="chevron-row__label">
+            {label}
+            {badge && " "}
+            {badge && (
+              <span class="chevron-row__badge" data-testid={`${id}-badge`}>
+                <span class="chevron-row__dot" aria-hidden="true" />
+                <span aria-hidden="true">{`· ${badge.count}`}</span>
+              </span>
+            )}
+          </span>
+          <ChevronRight
+            class="chevron-row__chevron"
+            size={16}
+            strokeWidth={1.5}
+            aria-hidden="true"
+          />
+        </button>
+        {summaryExtra && <span class="chevron-row__extra">{summaryExtra}</span>}
+      </div>
       <RowContent
         id={id}
         title={label}

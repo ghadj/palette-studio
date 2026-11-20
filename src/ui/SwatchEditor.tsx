@@ -6,8 +6,8 @@
  *
  * An edit sets the swatch's base color and pins it (M3 decision 24), like a marker drag; its
  * origin and `extracted` are unchanged. A pinned swatch is kept on re-extraction but still adjusted
- * (spec 3.7), so the editor shows and edits the base color, with a muted "After adjustments" line
- * when the displayed color differs. The color is kept as typed, even beyond sRGB: the HEX shows
+ * (spec 3.7), so the editor shows and edits the base color. The adjusted color shows in the strip and
+ * exports (decision 57). The color is kept as typed, even beyond sRGB: the HEX shows
  * the clipped value and the indicator says so (spec 3.5).
  *
  * Undo (plan D16): a slider drag is one step (begin on press, end on release); a keyboard step
@@ -20,7 +20,7 @@ import { inGamut } from "../color/gamut";
 import { parseHex } from "../color/hex";
 import { setLocked, setPinned, setSwatchColor, unlockSwatch } from "../palette/model";
 import { begin, commit, end } from "../state/history";
-import { outputPalette, palette, selectedSwatchId } from "../state/signals";
+import { palette, selectedSwatchId } from "../state/signals";
 import type { Oklch } from "../types";
 import { RowContent, useRowOpen } from "./ChevronRow";
 import { useLayout } from "./layout";
@@ -55,8 +55,6 @@ export function SwatchEditor() {
   const swatch = palette.value.find((s) => s.id === id) ?? null;
   const color = swatch?.color ?? null;
   const hex = color ? oklchToHex(color) : "";
-  const shownHex = outputPalette.value.find((s) => s.id === id)?.color;
-  const adjustedHex = shownHex ? oklchToHex(shownHex) : hex;
 
   /** Records the pending step, now or (for a text entry) when the entry ends. */
   const record = (label: string) => {
@@ -189,20 +187,6 @@ export function SwatchEditor() {
           Ramp
         </button>
       </div>
-      {swatch && adjustedHex !== hex && (
-        <p class="hint swatch-adjusted" data-testid="after-adjustments">
-          <span>After adjustments {adjustedHex}</span>
-          <button
-            type="button"
-            class="icon-pill copy-icon"
-            data-testid="editor-copy-adjusted"
-            aria-label="Copy adjusted HEX"
-            onClick={() => shownHex && void copySelected(shownHex, "hex")}
-          >
-            <Copy aria-hidden="true" size={18} strokeWidth={1.5} />
-          </button>
-        </p>
-      )}
       <RowContent
         id="ramp"
         title={RAMP_TITLE}

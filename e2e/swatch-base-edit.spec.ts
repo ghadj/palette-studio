@@ -1,7 +1,7 @@
 /**
  * The Swatch row edits the BASE color (M3 decision 47, round-2 failure 1; decision 24; spec 3.3):
- * its fields show the base, a commit sets that exact base and pins the swatch, and an "After
- * adjustments" line names the output color. With Lightness +0.1 active, editing R by 1 must not
+ * its fields show the base, a commit sets that exact base and pins the swatch. The "After
+ * adjustments" line is gone (decision 57); the strip shows the output color. With Lightness +0.1 active, editing R by 1 must not
  * apply the adjustment twice.
  */
 import { expect, type Page, test } from "@playwright/test";
@@ -44,9 +44,8 @@ test("with Lightness +0.1 active, the row shows and edits the base, once", async
   await setUp(page, phone);
   expect(await rgb(page), "the row shows the base color").toEqual(["20", "56", "107"]);
   const adjusted = (await stripSwatch(page).getAttribute("aria-label")) ?? "";
-  await expect(details(page).getByTestId("swatch-after-adjustments")).toHaveText(
-    /^After adjustments #[0-9A-F]{6}$/,
-  );
+  await expect(details(page).getByTestId("swatch-after-adjustments")).toHaveCount(0);
+  await expect(details(page).getByText(/After adjustments/)).toHaveCount(0);
 
   const r = details(page).getByLabel("RGB R");
   await r.fill("21");
@@ -57,9 +56,8 @@ test("with Lightness +0.1 active, the row shows and edits the base, once", async
 
   // The strip shows the typed base adjusted once: the adjusted hex differs from the base by about
   // the same lightness step as before, not by twice as much.
-  const lines = await details(page).getByTestId("swatch-after-adjustments").textContent();
-  const outHex = (lines ?? "").match(/#[0-9A-F]{6}/)?.[0] ?? "";
-  expect(afterEdit.toUpperCase()).toContain(outHex);
+  const outHex = afterEdit.toUpperCase().match(/#[0-9A-F]{6}/)?.[0] ?? "";
+  expect(outHex).not.toBe("");
   const channel = (hex: string, at: number) =>
     Number.parseInt(hex.slice(1 + at * 2, 3 + at * 2), 16);
   const adjustedBefore = adjusted.toUpperCase().match(/#[0-9A-F]{6}/)?.[0] ?? "#000000";
@@ -91,7 +89,7 @@ test("the row and the editor agree; clearing the adjustments gives exactly the t
   await expect(stripSwatch(page)).toHaveAttribute("aria-label", /#15386B/i);
 });
 
-test("the adjusted line has its own copy icon; the field's icon copies the shown base", async ({
+test("the field's icon copies the shown base; there is no adjusted copy icon (decision 57)", async ({
   page,
   context,
 }, info) => {
@@ -104,12 +102,5 @@ test("the adjusted line has its own copy icon; the field's icon copies the shown
   const read = () => page.evaluate(() => navigator.clipboard.readText());
   await details(page).getByTestId("copy-value").click();
   expect(await read()).toBe("rgb(20 56 107)");
-  const shown = (
-    (await details(page).getByTestId("swatch-after-adjustments").textContent()) ?? ""
-  ).match(/#[0-9A-F]{6}/)?.[0];
-  const button = details(page).getByRole("button", { name: "Copy adjusted HEX value" });
-  const box = await button.boundingBox();
-  expect(box?.height ?? 0).toBeGreaterThanOrEqual(32);
-  await button.click();
-  expect(await read()).toBe(shown);
+  await expect(details(page).getByRole("button", { name: /Copy adjusted/ })).toHaveCount(0);
 });

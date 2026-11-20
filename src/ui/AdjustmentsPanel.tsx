@@ -1,18 +1,24 @@
 /**
  * The Adjustments row's content (spec 3.3, 3.6; ui-contract column 2 item 5): in place on desktop,
  * a bottom sheet on phones. One `Slider` per adjustment in the table order of 3.3, Even out,
- * Harmonize (anchor and amount), Gamut (Off or Clamp, with the indicator), Reset, and the
+ * Harmonize (anchor and amount), Gamut (Off or Clamp, with the indicator), and the
  * before/after Compare toggle. Plan D1 gives the ranges.
+ *
+ * A row whose value differs from its default shows a reset icon; the section header shows a count and
+ * a reset-all icon (decision 58, `AdjustmentsHeaderExtras`).
  *
  * Undo (plan D16): a slider drag is one step (begin on press, end on release); a keyboard step,
  * field entry, toggle or button is one step each. Compare is view state and isn't recorded (3.6).
  * Locked swatches aren't adjusted (spec 3.3); pinned ones are (decision 24), which the note under the title says.
  */
+import { RotateCcw } from "lucide-preact";
 import { inGamut } from "../color/gamut";
-import { isIdentity, resetAdjustments } from "../palette/adjust";
+import { resetAdjustments } from "../palette/adjust";
+import { DEFAULT_ADJUSTMENTS } from "../state/defaults";
 import { begin, commit, end } from "../state/history";
 import { adjustments, compareBefore, outputPalette, palette } from "../state/signals";
 import type { Adjustments, GamutMode } from "../types";
+import { ChevronRow } from "./ChevronRow";
 import { SettingRow } from "./SettingRow";
 import { Slider } from "./Slider";
 import { Toggle } from "./Toggle";
@@ -159,9 +165,91 @@ function change(next: Adjustments, label: string): void {
   commit(label);
 }
 
-function AdjustSlider({ spec }: { spec: SliderSpec }) {
+/** One adjustment: how its row resets it. `reset` returns the parameters with only this one at its default. */
+interface RowReset {
+  label: string;
+  reset: (a: Adjustments) => Adjustments;
+}
+
+const sliderRows: RowReset[] = [...SLIDERS, ...HARMONIZE_SLIDERS].map((spec) => ({
+  label: spec.label,
+  reset: (a) => spec.set(a, spec.get(DEFAULT_ADJUSTMENTS)),
+}));
+
+const EVEN_OUT: RowReset = {
+  label: "Even out lightness",
+  reset: (a) => ({ ...a, evenOut: DEFAULT_ADJUSTMENTS.evenOut }),
+};
+const GAMUT: RowReset = {
+  label: "Gamut",
+  reset: (a) => ({ ...a, gamut: DEFAULT_ADJUSTMENTS.gamut }),
+};
+
+const ROW_RESETS: readonly RowReset[] = [...sliderRows, EVEN_OUT, GAMUT];
+
+const differs = (row: RowReset, a: Adjustments): boolean =>
+  JSON.stringify(row.reset(a)) !== JSON.stringify(a);
+
+/** How many adjustments differ from their defaults (the Adjustments header's count). */
+export function activeAdjustmentCount(a: Adjustments): number {
+  return ROW_RESETS.filter((row) => differs(row, a)).length;
+}
+
+/** The Adjustments header's indicator and reset-all icon (M3 decision 58). */
+export function AdjustmentsHeaderExtras() {
+  const count = activeAdjustmentCount(adjustments.value);
+  if (count === 0) return null;
   return (
-    <SettingRow label={spec.label} htmlFor={spec.id}>
+    <button
+      type="button"
+      class="reset-icon"
+      data-testid="adjustments-reset-all"
+      aria-label="Reset adjustments"
+      onClick={(event) => {
+        event.stopPropagation();
+        change(resetAdjustments(), "Reset adjustments");
+      }}
+    >
+      <RotateCcw aria-hidden="true" size={18} strokeWidth={1.5} />
+    </button>
+  );
+}
+
+/** The Adjustments chevron row, with the active count and the reset-all icon in its header. */
+export function AdjustmentsRow() {
+  const count = activeAdjustmentCount(adjustments.value);
+  return (
+    <ChevronRow
+      id="adjustments"
+      label="Adjustments"
+      badge={count > 0 ? { count, name: `Adjustments, ${count} active` } : null}
+      summaryExtra={<AdjustmentsHeaderExtras />}
+    >
+      <AdjustmentsPanel />
+    </ChevronRow>
+  );
+}
+
+function RowResetButton({ row }: { row: RowReset }) {
+  const a = adjustments.value;
+  if (!differs(row, a)) return null;
+  return (
+    <button
+      type="button"
+      class="reset-icon"
+      data-testid="adjust-reset-row"
+      aria-label={`Reset ${row.label}`}
+      onClick={() => change(row.reset(adjustments.peek()), `Reset ${row.label}`)}
+    >
+      <RotateCcw aria-hidden="true" size={18} strokeWidth={1.5} />
+    </button>
+  );
+}
+
+function AdjustSlider({ spec }: { spec: SliderSpec }) {
+  const row = sliderRows.find((r) => r.label === spec.label) as RowReset;
+  return (
+    <SettingRow label={spec.label} htmlFor={spec.id} reset={<RowResetButton row={row} />}>
       <Slider
         id={spec.id}
         label={spec.label}
@@ -180,7 +268,6 @@ function AdjustSlider({ spec }: { spec: SliderSpec }) {
 
 export function AdjustmentsPanel() {
   const a = adjustments.value;
-  const identity = isIdentity(a);
   const hasLocked = palette.value.some((s) => s.locked);
   const outside = outputPalette.value.filter((s) => !inGamut(s.color)).length;
   const gamutNote =
@@ -193,7 +280,11 @@ export function AdjustmentsPanel() {
       {SLIDERS.map((spec) => (
         <AdjustSlider key={spec.id} spec={spec} />
       ))}
-      <SettingRow label="Even out lightness" htmlFor="adjust-even-out">
+      <SettingRow
+        label="Even out lightness"
+        htmlFor="adjust-even-out"
+        reset={<RowResetButton row={EVEN_OUT} />}
+      >
         <Toggle
           id="adjust-even-out"
           checked={a.evenOut}
@@ -203,7 +294,12 @@ export function AdjustmentsPanel() {
       {HARMONIZE_SLIDERS.map((spec) => (
         <AdjustSlider key={spec.id} spec={spec} />
       ))}
-      <SettingRow label="Gamut" note={gamutNote} noteId="adjust-gamut-note">
+      <SettingRow
+        label="Gamut"
+        note={gamutNote}
+        noteId="adjust-gamut-note"
+        reset={<RowResetButton row={GAMUT} />}
+      >
         <fieldset class="segmented" aria-describedby="adjust-gamut-note">
           <legend class="visually-hidden">Gamut</legend>
           {GAMUT_LABELS.map(([mode, label]) => (
@@ -230,16 +326,6 @@ export function AdjustmentsPanel() {
           }}
         />
       </SettingRow>
-      <div class="adjustments-panel__actions">
-        <button
-          type="button"
-          class="pill-button"
-          disabled={identity}
-          onClick={() => change(resetAdjustments(), "Reset adjustments")}
-        >
-          Reset
-        </button>
-      </div>
     </div>
   );
 }

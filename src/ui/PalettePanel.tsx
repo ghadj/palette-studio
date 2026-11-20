@@ -13,7 +13,7 @@
  * don't edit this one.
  */
 import { outputPalette } from "../state/signals";
-import { AdjustmentsPanel } from "./AdjustmentsPanel";
+import { AdjustmentsRow } from "./AdjustmentsPanel";
 import { ChevronRow } from "./ChevronRow";
 import { ContrastPanel } from "./ContrastPanel";
 import { CvdPanel } from "./CvdPanel";
@@ -39,9 +39,7 @@ export function PalettePanel({ variant }: { variant: "desktop" | "phone" }) {
           <ChevronRow id="swatch" label="Swatch" sheetAction={<DuplicateButton />}>
             <SwatchDetails />
           </ChevronRow>
-          <ChevronRow id="adjustments" label="Adjustments">
-            <AdjustmentsPanel />
-          </ChevronRow>
+          <AdjustmentsRow />
           <ChevronRow id="contrast" label="Contrast">
             <ContrastPanel />
           </ChevronRow>

@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demo, isPhoneProject } from "./helpers/app";
-import { openExport } from "./helpers/sheet";
+import { measure } from "./helpers/rows";
+import { openExport, sheetSettled } from "./helpers/sheet";
 
 /** Global adjustments and Compare (M3-T6; spec 3.3, 3.6; plan decisions 24, D16). Swatch 3 is selected. */
 
@@ -29,7 +30,7 @@ async function enter(page: Page, name: string, value: string) {
 }
 
 test.describe("adjustments (spec 3.3)", () => {
-  test("Lightness +0.1 changes the strip hex; the editor keeps the base L 0.345 and names the adjusted color (decision 24)", async ({
+  test("Lightness +0.1 changes the strip hex; the editor keeps the base L 0.345 and shows no After-adjustments line (decisions 24, 57)", async ({
     page,
   }, info) => {
     await open(page, info);
@@ -38,9 +39,7 @@ test.describe("adjustments (spec 3.3)", () => {
     await expect(page.getByTestId("after-adjustments")).toHaveCount(0);
     await enter(page, "^Lightness$", "0.1");
     await expect(editorL(page)).toHaveValue("0.345");
-    await expect(page.locator("[data-testid=after-adjustments]:visible")).toHaveText(
-      /^After adjustments #[0-9A-F]{6}$/,
-    );
+    await expect(page.getByText(/After adjustments/)).toHaveCount(0);
     expect(await labelOf(page, 3)).not.toBe(before);
   });
 
@@ -109,14 +108,93 @@ test.describe("adjustments (spec 3.3)", () => {
     await expect(field(page, "^Lightness$").first()).toHaveValue("0.00");
   });
 
-  test("Reset returns the base hexes", async ({ page }, info) => {
+  test("Reset returns the base hexes: the header icon resets all as one undo step (decision 58)", async ({
+    page,
+  }, info) => {
     await open(page, info);
     const before = await labelOf(page, 1);
     await enter(page, "Hue rotate", "90");
-    expect(await labelOf(page, 1)).not.toBe(before);
-    await panel(page).getByRole("button", { name: "Reset" }).click();
+    await enter(page, "^Lightness$", "0.1");
+    const adjusted = await labelOf(page, 1);
+    expect(adjusted).not.toBe(before);
+    await expect(panel(page).getByRole("button", { name: /^Reset$/ })).toHaveCount(0);
+    if (isPhoneProject(info)) await page.keyboard.press("Escape");
+    const header = page.getByRole("button", { name: "Adjustments, 2 active" });
+    await expect(header).toHaveText("Adjustments · 2");
+    await page.getByRole("button", { name: "Reset adjustments", exact: true }).click();
     expect(await labelOf(page, 1)).toBe(before);
-    await expect(panel(page).getByRole("button", { name: "Reset" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Reset adjustments", exact: true })).toHaveCount(
+      0,
+    );
+    await expect(page.getByRole("button", { name: "Adjustments", exact: true })).toBeVisible();
+    await expect(page.getByTestId("adjustments-badge")).toHaveCount(0);
+    // One undo step restores both.
+    await undoButton(page).click();
+    expect(await labelOf(page, 1)).toBe(adjusted);
+  });
+
+  test("the header shows the count; a row icon resets one adjustment and hides at the default (decision 58)", async ({
+    page,
+  }, info) => {
+    await open(page, info);
+    await expect(panel(page).getByRole("button", { name: /^Reset / })).toHaveCount(0);
+    await enter(page, "^Lightness$", "0.1");
+    const phone = isPhoneProject(info);
+    const rowReset = panel(page).getByRole("button", { name: "Reset Lightness", exact: true });
+    await expect(rowReset).toBeVisible();
+    await expect(panel(page).getByRole("button", { name: /^Reset / })).toHaveCount(1);
+    expect((await rowReset.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(phone ? 43.9 : 32);
+    expect((await rowReset.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(phone ? 43.9 : 32);
+    await expect(page.getByTestId("adjustments-badge")).toHaveText("· 1");
+    await expect(page.getByRole("button", { name: "Adjustments, 1 active" })).toHaveText(
+      "Adjustments · 1",
+    );
+    await rowReset.click();
+    await expect(field(page, "^Lightness$").first()).toHaveValue("0.00");
+    await expect(rowReset).toHaveCount(0);
+    await expect(page.getByTestId("adjustments-badge")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Reset adjustments", exact: true })).toHaveCount(
+      0,
+    );
+    if (phone) await page.keyboard.press("Escape");
+    await undoButton(page).click();
+    if (phone) await page.getByRole("button", { name: "Adjustments, 1 active" }).click();
+    await expect(field(page, "^Lightness$").first()).toHaveValue("0.10");
+  });
+
+  test("the header reset icon doesn't open or close the row, and is 44 px on a phone", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "on a phone the open sheet covers the header; checked below");
+    await open(page, info);
+    await enter(page, "^Lightness$", "0.1");
+    const row = page.getByRole("button", { name: "Adjustments, 1 active" });
+    await expect(row).toHaveAttribute("aria-expanded", "true");
+    await page.getByRole("button", { name: "Reset adjustments", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Adjustments", exact: true })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
+  test("phone: the header reset icon is 44 px and leaves a closed row closed", async ({
+    page,
+  }, info) => {
+    test.skip(!isPhoneProject(info), "phone only");
+    await open(page, info);
+    await enter(page, "^Lightness$", "0.1");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const reset = page.getByRole("button", { name: "Reset adjustments", exact: true });
+    const box = await reset.boundingBox();
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    await reset.click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Adjustments", exact: true })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 
   test("Compare shows the base hexes and isn't an undo step", async ({ page }, info) => {
@@ -153,4 +231,51 @@ test.describe("adjustments (spec 3.3)", () => {
     expect(text.split("\n")[0]).toBe(hex);
     expect(text).not.toContain("#E8693A");
   });
+
+  for (const width of [1280, 1024, 390, 320]) {
+    test(`rows with a reset icon keep one line, apart and centered at ${width} px (decision 58)`, async ({
+      page,
+    }, info) => {
+      test.skip(info.project.name !== "chromium", "layout is checked once, at set widths");
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(demo(`${width < 1024 ? "tab=palette&" : ""}rows=adjustments`));
+      if (width < 1024) await sheetSettled(page);
+      // Every adjustment away from its default, so every row shows its icon.
+      for (const [name, value] of [
+        ["^Lightness$", "0.1"],
+        ["^Chroma %", "120"],
+        ["Hue rotate", "20"],
+        ["^Contrast %", "120"],
+        ["^Temperature", "0.02"],
+        ["^Tint", "0.02"],
+        ["^Gamma", "1.2"],
+        ["Lightness range min", "0.1"],
+        ["Lightness range max", "0.9"],
+        ["Harmonize anchor", "30"],
+        ["Harmonize amount", "20"],
+      ] as const)
+        await enter(page, name, value);
+      await panel(page).getByRole("switch", { name: "Even out lightness" }).click();
+      await panel(page).getByRole("button", { name: "Clamp" }).click();
+      await expect(panel(page).getByTestId("adjust-reset-row")).toHaveCount(13);
+      const rows = await measure(page);
+      for (const r of rows) {
+        if (!r.value) continue;
+        const apart = r.group.right <= r.value.left + 0.5;
+        expect(apart, `${r.name}: label group and value are side by side, not overlapping`).toBe(
+          true,
+        );
+        expect(r.value.top, `${r.name}: the value stays on the label's line`).toBeLessThan(
+          r.group.bottom - 0.5,
+        );
+        const mid = (b: DOMRect) => b.top + b.height / 2;
+        expect(Math.abs(mid(r.value) - mid(r.group)), `${r.name}: centered`).toBeLessThanOrEqual(
+          Math.max(r.group.height, r.value.height) / 2 + 1,
+        );
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    });
+  }
 });
