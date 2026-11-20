@@ -259,7 +259,7 @@ test.describe("mockup state (mockup-state.md)", () => {
   test("zoom=2 opens at 200%", async ({ page }) => {
     await page.goto(demo("zoom=2"));
     const well = page.locator("[data-testid=image-well]:visible").first();
-    await expect(well.getByTestId("zoom-level")).toHaveText("200%");
+    await expect(page.locator("[data-testid=zoom-level]:visible").first()).toHaveText("200%");
     await expect(well).toHaveAttribute("data-scale", "2");
     // Centered: the image's center sits at the well's center.
     const image = well.locator("img");
@@ -270,8 +270,8 @@ test.describe("mockup state (mockup-state.md)", () => {
     expect(i.x + i.width / 2).toBeCloseTo(w.x + w.width / 2, 0);
     expect(i.y + i.height / 2).toBeCloseTo(w.y + w.height / 2, 0);
     await page.goto(demo("zoom=4"));
-    await expect(well.getByTestId("zoom-level")).toHaveText("400%");
+    await expect(page.locator("[data-testid=zoom-level]:visible").first()).toHaveText("400%");
     await page.goto(demo("zoom=8"));
-    await expect(well.getByTestId("zoom-level")).toHaveText("800%");
+    await expect(page.locator("[data-testid=zoom-level]:visible").first()).toHaveText("800%");
   });
 });

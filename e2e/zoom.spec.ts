@@ -293,7 +293,10 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
       // They sit on the right of the toolbar row under the well, and never cover the image (M3 decision 42).
       const controls = await toolbar(page).getByTestId("zoom-controls").boundingBox();
       const box = await wellBox(page);
-      expect((controls?.x ?? 0) + (controls?.width ?? 0)).toBeLessThanOrEqual(box.x + box.width);
+      // The toolbar is as wide as the well, border included, so compare with its outer edge.
+      expect((controls?.x ?? 0) + (controls?.width ?? 0)).toBeLessThanOrEqual(
+        box.x + box.width + 2 * (await well(page).evaluate((el) => el.clientLeft)),
+      );
       expect(controls?.y ?? 0).toBeGreaterThanOrEqual(box.y + box.height);
       expect(controls?.x ?? 0).toBeGreaterThan(box.x + box.width / 2);
       const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
