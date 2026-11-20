@@ -480,7 +480,12 @@ Rules that hold for every task:
   - "each change is one undo step; a row's reset icon shows only off its default"
   - "phone: the drawer opens below the dock with the --space-2 gap and locks the page; 320 px rows stay on one line (M2 decision 23)"
 - Done when: tests pass. The Gamut row's e2e test lands in T10.
-- [ ] Done
+- [x] Done. Notes:
+  - The option logic (count, resets, polar spaces, translucent test) is in `src/gradient/interpolation-options.ts`, unit-tested in `tests/gradient/interpolation-options.test.ts`.
+  - The Gamut row reads `render.outOfGamut` (T10 fills it), so its e2e test lands in T10. The header's out-of-sRGB description is set on `ChevronRow`'s button from the header component, since `ChevronRow` has no description prop.
+  - On phones the reset-all icon is also in the sheet's title bar (`sheetAction`, testid `interpolation-reset-all-sheet`), because the sheet covers the header.
+  - `e2e/gradient-scaffold.spec.ts`: the `interpolation-value` text checks became `#interpolation-space` value checks (the row is a select now), and the drawer test's "Coming in a later version" check names real content ("Easing", "Position").
+  - A bezier field commits on blur, Enter or the arrow keys (one undo step each); x1 and x2 outside 0 to 1 are rejected with a note.
 
 ### M4-T10: Baked stops, CSS and render state (Opus)
 - Files:

@@ -99,7 +99,7 @@ test.describe("Gradient column and tab (M4-T2)", () => {
     const preview = page.getByTestId("gradient-preview");
     await expect(preview).toHaveAttribute("data-type", "conic");
     await expect(preview).toHaveAttribute("data-space", "oklch");
-    await expect(page.getByTestId("interpolation-value")).toHaveText("OKLCH");
+    await expect(page.locator("#interpolation-space")).toHaveValue("oklch");
   });
 
   test("the technique row reads Smooth path", async ({ page }, info) => {
@@ -109,7 +109,7 @@ test.describe("Gradient column and tab (M4-T2)", () => {
       await page.goto(demo());
     }
     await expect(page.getByTestId("technique-value")).toHaveText("Smooth path");
-    await expect(page.getByTestId("interpolation-value")).toHaveText("OKLab");
+    await expect(page.locator("#interpolation-space")).toHaveValue("oklab");
   });
 });
 
@@ -161,7 +161,8 @@ test.describe("Gradient-tab drawers stop below the pinned preview (M4 plan Q2; M
       expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflow)).toBe(
         "hidden",
       );
-      await expect(page.getByRole("dialog")).toContainText("Coming in a later version");
+      // The drawers' content is built (M4-T8, M4-T9): the stub text is gone.
+      await expect(page.getByRole("dialog")).toContainText(row === "stop" ? "Position" : "Easing");
     });
   }
 

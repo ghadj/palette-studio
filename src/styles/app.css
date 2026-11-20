@@ -2863,7 +2863,45 @@ fieldset {
 /* ---- end M4-T8 ---- */
 
 /* ---- M4-T9 interpolation row and options (InterpolationRow.tsx, InterpolationOptions.tsx) ---- */
-/* M4-T9 styles go here. */
+/* The four bezier fields sit under the Easing row, one per column, so they fit at 320 px. */
+.bezier {
+  padding: var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.bezier__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.bezier__cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.bezier__field {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.bezier__field[aria-invalid="true"] {
+  border-color: var(--color-text);
+}
+
+.bezier__note {
+  min-height: 0;
+  margin: var(--space-1) 0 0;
+}
+
+.bezier__note:empty {
+  display: none;
+}
 /* ---- end M4-T9 ---- */
 
 /* ---- M4-T11 technique rows (TechniqueRows.tsx, ImageSampleThumb.tsx) ---- */
