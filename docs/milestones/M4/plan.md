@@ -301,7 +301,12 @@ Rules that hold for every task:
     - "min contrast 1.5 is respected when possible"
   - Population: "[0.5, 0.25, 0.25] → [0, 0.6, 1]; all zero → [0, 0.5, 1]; a 0 share counts as 2%".
 - Done when: tests pass, and live gradients in the app use these functions.
-- [ ] Done
+- [x] Done. Notes:
+  - The fixture risk is cleared: under ΔE OK (the fixture's metric) Smooth path over swatches 2, 4 and 6 gives green, pink, violet. Under CIEDE2000 it gives green, violet, pink, since the metric is the current one (M2 decision 7); the test pins both.
+  - `orderedStops` and `distinctSwatches` keep their signatures and take an optional third `metric`, which defaults to `settings.value.distanceMetric`, so a live gradient rebuilds when the metric changes. `order.ts` therefore imports `settings` from `src/state/signals.ts` (no cycle).
+  - Also exported for T11 and tests: `distanceMatrix`, `twoOpt`, `randomTries` (the 200 seeded Fisher-Yates shuffles), `RANDOM_TRIES` and `MIN_POPULATION_SHARE`. T11's "Constraints can't all be met." reads `constrainedRandom(...).met`.
+  - Constrained random keeps the first try that meets every active constraint (min ΔE above 0, in ΔE OK units scaled by `thresholdFor`; min contrast above 1), else the try with the best worst-neighbor ratio of value to threshold.
+  - Population-weighted applies the 2% floor after normalizing the shares over the swatches used. Hue sort counts grays as 0°, as the strip's sort does.
 
 ### M4-T5: Derived and Image-sample engines; ring sampling in the worker
 - Files:
