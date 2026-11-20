@@ -2,10 +2,16 @@ import { describe, expect, it } from "vitest";
 import { hexToOklab } from "../../src/color/convert";
 import {
   assignPixels,
+  EDGE_INNER,
+  EDGE_OUTER,
   FILTERED,
+  OUTLINE_DARK,
+  OUTLINE_LIGHT,
   OVERLAY_ALPHA,
   OVERLAY_GRAY,
+  outlinedOverlayPixels,
   overlayPixels,
+  regionBoundary,
 } from "../../src/extract/cluster-map";
 import { filterPixels } from "../../src/extract/filters";
 import { DEFAULT_SETTINGS } from "../../src/state/defaults";
@@ -137,5 +143,72 @@ describe("cluster map overlay pixels (spec 2.6; M2 decision 13b)", () => {
     const labels = Uint8Array.from([FILTERED, FILTERED]);
     const alphas = [...overlayPixels(labels, 0)].filter((_, i) => i % 4 === 3);
     expect(alphas).toEqual([OVERLAY_ALPHA, OVERLAY_ALPHA]);
+  });
+});
+
+describe("cluster map outline (spec 2.6; M3 decision 61)", () => {
+  // 5 x 4; swatch 1 is the 3 x 2 block at columns 1 to 3, rows 1 to 2.
+  const labels = Uint8Array.from([0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0]);
+  const at = (x: number, y: number) => y * 5 + x;
+
+  it("marks region pixels that touch the outside as inner and outside pixels that touch it as outer", () => {
+    const edges = regionBoundary(labels, 5, 4, 1);
+    // Every region pixel of a 3 x 2 block is on its boundary.
+    for (const [x, y] of [
+      [1, 1],
+      [2, 1],
+      [3, 1],
+      [1, 2],
+      [2, 2],
+      [3, 2],
+    ] as const) {
+      expect(edges[at(x, y)], `inner ${x},${y}`).toBe(EDGE_INNER);
+    }
+    // The ring around it, by 4-neighbours: corners (0,0) and (4,0) don't touch it.
+    expect(edges[at(1, 0)]).toBe(EDGE_OUTER);
+    expect(edges[at(0, 1)]).toBe(EDGE_OUTER);
+    expect(edges[at(4, 2)]).toBe(EDGE_OUTER);
+    expect(edges[at(2, 3)]).toBe(EDGE_OUTER);
+    expect(edges[at(0, 0)]).toBe(0);
+    expect(edges[at(4, 3)]).toBe(0);
+  });
+
+  it("leaves the interior of a larger region unmarked, and the map's border is not an edge", () => {
+    const big = new Uint8Array(25).fill(1);
+    expect([...regionBoundary(big, 5, 5, 1)].every((v) => v === 0)).toBe(true);
+    const inner = regionBoundary(
+      big.map((_, i) => (i === 12 ? 0 : 1)),
+      5,
+      5,
+      1,
+    );
+    expect(inner[12]).toBe(EDGE_OUTER);
+    expect(inner[7]).toBe(EDGE_INNER);
+    expect(inner[0]).toBe(0);
+    // Filtered pixels count as outside.
+    const f = regionBoundary(Uint8Array.from([1, FILTERED]), 2, 1, 1);
+    expect([...f]).toEqual([EDGE_INNER, EDGE_OUTER]);
+  });
+
+  it("draws a light line outside and a dark line inside; interior and far outside differ from both", () => {
+    const wide = Uint8Array.from([
+      0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+      0, 0, 0, 0,
+    ]);
+    const rgba = outlinedOverlayPixels(wide, 7, 5, 1);
+    const px = (x: number, y: number) => [...rgba.slice((y * 7 + x) * 4, (y * 7 + x) * 4 + 4)];
+    expect(px(3, 2), "interior stays clear").toEqual([0, 0, 0, 0]);
+    expect(px(0, 0), "far outside stays dimmed").toEqual([
+      OVERLAY_GRAY,
+      OVERLAY_GRAY,
+      OVERLAY_GRAY,
+      OVERLAY_ALPHA,
+    ]);
+    expect(px(3, 1), "inner line").toEqual([...OUTLINE_DARK]);
+    expect(px(3, 0), "outer line").toEqual([...OUTLINE_LIGHT]);
+    expect(px(3, 1)).not.toEqual(px(3, 2));
+    expect(px(3, 0)).not.toEqual(px(0, 0));
+    // The dimming alone is unchanged.
+    expect([...overlayPixels(wide, 1)].slice(0, 4)).toEqual([...px(0, 0)]);
   });
 });

@@ -110,6 +110,78 @@ async function colorAt(page: Page, x: number, y: number): Promise<[number, numbe
   }, png.toString("base64"));
 }
 
+/** Counts of the overlay's outline, clear and dimmed pixels, and a hash of all its pixels. */
+async function overlayDump(canvas: Locator) {
+  return canvas.evaluate((el) => {
+    const c = el as HTMLCanvasElement;
+    const ctx = c.getContext("2d");
+    if (!ctx) throw new Error("no 2d context");
+    const { data, width, height } = ctx.getImageData(0, 0, c.width, c.height);
+    let outline = 0;
+    let clear = 0;
+    let dimmed = 0;
+    for (let y = 1; y < height - 1; y += 1) {
+      for (let x = 1; x < width - 1; x += 1) {
+        const at = (y * width + x) * 4;
+        const alpha = data[at + 3];
+        if (alpha === 0) clear += 1;
+        else if (alpha === 179) dimmed += 1;
+        else if (alpha === 230) outline += 1;
+      }
+    }
+    let sum = 0;
+    for (let i = 0; i < data.length; i += 1) sum = (sum * 31 + (data[i] ?? 0)) % 2147483647;
+    return { outline, clear, dimmed, hash: sum };
+  });
+}
+
+test.describe("cluster map outline (M3 decision 61)", () => {
+  test("the region has a boundary outline that differs from its interior and the dimmed outside; the same in both themes", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "hover needs a fine pointer; phones use the toggle");
+    const dumps = [];
+    for (const theme of ["light", "dark"]) {
+      await page.goto(demo(`theme=${theme}`));
+      await demoMapReady(page);
+      await swatches(page).nth(2).hover();
+      await overlayShows(page, 2);
+      dumps.push(await overlayDump(overlay(page)));
+    }
+    const [light, dark] = dumps;
+    expect(light?.outline ?? 0).toBeGreaterThan(20);
+    // The outline is distinct from the clear interior and the dimmed outside.
+    expect(light?.clear ?? 0).toBeGreaterThan(0);
+    expect(light?.dimmed ?? 0).toBeGreaterThan(0);
+    expect(dark).toEqual(light);
+  });
+
+  test("the glow-in is a short animation on the overlay, and absent with reduced motion", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "hover needs a fine pointer; phones use the toggle");
+    await page.goto(demo());
+    await demoMapReady(page);
+    await swatches(page).nth(2).hover();
+    await expect(overlay(page)).toHaveCount(1);
+    const names = () =>
+      overlay(page).evaluate((el) =>
+        el.getAnimations().map((a) => (a as CSSAnimation).animationName),
+      );
+    await expect.poll(names).toContain("overlay-glow-in");
+    // It settles to the outline alone.
+    await expect
+      .poll(() => overlay(page).evaluate((el) => getComputedStyle(el).filter), { timeout: 3000 })
+      .toBe("none");
+    await page.mouse.move(0, 0);
+    await expect(overlay(page)).toHaveCount(0);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await swatches(page).nth(2).hover();
+    await overlayShows(page, 2);
+    expect(await names()).toEqual([]);
+  });
+});
+
 test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
   test("hovering swatch 3 in demo mode shows the overlay; its undimmed pixels lie within 0.05 of (0.769, 0.167)", async ({
     page,
@@ -131,8 +203,9 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
     const mean = (k: "x" | "y") => points.reduce((s, p) => s + p[k], 0) / points.length;
     expect(Math.abs(mean("x") - PATCH.x)).toBeLessThan(0.01);
     expect(Math.abs(mean("y") - PATCH.y)).toBeLessThan(0.02);
-    // Every other pixel is neutral mid-gray at about 70% (decision 13b).
-    expect(alphas).toEqual([0, 179]);
+    // Every other pixel is neutral mid-gray at about 70% (decision 13b); the region's outline adds
+    // its two lines (decision 61, alpha 230).
+    expect(alphas).toEqual([0, 179, 230]);
     expect(rgb).toEqual([128, 128, 128]);
     // Leaving the swatch hides it.
     await page.mouse.move(0, 0);
@@ -243,6 +316,10 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
   }) => {
     await page.goto(demo("cluster=3"));
     await overlayShows(page, 2);
+    // Sample colors after the glow-in (decision 61) has settled.
+    await page.waitForFunction(() =>
+      document.getAnimations().every((a) => a.playState !== "running"),
+    );
     const w = well(page);
     await w.focus();
     await page.keyboard.press("+");

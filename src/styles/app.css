@@ -494,6 +494,37 @@ fieldset {
   pointer-events: none;
 }
 
+/*
+ * A short glow-in when the map appears (M3 decision 61): the overlay fades in with a light glow
+ * that settles to just the outline. Only opacity and a filter on the canvas change, never its
+ * colors. The duration is two slow steps, 0 ms under reduced motion (spec 6.4), and the media query
+ * below drops the animation outright.
+ */
+.image-well__overlay:not([data-settling]) {
+  animation: overlay-glow-in calc(var(--duration-slow) * 2) var(--ease-out);
+}
+
+@keyframes overlay-glow-in {
+  from {
+    opacity: 0;
+    filter: drop-shadow(0 0 var(--space-3) var(--marker-ring-outer));
+  }
+  40% {
+    opacity: 1;
+    filter: drop-shadow(0 0 var(--space-2) var(--marker-ring-outer));
+  }
+  to {
+    opacity: 1;
+    filter: drop-shadow(0 0 0 transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-well__overlay:not([data-settling]) {
+    animation: none;
+  }
+}
+
 .image-well__overlay[data-busy] {
   opacity: 0.6;
   transition: opacity var(--duration-fast) var(--ease-out);

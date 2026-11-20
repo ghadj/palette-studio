@@ -248,7 +248,7 @@ describe("image worker: assign (spec 2.6, 7.4)", () => {
     expect(transfer).toEqual([message.map.labels.buffer]);
   });
 
-  it("overlay builds the dimmed RGBA pixels in the worker and transfers them (decision 13b)", async () => {
+  it("overlay builds the outlined, dimmed RGBA pixels in the worker and transfers them (decisions 13b, 61)", async () => {
     const posted: Array<{ message: FromWorker; transfer: Transferable[] }> = [];
     const listeners: Array<(event: { data: ToWorker }) => void> = [];
     vi.stubGlobal("self", {
@@ -268,7 +268,8 @@ describe("image worker: assign (spec 2.6, 7.4)", () => {
     if (message.type !== "overlaid") throw new Error(`unexpected ${message.type}`);
     expect([message.jobId, message.width, message.height]).toEqual([9, 3, 1]);
     expect([...new Uint8ClampedArray(message.data)]).toEqual([
-      128, 128, 128, 179, 0, 0, 0, 0, 128, 128, 128, 179,
+      // A 3 x 1 map with the region in the middle: light line, dark line, light line.
+      255, 255, 255, 230, 22, 22, 22, 230, 255, 255, 255, 230,
     ]);
     expect(transfer).toEqual([message.data]);
   });

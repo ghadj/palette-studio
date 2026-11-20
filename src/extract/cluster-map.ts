@@ -125,3 +125,66 @@ export function overlayPixels(labels: Uint8Array, index: number): Uint8ClampedAr
   }
   return rgba;
 }
+
+/** A pixel of the swatch's region that touches a pixel outside it (the dark, inner line). */
+export const EDGE_INNER = 1;
+/** A pixel outside the region that touches a pixel inside it (the light, outer line). */
+export const EDGE_OUTER = 2;
+
+/**
+ * The boundary of one swatch's region in a label map (spec 2.6, M3 decision 61), by the 4-neighbour
+ * edge test: a region pixel with a 4-neighbour outside the region is EDGE_INNER, and a pixel outside
+ * with a 4-neighbour in the region is EDGE_OUTER. Everything else is 0. The map's own border is not
+ * an edge. Together the two make a 2 px line along the boundary: light outside, dark inside. Runs in
+ * the worker, at the map's resolution.
+ */
+export function regionBoundary(
+  labels: Uint8Array,
+  width: number,
+  height: number,
+  index: number,
+): Uint8Array {
+  const edges = new Uint8Array(labels.length);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const at = y * width + x;
+      const inside = labels[at] === index;
+      const touches = (neighbour: number): boolean => (labels[neighbour] === index) !== inside;
+      if (
+        (x > 0 && touches(at - 1)) ||
+        (x < width - 1 && touches(at + 1)) ||
+        (y > 0 && touches(at - width)) ||
+        (y < height - 1 && touches(at + width))
+      ) {
+        edges[at] = inside ? EDGE_INNER : EDGE_OUTER;
+      }
+    }
+  }
+  return edges;
+}
+
+/** The outline's light line (outside the region) as RGBA; the same in both themes. */
+export const OUTLINE_LIGHT = [255, 255, 255, 230] as const;
+/** The outline's dark line (inside the region) as RGBA. */
+export const OUTLINE_DARK = [22, 22, 22, 230] as const;
+
+/**
+ * The overlay for a cluster map with the swatch's region outlined (M3 decision 61): the dimming of
+ * `overlayPixels`, then a 1 px light line just outside the region and a 1 px dark line just inside
+ * it, like the marker ring. Both are fixed colors, so it is the same in both themes. Runs in the worker.
+ */
+export function outlinedOverlayPixels(
+  labels: Uint8Array,
+  width: number,
+  height: number,
+  index: number,
+): Uint8ClampedArray {
+  const rgba = overlayPixels(labels, index);
+  const edges = regionBoundary(labels, width, height, index);
+  for (let i = 0; i < edges.length; i += 1) {
+    const edge = edges[i];
+    if (!edge) continue;
+    rgba.set(edge === EDGE_INNER ? OUTLINE_DARK : OUTLINE_LIGHT, i * 4);
+  }
+  return rgba;
+}

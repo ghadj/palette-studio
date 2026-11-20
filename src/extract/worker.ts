@@ -30,7 +30,7 @@ import type {
   SampleStat,
   ViewSettings,
 } from "../types";
-import { assignPixels, overlayPixels } from "./cluster-map";
+import { assignPixels, outlinedOverlayPixels } from "./cluster-map";
 import { placeMarkers } from "./markers";
 import type { DrawnViewMode, FromWorker, PixelBuffer, ToWorker } from "./messages";
 import { type AnalysisImage, keepPixels, runExtraction } from "./pipeline";
@@ -165,7 +165,7 @@ function assign(
   scope.postMessage({ type: "assigned", jobId, map }, [map.labels.buffer]);
 }
 
-/** The overlay pixels of one swatch's cluster map (spec 2.6, decision 13b). */
+/** The overlay pixels of one swatch's cluster map, outlined (spec 2.6, decisions 13b and 61). */
 function overlay(
   jobId: number,
   width: number,
@@ -173,7 +173,8 @@ function overlay(
   labels: ArrayBuffer,
   index: number,
 ): void {
-  const data = overlayPixels(new Uint8Array(labels), index).buffer as ArrayBuffer;
+  const data = outlinedOverlayPixels(new Uint8Array(labels), width, height, index)
+    .buffer as ArrayBuffer;
   scope.postMessage({ type: "overlaid", jobId, width, height, data }, [data]);
 }
 
