@@ -2600,6 +2600,18 @@ fieldset {
     --slider-min: calc(var(--space-8) * 1.5);
     column-gap: var(--space-2);
   }
+
+  /*
+   * A segmented value (Gamut) has its text's natural width, which wider fonts (Linux, CI) push
+   * past the row. Tighter segments and a shorter label minimum keep it on the label's line.
+   */
+  .setting-row:has(> [data-resettable] .segmented) {
+    --setting-label-min: calc(var(--space-8) * 2);
+  }
+
+  .setting-row:has(> [data-resettable] .segmented) .segment {
+    padding: 0 var(--space-2);
+  }
 }
 
 /*

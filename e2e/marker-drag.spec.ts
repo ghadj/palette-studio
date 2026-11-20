@@ -370,7 +370,11 @@ test.describe("keyboard (spec 3.7, plan D9)", () => {
     await expect
       .poll(async () => (await pointOf(page, 1)).y, { timeout: 10_000 })
       .toBeCloseTo(start.y + 10 / 800, 5);
-    expect((await pointOf(page, 1)).x).toBeCloseTo(start.x - 1 / 1600, 5);
+    // The two nudges run one after the other, each after its sample, so the second can land after
+    // the first: wait for it rather than reading x at once.
+    await expect
+      .poll(async () => (await pointOf(page, 1)).x, { timeout: 10_000 })
+      .toBeCloseTo(start.x - 1 / 1600, 5);
     expect(await view(page)).toEqual({ scale: 1, x: 0, y: 0 });
   });
 

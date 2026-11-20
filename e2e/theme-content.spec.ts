@@ -130,6 +130,11 @@ test("overlay pixels are identical in light and dark (spec 2.6, M2 decision 13b)
       well.locator("[data-testid=cluster-overlay][data-index='2']:not([data-settling])"),
     ).toHaveCount(1, { timeout: 15_000 });
     await well.locator("img").evaluate((el) => (el as HTMLImageElement).decode?.());
+    // The glow-in (M3 decisions 61, 64) is a timed animation: capture the settled overlay, not a
+    // frame of it, so the two themes are compared at the same point.
+    await page.waitForFunction(() =>
+      document.getAnimations().every((a) => a.playState !== "running"),
+    );
     const box = await well.boundingBox();
     if (!box) throw new Error("no well");
     const inset = 12;
