@@ -148,3 +148,22 @@ Checks:
 5. Stale wording: `ui-contract.md:143`, and the decision citation in the `sheetDock.ts` comment.
 6. Rule checks found nothing.
 7. Carried over: the marker ring color for a typed swatch, and the cluster-map cost.
+
+## After the final evaluation (orchestrator, 2026-11-20)
+
+- **M3-F20 (ccdd18c, 1496a3e):** the drawer lock now cancels touches only outside the sheet, so the contrast matrix pans and sliders drag inside sheets. New `e2e/sheet-touch.spec.ts`: 4 of its 6 tests failed on the old code and all 6 pass now. This fixes the final-evaluation failure.
+- **Cleanups (cd17ec6):**
+  - the live region names the flagged swatches, so it re-announces when the set changes
+  - `closeFlags` unit tests
+  - distinct copy-icon names
+  - sheets focus Close on open
+  - stale wording fixed
+- **M3-F21 (1eb025c, db93cdc):** a thin footer, one row on phones (decision 54).
+- **M3-F22 (705de78):** one Lock toggle; Unlock clears both the lock and the pin (decision 55, approved by the user).
+- **b3c50f1:** the filters 320 px test waits for the drawer to settle; it now passes 25 of 25 runs across the 5 projects.
+- **Verification:**
+  - Last full 5-project run, before F22: 3456 passed, 1 failed (the sub-pixel flake, since fixed).
+  - After F22: lint, typecheck, unit (491) and build pass; the affected specs on 5 projects pass.
+  - No further evaluator round was run (the fix-round limit was reached; the user had authorised autonomous decisions).
+
+**M3 status:** implementation complete. Waiting on the user: visual sign-off, real-device checks, confirmation of the orchestrator and spec-departure decisions, and push/PR.
