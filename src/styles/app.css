@@ -2661,7 +2661,57 @@ fieldset {
   flex: 1 1 0;
 }
 
-/* M4-T6 styles go here. */
+/* Angle dial: a round slider with a needle; touch drags don't scroll the page. */
+.angle-dial {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--hit);
+  height: var(--hit);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+}
+
+.angle-dial__needle {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.angle-dial__needle::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: var(--space-1);
+  height: calc(50% - var(--space-1));
+  width: var(--stroke-selected);
+  transform: translateX(-50%);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+.angle-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.angle-presets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.angle-presets .chip {
+  padding: 0 var(--space-2);
+}
 /* ---- end M4-T6 ---- */
 
 /* ---- M4-T7 stop bar (StopBar.tsx) ---- */

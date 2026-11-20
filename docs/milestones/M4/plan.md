@@ -374,7 +374,9 @@ Rules that hold for every task:
     - "reset icons show only when a row differs; each reset is one step"
     - "phone: Geometry opens a sheet below the dock; the dial and fields are 44 px; fields are 16 px"
 - Done when: tests pass, and nothing depends on hover.
-- [ ] Done
+- [x] Done. Notes:
+  - Center is two rows (Center X %, Center Y %, sliders), and the angle presets sit under the Angle row, because eight chips would not fit one row at 320 px. The count and reset-all cover only the rows shown for the current type.
+  - The phone e2e tests undo with Mod+Z, since the sheet covers the header's Undo button.
 
 ### M4-T7: Stop bar
 - Files:
