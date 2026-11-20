@@ -20,6 +20,7 @@ import {
   swatchOklab,
   unlockSwatch,
 } from "../../src/palette/model";
+import { withSample } from "../../src/state/marker-drag";
 import type { Swatch } from "../../src/types";
 
 describe("palette model (spec 3.1)", () => {
@@ -178,13 +179,22 @@ describe("palette operations (spec 3.2, 3.7; plan D12, Q4a)", () => {
     expect(resetToExtracted(list, manual.id)).toBe(list);
   });
 
-  it("setSwatchColor keeps `extracted`", () => {
+  it("setSwatchColor keeps `extracted` and clears the point (decision 65)", () => {
     const extracted = { color: hexToOklch("#E8693A"), point: { x: 0.2, y: 0.5 } };
     const swatch = make("#E8693A", { extracted, point: extracted.point });
     const color = hexToOklch("#5039B0");
     const next = setSwatchColor([swatch], swatch.id, color);
     expect(next[0]?.color).toEqual(color);
     expect(next[0]?.extracted).toBe(extracted);
-    expect(next[0]?.point).toBe(extracted.point);
+    expect(next[0]?.point).toBeNull();
+  });
+
+  it("a sampled update keeps the point; reset restores color and point (decision 65)", () => {
+    const extracted = { color: hexToOklch("#E8693A"), point: { x: 0.2, y: 0.5 } };
+    const swatch = make("#E8693A", { extracted, point: extracted.point });
+    const edited = setSwatchColor([swatch], swatch.id, hexToOklch("#5039B0"));
+    expect(resetToExtracted(edited, swatch.id)[0]?.point).toEqual(extracted.point);
+    const sampled = withSample([swatch], swatch.id, hexToOklab("#5039B0"));
+    expect(sampled[0]?.point).toBe(extracted.point);
   });
 });

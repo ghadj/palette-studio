@@ -120,6 +120,10 @@ test.describe("palette sync (desktop)", () => {
     await hex.fill("#14386F");
     await hex.press("Enter");
     await expect(strip(page).nth(2)).toHaveAttribute("aria-label", /#14386F$/);
+    // The typed color drops the marker (decision 65); Undo brings it back for the drag.
+    await expect(marker(page, 3)).toHaveCount(0);
+    await header(page, /^Undo/).first().click();
+    await expect(marker(page, 3)).toHaveCount(1);
     await dragMarker3To(page, PATCH5);
     await expect(strip(page).nth(2)).toHaveAttribute("aria-label", /#1E8A2E$/);
     await page.getByRole("button", { name: "Eyedropper" }).click();

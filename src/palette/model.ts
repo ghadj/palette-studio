@@ -137,9 +137,12 @@ export function renameSwatch(palette: Swatch[], id: string, name: string): Swatc
   return patchSwatch(palette, id, { name });
 }
 
-/** Sets the base color. `extracted` is kept, so the swatch can still be reset (spec 3.7). */
+/**
+ * Sets the base color by value and clears the image point, since the color no longer comes from the
+ * image (decision 65). `extracted` is kept, so the swatch can still be reset (spec 3.7).
+ */
 export function setSwatchColor(palette: Swatch[], id: string, color: Oklch): Swatch[] {
-  return patchSwatch(palette, id, { color });
+  return patchSwatch(palette, id, { color, point: null });
 }
 
 export function setSwatchPoint(palette: Swatch[], id: string, point: ImagePoint | null): Swatch[] {
