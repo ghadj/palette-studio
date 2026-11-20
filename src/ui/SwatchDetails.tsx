@@ -301,7 +301,6 @@ export function setExact(p: Swatch[], id: string, color: Oklch): Swatch[] {
   return setPinned(setSwatchColor(p, id, color), id, true);
 }
 
-/** `swatch` is the output (displayed) swatch: the fields show what the strip shows. */
 /** The copy icon beside the color code: copies the value in the current format (decision 39; D14). */
 function CopyIcon({ color, format }: { color: Oklch; format: SwatchFormat }) {
   const name = FORMATS.find((f) => f.id === format)?.label ?? format.toUpperCase();
@@ -318,11 +317,17 @@ function CopyIcon({ color, format }: { color: Oklch; format: SwatchFormat }) {
   );
 }
 
-function ValueFields({ swatch }: { swatch: Swatch }) {
+/**
+ * `swatch` is the BASE swatch: the fields show and edit the base color, as the color editor does
+ * (M3 decisions 24 and 47). When adjustments change it, a muted "After adjustments" line shows
+ * the output color, with its own copy icon.
+ */
+function ValueFields({ swatch, output }: { swatch: Swatch; output: Swatch }) {
   const base = useId();
   const format = swatchFormat.value;
   const color = swatch.color;
   const hex = swatchHex(swatch);
+  const adjustedHex = swatchHex(output);
   return (
     <div class="swatch-fields" data-testid="swatch-fields">
       {format === "hex" ? (
@@ -368,6 +373,20 @@ function ValueFields({ swatch }: { swatch: Swatch }) {
             </span>
           </Field>
         ))
+      )}
+      {adjustedHex !== hex && (
+        <p class="hint swatch-adjusted" data-testid="swatch-after-adjustments">
+          <span>After adjustments {adjustedHex}</span>
+          <button
+            type="button"
+            class="icon-pill copy-icon"
+            data-testid="copy-adjusted"
+            aria-label="Copy adjusted HEX"
+            onClick={() => void copySelected(output.color, "hex")}
+          >
+            <Copy aria-hidden="true" size={18} strokeWidth={1.5} />
+          </button>
+        </p>
       )}
     </div>
   );
@@ -440,7 +459,7 @@ function SwatchControls({ swatch, index }: { swatch: Swatch; index: number }) {
           testId="swatch-format"
         />
       </Field>
-      <ValueFields swatch={output} />
+      <ValueFields swatch={swatch} output={output} />
       <NameField swatch={swatch} index={index} />
       <div class="swatch-actions">
         <button

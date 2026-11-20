@@ -1744,6 +1744,13 @@ fieldset {
   min-height: var(--hit);
 }
 
+.swatch-adjusted {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+}
+
 .swatch-name {
   display: flex;
   flex-direction: column;
