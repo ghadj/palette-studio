@@ -61,7 +61,7 @@ export function BottomSheet({
       undock();
       el.removeEventListener("close", onDialogClose);
       if (el.open) el.close();
-      if (opener?.isConnected) opener.focus();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
   }, [openerId]);
 

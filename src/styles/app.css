@@ -750,6 +750,14 @@ fieldset {
   }
 }
 
+/* An open drawer is the only scroller (M3 decision 46); sheetDock.ts adds the class. */
+@media (max-width: 1023.98px) {
+  html.sheet-locked {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+  }
+}
+
 .strip-dock[data-stuck] {
   box-shadow: 0 var(--stroke) 0 var(--color-border);
 }

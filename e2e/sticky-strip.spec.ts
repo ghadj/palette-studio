@@ -107,7 +107,9 @@ test.describe("sticky swatch strip below 1024 px (M2 decision 19; ui-contract D4
     expect(bar.y - (above.y + above.height)).toBeCloseTo(12, 0);
   });
 
-  test("desktop 1280 × 800: the strip is in column 2 and pins inside its scroll container (M3 decision 45)", async ({ page }, info) => {
+  test("desktop 1280 × 800: the strip is in column 2 and pins inside its scroll container (M3 decision 45)", async ({
+    page,
+  }, info) => {
     test.skip(isPhoneProject(info), "desktop viewport");
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(demo("rows=filters,advanced"));

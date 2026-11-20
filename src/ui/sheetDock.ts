@@ -12,13 +12,15 @@ const DOCK = "[data-testid=strip-dock]";
 
 export function dockSheetBelowStrip(dialog: HTMLElement): () => void {
   const dock = document.querySelector<HTMLElement>(DOCK);
-  if (!dock) return () => {};
+  if (!dock) return lockPage();
   const root = document.documentElement;
   const header = document.querySelector("header");
   const headerBottom = () => header?.getBoundingClientRect().bottom ?? 0;
   const place = () =>
     dialog.style.setProperty("--sheet-top", `${dock.getBoundingClientRect().bottom}px`);
 
+  // Where the page was before the sheet opened; closing puts it back (M3 decision 47).
+  const startY = window.scrollY;
   // Bring the dock under the header, adding room below the page if it can't scroll that far.
   const slack = dock.getBoundingClientRect().top - headerBottom();
   if (slack > 0.5) {
@@ -28,6 +30,8 @@ export function dockSheetBelowStrip(dialog: HTMLElement): () => void {
     window.scrollTo(0, target);
   }
   place();
+  // Only after the page has scrolled to pin the dock: from here on only the sheet scrolls.
+  const unlock = lockPage();
 
   let frame = 0;
   const schedule = () => {
@@ -46,6 +50,36 @@ export function dockSheetBelowStrip(dialog: HTMLElement): () => void {
     window.removeEventListener("resize", schedule);
     observer.disconnect();
     if (frame) cancelAnimationFrame(frame);
+    unlock();
     root.style.removeProperty("--sheet-extra");
+    window.scrollTo(0, startY);
+    // The dialog's own focus return can scroll a frame later.
+    requestAnimationFrame(() => window.scrollTo(0, startY));
+  };
+}
+
+/** The scroll area inside a sheet: the only thing that scrolls while a drawer is open. */
+const SHEET_SCROLL = ".bottom-sheet__body";
+
+/**
+ * Locks the page while a drawer is open (M3 decision 46), so the sheet is the only scroller. The
+ * `sheet-locked` class on the root sets `overflow: hidden` below 1024 px, which keeps the scroll
+ * position, with a stable scrollbar gutter so nothing shifts sideways. iOS Safari still scrolls an
+ * `overflow: hidden` page on touch, so touchmove outside the sheet's scroll area (or inside one
+ * with nothing to scroll) is cancelled here; `overscroll-behavior: contain` on the scroll area
+ * stops chaining to the page at its ends.
+ */
+function lockPage(): () => void {
+  const root = document.documentElement;
+  root.classList.add("sheet-locked");
+  const onTouchMove = (event: TouchEvent) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const area = target?.closest<HTMLElement>(SHEET_SCROLL);
+    if (!area || area.scrollHeight <= area.clientHeight) event.preventDefault();
+  };
+  document.addEventListener("touchmove", onTouchMove, { passive: false, capture: true });
+  return () => {
+    document.removeEventListener("touchmove", onTouchMove, { capture: true });
+    root.classList.remove("sheet-locked");
   };
 }
