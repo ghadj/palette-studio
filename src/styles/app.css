@@ -499,7 +499,7 @@ fieldset {
 
 /*
  * A short glow-in when the map appears (M3 decision 61): the overlay fades in with a light glow
- * that settles to just the outline. Only opacity and a filter on the canvas change, never its
+ * that settles to the plain overlay. Only opacity and a filter on the canvas change, never its
  * colors. The duration is two slow steps, 0 ms under reduced motion (spec 6.4), and the media query
  * below drops the animation outright.
  */
