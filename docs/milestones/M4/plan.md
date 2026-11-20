@@ -329,7 +329,8 @@ Rules that hold for every task:
   - `tests/extract/client-ring.test.ts` (from T2): it now expects `ring` to resolve.
   - `tests/extract/client-image-sample.test.ts`: "a line from marker 1's point to marker 2's point, count 2, samples #E8693A and #1DB07A ± 1" (mockup-scene.png).
 - Done when: tests pass, and no UI-thread code loops over pixels.
-- [ ] Done
+- [x] Done
+  - Note: the ring test uses disk and ring edges at 1/3 and 2/3 of the half-diagonal (the plan's 0.2 and 0.4 are not ring edges for a count of 3). "Every color is in gamut" is tested at chroma 0.04, since offsets keep the base chroma and gamut handling is the renderer's (D12). `ringStops` takes the image aspect (height over width) to find the half-diagonal in width fractions. No T5 e2e spec exists (no UI until T11); `e2e/helpers/ring-image.ts` is the runtime fixture, used by the unit test.
 
 ### M4-T6: Type chips and the Geometry row
 - Files:

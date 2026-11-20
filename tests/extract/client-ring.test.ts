@@ -1,7 +1,7 @@
 /**
- * The worker request M4-T2 reserves for M4-T5: `ring`, the mean color of an annulus of the master
- * (plan D18). The real worker module runs against a stand-in scope, so the request goes through the
- * client, the message, the worker's handler and the stub `src/image/ring.ts`, on both paths: the
+ * The worker request M4-T2 reserved and M4-T5 built: `ring`, the mean color of an annulus of the
+ * master (plan D18). The real worker module runs against a stand-in scope, so the request goes
+ * through the client, the message, the worker's handler and `src/image/ring.ts`, on both paths: the
  * worker holding the master, and the main-thread fallback sending pixels (spec 7.4).
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -71,18 +71,26 @@ async function connect(mainThread: boolean) {
   return { client, received, prepared };
 }
 
-describe("reserved ring request (plan M4-T2)", () => {
+describe("ring request (plan M4-T2, M4-T5)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.resetModules();
   });
 
-  it("ring round-trips through the worker and the fallback and rejects with 'not built'", async () => {
+  it("ring round-trips through the worker and the fallback and resolves with an OKLab color", async () => {
     for (const mainThread of [false, true]) {
       const { client, received, prepared } = await connect(mainThread);
       expect(prepared.thread).toBe(mainThread ? "main" : "worker");
-      await expect(client.ring({ x: 0.5, y: 0.5 }, 0.1, 0.3)).rejects.toThrow("not built");
-      await expect(client.ring({ x: 0.25, y: 0.75 }, 0, 0.1)).rejects.toThrow("not built");
+      // The stand-in canvas reads as transparent black, so every ring is black: L 0.
+      for (const [center, r0, r1] of [
+        [{ x: 0.5, y: 0.5 }, 0.1, 0.3],
+        [{ x: 0.25, y: 0.75 }, 0, 0.1],
+      ] as const) {
+        const color = await client.ring(center, r0, r1);
+        expect(color.l).toBeCloseTo(0, 9);
+        expect(color.a).toBeCloseTo(0, 9);
+        expect(color.b).toBeCloseTo(0, 9);
+      }
 
       const rings = received.filter((m) => m.type === "ring");
       expect(rings).toHaveLength(2);
