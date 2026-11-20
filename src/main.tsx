@@ -34,6 +34,7 @@ import {
   surround,
   viewSettings,
 } from "./state/signals";
+import { initSurround } from "./state/surround";
 import { initTheme } from "./state/theme";
 import { App } from "./ui/App";
 import { installFocusClearance } from "./ui/focusClearance";
@@ -42,6 +43,7 @@ import { registerShortcut } from "./ui/shortcuts";
 import { showToast } from "./ui/Toast";
 
 initTheme();
+initSurround();
 installFocusClearance();
 
 // The mockup state loads its fixture directly and never touches storage (mockup-state.md, spec 5.5).

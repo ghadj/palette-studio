@@ -3099,8 +3099,37 @@ fieldset {
 
 /* ---- end M4-T12 ---- */
 
-/* ---- M4-T13 preview row, text check, surround (PreviewPanel.tsx, TextOverlay.tsx) ---- */
-/* M4-T13 styles go here. */
+/* ---- M4-T13 surround (ThemeButton.tsx, ImageWell.tsx) ---- */
+/* The surround behind the image (spec 6.2): the well's background only, never the image pixels. */
+.image-well[data-surround="mid-gray"] {
+  background: var(--surround-mid-gray);
+}
+
+.image-well[data-surround="white"] {
+  background: var(--surround-white);
+}
+
+.image-well[data-surround="black"] {
+  background: var(--surround-black);
+}
+
+/* The theme menu's two groups. */
+.menu-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-group--surround {
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  border-top: var(--stroke) solid var(--color-border);
+}
+
+.menu-group__label {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
 /* ---- end M4-T13 ---- */
 
 /* ---- end M4 ---- */

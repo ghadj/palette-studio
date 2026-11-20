@@ -138,8 +138,9 @@ test.describe("themes (spec 6.2)", () => {
     await expect(page.getByRole("menuitemradio", { name: "Light" })).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(page.getByRole("menuitemradio", { name: "Dark" })).toBeFocused();
+    // The Surround group follows Dark (T13); the arrows wrap around the whole menu.
     await page.keyboard.press("ArrowDown");
-    await expect(page.getByRole("menuitemradio", { name: "System" })).toBeFocused();
+    await expect(page.getByRole("menuitemradio", { name: "Match theme" })).toBeFocused();
     await page.keyboard.press("ArrowUp");
     await expect(page.getByRole("menuitemradio", { name: "Dark" })).toBeFocused();
     await page.keyboard.press("Escape");
@@ -148,7 +149,8 @@ test.describe("themes (spec 6.2)", () => {
     expect(await dataTheme(page)).toBeNull();
 
     await page.keyboard.press("Enter");
-    await page.keyboard.press("ArrowUp");
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
     await expect(menu).toBeHidden();
     expect(await dataTheme(page)).toBe("dark");
@@ -164,7 +166,7 @@ test.describe("themes (spec 6.2)", () => {
     expect(box?.height).toBeGreaterThanOrEqual(44);
     await button.click();
     const items = page.getByRole("menuitemradio");
-    await expect(items).toHaveCount(3);
+    await expect(items).toHaveCount(7); // 3 theme options and 4 surrounds (T13)
     for (const item of await items.all()) {
       const b = await item.boundingBox();
       expect(b?.height).toBeGreaterThanOrEqual(44);

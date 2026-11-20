@@ -626,7 +626,8 @@ Shrunk by decision 68: the Preview row, text check, lowest contrast and vision w
     - "the demo writes no localStorage"
     - "it is not an undo step"
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+  - Surround group in the theme menu: Match theme, Mid-gray, White, Black, as `menuitemradio` items inside a `role="group"` under the three theme options (arrows wrap across all seven; `e2e/theme.spec.ts` updated for the count and the wrap). `src/state/surround.ts` handles storage like `theme.ts`; `initSurround()` runs before the mockup state. The well gets `data-surround` on the image well only (the empty drop-zone well keeps its own background). Removed `TextOverlay.tsx` (T13's slot). For T14: `GradientPreviewSettings`, `gradientPreview`, `data-cvd` and the `compare=`, `overlay=`, `cvd=`, `aspect=` demo params are still in `types.ts`, `defaults.ts`, `signals.ts`, `mockup.ts`, `main.tsx` and `tests/state/mockup.test.ts`, which this task doesn't own.
 
 ### M4-T14: Integration sweep, phone and theme pass, review page
 - Files:

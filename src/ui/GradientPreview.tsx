@@ -23,7 +23,6 @@ import type { ResolvedStop } from "../gradient/model";
 import { render } from "../state/gradient-render";
 import { resolvedStops } from "../state/gradient-stops";
 import { gradient, gradientPreview, surround } from "../state/signals";
-import { TextOverlay } from "./TextOverlay";
 
 const num = (n: number): string => String(Math.round(n * 1000) / 1000);
 
@@ -59,9 +58,7 @@ export function GradientPreview() {
           data-render={mode}
           data-cvd={gradientPreview.value.cvd}
           style={css ? { background: css } : undefined}
-        >
-          <TextOverlay />
-        </div>
+        />
       </div>
     </div>
   );

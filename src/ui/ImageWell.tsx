@@ -31,6 +31,7 @@ import {
   imageSrc,
   imageView,
   masterThread,
+  surround,
 } from "../state/signals";
 import { ClusterOverlay } from "./ClusterOverlay";
 import { DropZone } from "./DropZone";
@@ -334,6 +335,7 @@ function ZoomableWell({
       {...attributes}
       ref={well}
       class="image-well image-well--image"
+      data-surround={surround.value}
       role="group"
       aria-label="Image view"
       aria-describedby="image-view-keys"
