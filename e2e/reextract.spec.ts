@@ -55,7 +55,7 @@ test.describe("re-extraction keeps locked swatches (spec 3.6)", () => {
     const before = await hexes(page);
     await page.getByRole("button", { name: "Lock", exact: true }).locator("visible=true").click();
     await expect(
-      page.getByRole("button", { name: "Lock", exact: true }).locator("visible=true"),
+      page.getByRole("button", { name: "Unlock", exact: true }).locator("visible=true"),
     ).toHaveAttribute("aria-pressed", "true");
 
     // Colors is on the Source tab on phones.
@@ -70,6 +70,29 @@ test.describe("re-extraction keeps locked swatches (spec 3.6)", () => {
     await waitForPalette(page, 6);
     expect(await hexes(page)).toEqual(before);
   });
+});
+
+test("a pinned swatch that is locked and then unlocked is replaced on re-extraction (decision 55)", async ({
+  page,
+}, info) => {
+  await load(page, info);
+  await strip(page).nth(1).click();
+  const hex = page
+    .locator("[data-testid=swatch-editor]:visible")
+    .getByLabel("HEX", { exact: true })
+    .first();
+  await hex.fill("#336699");
+  await hex.press("Enter");
+  expect(await hexes(page)).toContain("#336699");
+  const toggle = () => page.getByRole("button", { name: /^(Un)?lock$/i }).locator("visible=true");
+  await toggle().click();
+  await expect(toggle()).toHaveText("Unlock");
+  await toggle().click();
+  await expect(toggle()).toHaveText("Lock");
+  if (isPhoneProject(info)) await page.getByRole("tab", { name: "Source" }).tap();
+  await slideColors(page, 5);
+  await waitForPalette(page, 5);
+  expect(await hexes(page)).not.toContain("#336699");
 });
 
 /** A copy of the first swatch, which has no marker: select it and press D (decision 39). */

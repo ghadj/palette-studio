@@ -167,8 +167,10 @@ test.describe("dragging a marker (spec 3.7)", () => {
     await expect(marker(page, 3)).toHaveAttribute("aria-label", /^Swatch 3 marker, 89%, (77|78)%$/);
     await expect(page.getByTestId("loupe")).toHaveCount(0);
     if (!isPhoneProject(info)) {
-      // Pinned (decision 24): the Pinned button of the selected swatch (swatch 3 is selected).
-      await expect(page.getByTestId("pin-button")).toBeVisible();
+      // Pinned (decision 24): the pin badge on the strip (swatch 3 is selected).
+      await expect(
+        page.locator("[data-testid=swatch-strip]:visible [data-swatch][data-pinned]"),
+      ).toHaveCount(1);
       await expect(page.getByRole("button", { name: "Lock", exact: true })).toHaveAttribute(
         "aria-pressed",
         "false",
@@ -183,7 +185,9 @@ test.describe("dragging a marker (spec 3.7)", () => {
     expect(back.x).toBeCloseTo(before.point.x, 5);
     expect(back.y).toBeCloseTo(before.point.y, 5);
     if (!isPhoneProject(info)) {
-      await expect(page.getByTestId("pin-button")).toHaveCount(0);
+      await expect(
+        page.locator("[data-testid=swatch-strip]:visible [data-swatch][data-pinned]"),
+      ).toHaveCount(0);
     }
     await expect(headerButton(page, /^Undo/).first()).toBeDisabled();
     await headerButton(page, "Redo Move marker").click();

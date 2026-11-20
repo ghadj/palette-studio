@@ -54,7 +54,9 @@ test.describe("adjustments (spec 3.3)", () => {
       .getByLabel("HEX", { exact: true });
     await hex.fill("#14386F");
     await hex.press("Enter");
-    await expect(page.getByTestId("pin-button")).toBeVisible();
+    await expect(
+      page.locator("[data-testid=swatch-strip]:visible [data-swatch][data-pinned]"),
+    ).toHaveCount(1);
     const pinned = await labelOf(page, 3);
     await enter(page, "^Lightness$", "0.2");
     expect(await labelOf(page, 3)).not.toBe(pinned);

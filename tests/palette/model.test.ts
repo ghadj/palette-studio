@@ -18,6 +18,7 @@ import {
   swatchHex,
   swatchLabel,
   swatchOklab,
+  unlockSwatch,
 } from "../../src/palette/model";
 import type { Swatch } from "../../src/types";
 
@@ -139,6 +140,12 @@ describe("palette operations (spec 3.2, 3.7; plan D12, Q4a)", () => {
     const locked = setLocked(list, b.id, true);
     expect(locked[0]).toBe(a);
     expect(locked[1]?.locked).toBe(true);
+    const kept = setPinned(locked, b.id, true);
+    // Unlock clears both flags in one step (decision 55); other swatches are untouched.
+    const freed = unlockSwatch(kept, b.id);
+    expect([freed[1]?.locked, freed[1]?.pinned]).toEqual([false, false]);
+    expect(freed[0]).toBe(a);
+    expect(unlockSwatch(list, "nope")).toBe(list);
     expect(renameSwatch(list, a.id, "Rust")[0]?.name).toBe("Rust");
     expect(setSwatchPoint(list, a.id, { x: 0.3, y: 0.4 })[0]?.point).toEqual({ x: 0.3, y: 0.4 });
     expect(setSwatchPoint(list, a.id, { x: 0.3, y: 0.4 })[1]).toBe(b);

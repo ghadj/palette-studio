@@ -132,20 +132,6 @@ test.describe("Duplicate in the Swatch drawer (decision 48)", () => {
 });
 
 test.describe("focus (note 3)", () => {
-  test("after Unpin, focus is on the Lock button", async ({ page }, info) => {
-    test.skip(isPhoneProject(info), "desktop layout");
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto(demo());
-    const hex = page.locator("[data-testid=swatch-editor]:visible").getByLabel(/^HEX/).first();
-    await hex.fill("#336699");
-    await hex.press("Enter");
-    const pin = page.getByTestId("pin-button");
-    await expect(pin).toBeVisible();
-    await pin.click();
-    await expect(pin).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Lock", exact: true })).toBeFocused();
-  });
-
   test("after removing the last swatch on the phone Source tab, focus goes to a tab button", async ({
     page,
   }, info) => {

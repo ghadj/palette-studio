@@ -118,6 +118,11 @@ export function setLocked(palette: Swatch[], id: string, locked: boolean): Swatc
   return patchSwatch(palette, id, { locked });
 }
 
+/** Unlocks and unpins in one step, so re-extraction can replace the swatch (decision 55). */
+export function unlockSwatch(palette: Swatch[], id: string): Swatch[] {
+  return patchSwatch(palette, id, { locked: false, pinned: false });
+}
+
 /** Pins or unpins: kept on re-extraction, still adjusted (decision 24). */
 export function setPinned(palette: Swatch[], id: string, pinned: boolean): Swatch[] {
   return patchSwatch(palette, id, { pinned });

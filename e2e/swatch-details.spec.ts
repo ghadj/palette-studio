@@ -211,8 +211,8 @@ test.describe("reset to extracted", () => {
     await expect(hex).toHaveValue("#14386F");
     await expect(reset).toBeEnabled();
     // Like the color editor, an edit pins the swatch (decision 24); Reset clears the pin.
-    const pin = page.locator("[data-testid=swatch-editor]:visible").getByTestId("pin-button");
-    await expect(pin).toBeVisible();
+    const pin = page.locator("[data-testid=swatch-strip]:visible [data-swatch][data-pinned]");
+    await expect(pin).toHaveCount(1);
     await expect(details(page).getByTestId("reset-delta")).toHaveText(/^ΔE OK 0\.\d{3}$/);
     await reset.click();
     await expect(hex).toHaveValue("#14386B");

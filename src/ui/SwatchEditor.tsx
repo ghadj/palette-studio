@@ -13,12 +13,12 @@
  * Undo (plan D16): a slider drag is one step (begin on press, end on release); a keyboard step
  * is one step; a text entry in a number field or HEX is one step, committed on Enter or blur.
  */
-import { Copy, Pin } from "lucide-preact";
+import { Copy } from "lucide-preact";
 import { useEffect, useId, useRef, useState } from "preact/hooks";
 import { hexToOklch, oklchToHex } from "../color/convert";
 import { inGamut } from "../color/gamut";
 import { parseHex } from "../color/hex";
-import { setLocked, setPinned, setSwatchColor } from "../palette/model";
+import { setLocked, setPinned, setSwatchColor, unlockSwatch } from "../palette/model";
 import { begin, commit, end } from "../state/history";
 import { outputPalette, palette, selectedSwatchId } from "../state/signals";
 import type { Oklch } from "../types";
@@ -49,7 +49,6 @@ export function SwatchEditor() {
   const rampRegion = `${base}-ramp-region`;
   const root = useRef<HTMLDivElement>(null);
   const pending = useRef<string | null>(null);
-  const lockButton = useRef<HTMLButtonElement>(null);
   const [hexDraft, setHexDraft] = useState<string | null>(null);
 
   const id = selectedSwatchId.value;
@@ -163,39 +162,21 @@ export function SwatchEditor() {
           </span>
         )}
         <button
-          ref={lockButton}
           type="button"
           class="pill-button"
           aria-pressed={swatch?.locked ?? false}
           disabled={swatch === null}
           onClick={() => {
             if (id === null || !swatch) return;
-            palette.value = setLocked(palette.peek(), id, !swatch.locked);
+            // One toggle: Unlock also clears the pin, so the swatch is free again (decision 55).
+            palette.value = swatch.locked
+              ? unlockSwatch(palette.peek(), id)
+              : setLocked(palette.peek(), id, true);
             commit(swatch.locked ? "Unlock" : "Lock");
           }}
         >
-          Lock
+          {swatch?.locked ? "Unlock" : "Lock"}
         </button>
-        {swatch?.pinned && (
-          <button
-            type="button"
-            class="pill-button pin-button"
-            data-testid="pin-button"
-            aria-pressed="true"
-            aria-label="Pinned"
-            title="Pinned: kept on re-extraction. Press to unpin."
-            onClick={() => {
-              if (id === null) return;
-              palette.value = setPinned(palette.peek(), id, false);
-              commit("Unpin");
-              // The Pinned button is gone now: focus goes to Lock (round-2 note 3).
-              lockButton.current?.focus();
-            }}
-          >
-            <Pin aria-hidden="true" class="pin-icon" />
-            Pinned
-          </button>
-        )}
         <button
           id={rampButton}
           type="button"

@@ -1717,7 +1717,7 @@ fieldset {
   }
 }
 
-/* Pin state (decision 24): the editor's Pinned button and the badge on a strip swatch. */
+/* Pin state (decision 24): the badge on a strip swatch. */
 .pin-icon {
   width: var(--space-3);
   height: var(--space-3);

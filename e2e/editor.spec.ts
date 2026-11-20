@@ -12,7 +12,7 @@ const field = (page: Page, name: string) =>
   editor(page).getByRole("spinbutton", { name: new RegExp(name) });
 const slider = (page: Page, name: string) => editor(page).getByLabel(`${name} slider`);
 const hexField = (page: Page) => editor(page).getByLabel("HEX", { exact: true });
-const lock = (page: Page) => editor(page).getByRole("button", { name: "Lock", exact: true });
+const lock = (page: Page) => editor(page).getByRole("button", { name: /^(Un)?lock$/i });
 const stripSwatch = (page: Page, n: number) =>
   page.locator("[data-testid=swatch-strip]:visible [data-swatch]").nth(n - 1);
 const undoButton = (page: Page) => page.locator("header").getByRole("button", { name: /^Undo/ });
@@ -96,21 +96,37 @@ test.describe("color editor (spec 3.2)", () => {
     await expect(lock(page)).toHaveAttribute("aria-pressed", "false");
   });
 
-  test("an edit pins the swatch, not locks it; Pinned unpins; Undo restores", async ({
+  test("an edit pins the swatch, not locks it; Lock locks it; Unlock frees both; each is one undo step (decision 55)", async ({
     page,
   }, info) => {
     await open(page, info);
-    const pin = editor(page).getByTestId("pin-button");
+    const pin = page.locator("[data-testid=swatch-strip]:visible [data-swatch][data-pinned]");
     await expect(pin).toHaveCount(0);
     await hexField(page).fill("#1E8A2E");
     await hexField(page).press("Enter");
-    await expect(pin).toBeVisible();
-    await expect(pin).toHaveAttribute("aria-pressed", "true");
+    await expect(pin).toHaveCount(1);
+    await expect(lock(page)).toHaveText("Lock");
     await expect(lock(page)).toHaveAttribute("aria-pressed", "false");
-    await pin.click();
+    // Lock on a pinned swatch locks it; focus stays on the toggle.
+    // Keyboard activation: Safari does not focus a button on click.
+    await lock(page).focus();
+    await page.keyboard.press("Enter");
+    await expect(lock(page)).toHaveText("Unlock");
+    await expect(lock(page)).toHaveAttribute("aria-pressed", "true");
+    await expect(lock(page)).toBeFocused();
+    // Unlock clears the lock and the pin together.
+    await page.keyboard.press("Enter");
+    await expect(lock(page)).toHaveText("Lock");
+    await expect(lock(page)).toHaveAttribute("aria-pressed", "false");
     await expect(pin).toHaveCount(0);
+    await expect(lock(page)).toBeFocused();
+    // Undo: Unlock, then Lock, then the edit.
     await undoButton(page).click();
-    await expect(pin).toBeVisible();
+    await expect(lock(page)).toHaveAttribute("aria-pressed", "true");
+    await expect(pin).toHaveCount(1);
+    await undoButton(page).click();
+    await expect(lock(page)).toHaveAttribute("aria-pressed", "false");
+    await expect(pin).toHaveCount(1);
     await undoButton(page).click();
     await expect(pin).toHaveCount(0);
   });
