@@ -140,22 +140,38 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
     await page.setViewportSize({ width: 390, height: 520 });
     await page.goto(demo("tab=palette"));
     const before = await order(page);
-    const at = await center(swatches(page).nth(1));
     const cdp = await page.context().newCDPSession(page);
     // The page's start-up (the demo image, the worker) can swallow a gesture sent right after the
     // load on a slow runner, so wait for it to go quiet and send the swipe again until the page
     // has moved. A strip that held the swipe back would still never scroll.
     await page.waitForLoadState("networkidle");
+    // The swipe can only move a page that is taller than the viewport.
+    await expect
+      .poll(() =>
+        page.evaluate(() => (document.scrollingElement?.scrollHeight ?? 0) - window.innerHeight),
+      )
+      .toBeGreaterThan(0);
+    // A real touch stream (start, a run of moves, end) as the browser's own input path sees it;
+    // the synthesized scroll gesture did not move the page on the Linux CI runner.
+    const swipe = async () => {
+      const at = await center(swatches(page).nth(1));
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x: at.x, y: at.y }],
+      });
+      for (let i = 1; i <= 10; i++) {
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [{ x: at.x, y: at.y - 30 * i }],
+        });
+        await page.waitForTimeout(12);
+      }
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    };
     await expect
       .poll(
         async () => {
-          await cdp.send("Input.synthesizeScrollGesture", {
-            x: at.x,
-            y: at.y,
-            yDistance: -300,
-            speed: 2000,
-            gestureSourceType: "touch",
-          });
+          await swipe();
           await page.waitForTimeout(150);
           return page.evaluate(() => window.scrollY);
         },

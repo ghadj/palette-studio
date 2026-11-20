@@ -85,6 +85,8 @@ test.describe("accessibility @a11y", () => {
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
+        // The Source tab re-renders when the image loads and would swallow a click sent before.
+        await expect(page.getByRole("button", { name: /^Swatch 1, #/ })).toBeVisible();
         await openRow(page, "Filters");
         await page.locator("#setting-ignore-background:visible").selectOption({ label: "Auto" });
         await expect(
