@@ -4,10 +4,14 @@ import "./styles/tokens.css";
 import "./styles/app.css";
 import { centered } from "./image/viewport";
 import { clusterPinned } from "./state/cluster";
+import { duplicateSelected } from "./state/duplicate-swatch";
 import { startLiveExtraction } from "./state/extraction";
+import { redo, undo } from "./state/history";
 import {
   buildMockupState,
   parseMockupCluster,
+  parseMockupImage,
+  parseMockupLoupe,
   parseMockupParams,
   parseMockupZoom,
 } from "./state/mockup";
@@ -19,13 +23,18 @@ import {
   demoMode,
   imageSrc,
   imageView,
+  initialLoupe,
   initialOpenRows,
   loadProject,
   selectedSwatchId,
+  viewSettings,
 } from "./state/signals";
 import { initTheme } from "./state/theme";
 import { App } from "./ui/App";
 import { installFocusClearance } from "./ui/focusClearance";
+import { copySelectedHex } from "./ui/SwatchDetails";
+import { registerShortcut } from "./ui/shortcuts";
+import { showToast } from "./ui/Toast";
 
 initTheme();
 installFocusClearance();
@@ -43,6 +52,9 @@ if (mockup) {
     activeView.value = state.activeView;
     imageView.value = centered(parseMockupZoom(window.location.search), { width: 1, height: 1 });
     initialOpenRows.value = state.openRows;
+    // `image=<view>` and `loupe=<n>` (plan D20). The view is view state, never in undo (3.6).
+    viewSettings.value = { ...viewSettings.peek(), mode: parseMockupImage(window.location.search) };
+    initialLoupe.value = parseMockupLoupe(window.location.search);
     // `cluster=<n>` shows that swatch's map once the worker has made it (decision 14b).
     const cluster = parseMockupCluster(window.location.search);
     clusterPinned.value = cluster === null ? null : (state.project.palette[cluster]?.id ?? null);
@@ -52,6 +64,13 @@ if (mockup) {
   void loadMockupClusterMap(`${import.meta.env.BASE_URL}${MOCKUP_IMAGE_PATH}`, MOCKUP_IMAGE.name);
 }
 startLiveExtraction();
+// Undo and redo (spec 3.6, 6 "Keyboard"). In the mockup state history lives in memory only.
+registerShortcut("mod+z", undo);
+registerShortcut("mod+shift+z", redo);
+// C copies the selected swatch's HEX (M3 plan D17).
+registerShortcut("c", () => void copySelectedHex());
+// D duplicates the selected swatch: the Swatch row has no Duplicate button (decision 39).
+registerShortcut("d", () => duplicateSelected(showToast));
 
 const root = document.getElementById("app");
 if (root) render(<App />, root);

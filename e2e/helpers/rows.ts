@@ -1,4 +1,5 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { sheetSettled } from "./sheet";
 
 export interface RowBoxes {
   name: string;
@@ -8,6 +9,11 @@ export interface RowBoxes {
   tallest: DOMRect | null;
 }
 
+/**
+ * Opens the Source tab's Filters and Advanced rows in place. Only for the desktop layout: below
+ * 1024 px they are bottom sheets (M3 decision 34), and only one is open at a time, so use
+ * `inRowScopes`.
+ */
 export async function openRows(page: Page): Promise<void> {
   for (const id of ["filters-row", "advanced"]) {
     const d = page
@@ -54,3 +60,56 @@ export const measure = (page: Page): Promise<RowBoxes[]> =>
       };
     });
   });
+
+/** True in the sheet layout, below 1024 px. */
+export const isSheetLayout = async (page: Page): Promise<boolean> =>
+  (await page.locator(".app--phone").count()) > 0;
+
+/**
+ * Runs `fn` where the Source tab's collapsed rows are open. From 1024 px both rows open in place
+ * and `fn` runs once with "all". Below that each row is a bottom sheet (M3 decision 34): `fn` runs
+ * once per sheet, with "Filters" and then "Advanced", and the sheet is closed after.
+ */
+export async function inRowScopes(
+  page: Page,
+  fn: (scope: "all" | "Filters" | "Advanced") => Promise<void>,
+): Promise<void> {
+  if (!(await isSheetLayout(page))) {
+    await openRows(page);
+    await fn("all");
+    return;
+  }
+  for (const name of ["Filters", "Advanced"] as const) {
+    await page.getByRole("button", { name, exact: true }).click();
+    await sheetSettled(page);
+    await fn(name);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
+}
+
+/**
+ * Opens the Source tab's "Filters" or "Advanced" row: it expands in place from 1024 px and opens a
+ * bottom sheet below that (M3 decision 34). Resolves once the content can be used.
+ */
+export async function openRow(page: Page, name: "Filters" | "Advanced"): Promise<void> {
+  if (await isSheetLayout(page)) {
+    await page.getByRole("button", { name, exact: true }).click();
+    await sheetSettled(page);
+    return;
+  }
+  const row =
+    name === "Filters"
+      ? page.locator("[data-testid=filters-row]:visible")
+      : page.locator("details.chevron-row:visible").filter({ hasText: "Advanced" });
+  if ((await row.first().getAttribute("open")) === null)
+    await row.first().locator("summary").click();
+}
+
+/** The open Filters or Advanced row's box: the details element, or the sheet's row below 1024 px. */
+export const rowBox = (page: Page, name: "Filters" | "Advanced") =>
+  name === "Filters"
+    ? page.locator("[data-testid=filters-row]:visible")
+    : page.locator("details.chevron-row:visible, [data-row=advanced]:visible").filter({
+        hasText: "Advanced",
+      });

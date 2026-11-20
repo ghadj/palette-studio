@@ -19,6 +19,8 @@ export interface JobScheduler {
   request(): void;
   /** Runs at once, superseding anything pending or running. */
   runNow(): void;
+  /** Drops a pending request and the running job's result, for example on undo (spec 3.6). */
+  cancel(): void;
 }
 
 export function createJobScheduler<T>(options: JobSchedulerOptions<T>): JobScheduler {
@@ -72,5 +74,12 @@ export function createJobScheduler<T>(options: JobSchedulerOptions<T>): JobSched
       debounce = setTimeout(start, DEBOUNCE_MS);
     },
     runNow: start,
+    cancel() {
+      clearTimeout(debounce);
+      debounce = undefined;
+      // Any result still in flight now carries an older id, so it is dropped.
+      latest += 1;
+      setBusy(false);
+    },
   };
 }

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { demo, isPhoneProject, tokenColor } from "./helpers/app";
+import { isSheetLayout } from "./helpers/rows";
 
 const HEXES = ["#E8693A", "#1DB07A", "#14386B", "#D4527F", "#1E8A2E", "#5039B0"];
 const rgb = (hex: string) => {
@@ -85,16 +86,26 @@ test.describe("mockup state (mockup-state.md)", () => {
     page,
   }) => {
     await page.goto(demo("rows=advanced"));
-    const advanced = page.locator("details.chevron-row:visible").filter({ hasText: "Advanced" });
-    await expect(advanced).toHaveAttribute("open", "");
+    // In place from 1024 px; a bottom sheet below (M3 decision 34).
+    if (await isSheetLayout(page)) {
+      await expect(page.getByRole("dialog", { name: "Advanced" })).toBeVisible();
+    } else {
+      await expect(
+        page.locator("details.chevron-row:visible").filter({ hasText: "Advanced" }),
+      ).toHaveAttribute("open", "");
+    }
     for (const id of ["#setting-seed", "#setting-iterations", "#setting-merge", "#setting-sort"]) {
       await expect(page.locator(`${id}:visible`)).toBeVisible();
     }
     await expect(page.locator("[data-swatch]:visible")).toHaveCount(6);
     await page.goto(demo());
-    await expect(
-      page.locator("details.chevron-row:visible").filter({ hasText: "Advanced" }),
-    ).not.toHaveAttribute("open", "");
+    if (await isSheetLayout(page)) {
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    } else {
+      await expect(
+        page.locator("details.chevron-row:visible").filter({ hasText: "Advanced" }),
+      ).not.toHaveAttribute("open", "");
+    }
   });
 
   test("title ends with (demo)", async ({ page }) => {
@@ -145,6 +156,8 @@ test.describe("mockup state (mockup-state.md)", () => {
     ]) {
       await page.goto(demo(query));
       await expect(page.locator("#app-root")).toBeVisible();
+      // A drawer opened by `rows=` is modal below 1024 px: close it to use the page behind.
+      if (await page.getByRole("dialog").count()) await page.keyboard.press("Escape");
       // Use the page: select swatches, switch tabs, change the theme.
       const swatch = page.locator("[data-swatch]:visible").first();
       if (await swatch.count()) await swatch.click();
@@ -246,7 +259,7 @@ test.describe("mockup state (mockup-state.md)", () => {
   test("zoom=2 opens at 200%", async ({ page }) => {
     await page.goto(demo("zoom=2"));
     const well = page.locator("[data-testid=image-well]:visible").first();
-    await expect(well.getByTestId("zoom-level")).toHaveText("200%");
+    await expect(page.locator("[data-testid=zoom-level]:visible").first()).toHaveText("200%");
     await expect(well).toHaveAttribute("data-scale", "2");
     // Centered: the image's center sits at the well's center.
     const image = well.locator("img");
@@ -257,8 +270,8 @@ test.describe("mockup state (mockup-state.md)", () => {
     expect(i.x + i.width / 2).toBeCloseTo(w.x + w.width / 2, 0);
     expect(i.y + i.height / 2).toBeCloseTo(w.y + w.height / 2, 0);
     await page.goto(demo("zoom=4"));
-    await expect(well.getByTestId("zoom-level")).toHaveText("400%");
+    await expect(page.locator("[data-testid=zoom-level]:visible").first()).toHaveText("400%");
     await page.goto(demo("zoom=8"));
-    await expect(well.getByTestId("zoom-level")).toHaveText("800%");
+    await expect(page.locator("[data-testid=zoom-level]:visible").first()).toHaveText("800%");
   });
 });

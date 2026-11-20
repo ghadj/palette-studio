@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { fixture } from "./helpers/files";
 import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
+import { openRow } from "./helpers/rows";
 import { M1_SCREENS, THEMES } from "./helpers/screens";
+import { openExport } from "./helpers/sheet";
 import { checkTokens, describeFailures } from "./helpers/tokens";
 
 // Token conformance (visual-testing.md section 1). Fix failures with tokens; never widen the lists.
@@ -47,6 +49,13 @@ test.describe("token conformance @tokens", () => {
               (f) => f.kind === "touch-target",
             );
             expect(failures, describeFailures(failures)).toEqual([]);
+            // A screen that opens a bottom sheet (M3, `rows=`) has just been checked with it open.
+            // The sheet is modal, so close it to reach the header's theme button.
+            const sheet = page.locator("dialog[open]");
+            if ((await sheet.count()) > 0) {
+              await page.keyboard.press("Escape");
+              await expect(sheet).toHaveCount(0);
+            }
             // The theme menu's options too.
             await page.getByRole("button", { name: /^Theme/ }).click();
             const open = (await checkTokens(page, { touchTargets: true })).filter(
@@ -64,7 +73,10 @@ test.describe("token conformance @tokens", () => {
       await page.emulateMedia({ colorScheme: theme });
       await page.setViewportSize({ width: 1280, height: 800 });
       await page.goto("./?demo=mockup");
-      await page.getByRole("button", { name: "Undo" }).click();
+      await page
+        .locator("header")
+        .getByRole("button", { name: /Harbor mural/ })
+        .click();
       await expect(page.getByTestId("toast-region")).toContainText("Coming in a later version");
       await page.getByRole("button", { name: /^Theme/ }).click();
       await expect(page.getByRole("menu")).toBeVisible();
@@ -85,7 +97,7 @@ test.describe("token conformance @tokens", () => {
         await page.emulateMedia({ colorScheme: theme });
         await page.setViewportSize(viewport);
         await page.goto("./");
-        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+        await openRow(page, "Advanced");
         await expect(page.locator("#setting-seed:visible")).toBeVisible();
         // The M2-T7 rows, with the Keep one outlier toggle off, then on (ui-contract "Toggle").
         await expect(page.locator("#setting-sort:visible")).toBeVisible();
@@ -119,7 +131,7 @@ test.describe("token conformance @tokens", () => {
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
-        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+        await openRow(page, "Advanced");
         await expect(page.locator("#setting-outlier:visible")).toBeDisabled();
         await expect(page.locator("#setting-merge:visible")).toBeDisabled();
         await expect(page.locator("#setting-outlier-note:visible")).toHaveText(
@@ -140,7 +152,8 @@ test.describe("token conformance @tokens", () => {
     for (const theme of THEMES) {
       await page.emulateMedia({ colorScheme: theme });
       await page.setViewportSize({ width: 390, height: 844 });
-      await page.goto("./?demo=mockup");
+      await page.goto("./?demo=mockup&tab=palette");
+      await openExport(page);
       await page.getByRole("button", { name: "Copy HEX" }).click();
       await expect(
         page.getByTestId("toast-region").getByRole("button", { name: "Download" }),
@@ -181,7 +194,7 @@ test.describe("token conformance @tokens", () => {
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.locator("#setting-algorithm:visible").selectOption({ label: "Median cut" });
-        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+        await openRow(page, "Advanced");
         await expect(page.locator("#setting-seed:visible")).toBeDisabled();
         const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
         expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
@@ -225,7 +238,7 @@ test.describe("token conformance @tokens", () => {
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
-        await page.locator("[data-testid=filters-row]:visible summary").click();
+        await openRow(page, "Filters");
         await page.locator("#setting-ignore-background:visible").selectOption({ label: "Auto" });
         await expect(
           page.locator("[data-testid=filters-row]:visible #setting-ignore-background-note"),

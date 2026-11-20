@@ -1,4 +1,6 @@
+import { exportOpen } from "../state/export-panel";
 import { ImageInputs } from "./DropZone";
+import { ExportPanel } from "./ExportPanel";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
 import { PhoneTabBar, Shell, useLayout } from "./Shell";
@@ -12,7 +14,8 @@ export function App() {
       <Shell layout={layout} />
       <Footer />
       {layout === "phone" && <PhoneTabBar />}
-      <Toast />
+      <ExportPanel layout={layout} />
+      {!exportOpen.value && <Toast />}
       <ImageInputs />
     </div>
   );

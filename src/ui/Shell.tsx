@@ -3,39 +3,19 @@
  * - below 1024 px (phones, tablets and phones in landscape): one panel at a time with a bottom tab
  *   bar, the phone header and safe-area padding; on wide screens the panel is centered at a
  *   readable width. This departs on purpose, by the user's choice, from spec 6.1's two-column row.
- * - 1024 px and up: three equal columns plus the export drawer
+ * - 1024 px and up: three equal columns
  */
-import { useEffect, useState } from "preact/hooks";
+import { useLayoutEffect, useRef } from "preact/hooks";
 import { activeTab } from "../state/signals";
 import type { Tab } from "../types";
-import { ExportDrawer } from "./ExportDrawer";
 import { GradientPanel, MaterialsPanel } from "./GradientPanel";
 import { PalettePanel } from "./PalettePanel";
 import { SourcePanel } from "./SourcePanel";
 import { panelId, TabBar, tabId } from "./TabBar";
 
-export type Layout = "phone" | "desktop";
+export { type Layout, useLayout } from "./layout";
 
-const DESKTOP = "(min-width: 1024px)";
-
-function currentLayout(): Layout {
-  if (typeof window === "undefined" || !window.matchMedia) return "desktop";
-  return window.matchMedia(DESKTOP).matches ? "desktop" : "phone";
-}
-
-export function useLayout(): Layout {
-  const [layout, setLayout] = useState<Layout>(currentLayout);
-  useEffect(() => {
-    const queries = [window.matchMedia(DESKTOP)];
-    const update = () => setLayout(currentLayout());
-    for (const q of queries) q.addEventListener("change", update);
-    update();
-    return () => {
-      for (const q of queries) q.removeEventListener("change", update);
-    };
-  }, []);
-  return layout;
-}
+import type { Layout } from "./layout";
 
 const PHONE_TABS: readonly Tab[] = ["source", "palette", "gradient", "materials"];
 
@@ -52,24 +32,72 @@ function ActivePanel({ tab }: { tab: Tab }) {
   }
 }
 
+/**
+ * Each phone and tablet tab keeps its own scroll position (M3 decision 44). The window stays the
+ * scroll container. The outgoing tab's position is saved while rendering, before the DOM changes;
+ * the new tab's is restored in a layout effect, before paint. A tab not visited yet starts at 0.
+ */
+function usePerTabScroll(tab: Tab, active: boolean): void {
+  const saved = useRef(new Map<Tab, number>());
+  const current = useRef(tab);
+  const pending = useRef(false);
+  if (active && current.current !== tab) {
+    saved.current.set(current.current, window.scrollY);
+    current.current = tab;
+    pending.current = true;
+  }
+  useLayoutEffect(() => {
+    if (!active || !pending.current) return;
+    pending.current = false;
+    const target = saved.current.get(tab) ?? 0;
+    window.scrollTo(0, target);
+    // Panels fill in over the next frames and the page may be too short at first, which clamps the
+    // scroll. Keep restoring for a few frames, until the page reaches it or the user scrolls.
+    let frames = 0;
+    let frame = 0;
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      for (const type of ["wheel", "touchstart", "keydown", "pointerdown"])
+        window.removeEventListener(type, stop, true);
+    };
+    const retry = () => {
+      if (Math.abs(window.scrollY - target) > 0.5) window.scrollTo(0, target);
+      if (++frames < 30 && Math.abs(window.scrollY - target) > 0.5)
+        frame = requestAnimationFrame(retry);
+      else stop();
+    };
+    if (target > 0) {
+      for (const type of ["wheel", "touchstart", "keydown", "pointerdown"])
+        window.addEventListener(type, stop, { capture: true, passive: true });
+      frame = requestAnimationFrame(retry);
+    }
+  });
+}
+
 export function Shell({ layout }: { layout: Layout }) {
   const tab = activeTab.value;
+  usePerTabScroll(tab, layout === "phone");
 
   if (layout === "desktop") {
     return (
       <main class="shell shell--desktop">
         <div class="columns columns--three">
           <section class="column" data-column="source" aria-label="Source">
-            <SourcePanel variant="desktop" />
+            <div class="column__scroll" data-testid="column-scroll">
+              <SourcePanel variant="desktop" />
+            </div>
           </section>
           <section class="column" data-column="palette" aria-label="Palette">
-            <PalettePanel variant="desktop" />
+            <div class="column__scroll" data-testid="column-scroll">
+              <PalettePanel variant="desktop" />
+            </div>
           </section>
           <section class="column" data-column="gradient" aria-label="Gradient">
-            <GradientPanel variant="desktop" />
+            <div class="column__scroll" data-testid="column-scroll">
+              <GradientPanel variant="desktop" />
+            </div>
           </section>
         </div>
-        <ExportDrawer />
       </main>
     );
   }

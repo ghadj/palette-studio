@@ -2,9 +2,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 import { box, demo, hasHorizontalScroll, isPhoneProject, PHONE_SIZES } from "./helpers/app";
+import { sheetSettled } from "./helpers/sheet";
+import { checkTokens, describeFailures } from "./helpers/tokens";
 
 test.describe("responsive shell (spec 6.1)", () => {
-  test("1280×800: three equal columns (widths within 1 px) with a 16 px gutter and the export drawer below", async ({
+  test("1280×800: three equal columns (widths within 1 px) with a 16 px gutter and no export bar below", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "desktop viewport");
@@ -28,19 +30,17 @@ test.describe("responsive shell (spec 6.1)", () => {
     expect(a.y).toBeCloseTo(b.y, 0);
     expect(b.y).toBeCloseTo(c.y, 0);
 
-    const drawer = await box(page, "[data-testid=export-drawer]");
-    const tallest = Math.max(a.y + a.height, b.y + b.height, c.y + c.height);
-    expect(drawer.y).toBeGreaterThanOrEqual(tallest);
-    expect(drawer.x).toBeLessThanOrEqual(a.x + 1);
-    expect(drawer.x + drawer.width).toBeGreaterThanOrEqual(c.x + c.width - 1);
-    await expect(page.getByRole("heading", { name: "Palette export" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Gradient export" })).toBeVisible();
+    // No export bar under the columns: they reach the footer (M3 decision 56).
+    await expect(page.getByTestId("export-drawer")).toHaveCount(0);
+    const footer = await box(page, "footer");
+    const area = await box(page, ".columns");
+    expect(area.y + area.height).toBeCloseTo(footer.y, 0);
     // Desktop has no bottom tab bar.
     await expect(page.locator("[data-testid=tabbar]")).toHaveCount(0);
     expect(await hasHorizontalScroll(page)).toBe(false);
   });
 
-  test("desktop: the export drawer sits directly above the footer at the bottom of the window, with no gap", async ({
+  test("desktop: the columns sit directly above the footer at the bottom of the window, with no gap", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "desktop viewport");
@@ -51,25 +51,25 @@ test.describe("responsive shell (spec 6.1)", () => {
     ] as const) {
       await page.setViewportSize({ width, height });
       await page.goto(demo());
-      const drawer = await box(page, "[data-testid=export-drawer]");
+      const columns = await box(page, ".columns");
       const footer = await box(page, "footer");
       expect(footer.y + footer.height, `${width}×${height}`).toBeCloseTo(height, 0);
-      expect(drawer.y + drawer.height, `${width}×${height}`).toBeCloseTo(footer.y, 0);
+      expect(columns.y + columns.height, `${width}×${height}`).toBeCloseTo(footer.y, 0);
       expect(
         await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight),
       ).toBe(true);
     }
   });
 
-  test("desktop: when the columns are taller than the window they scroll between the header and the drawer", async ({
+  test("desktop: a column taller than the window scrolls on its own between the header and the footer (M3 decision 37)", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "desktop viewport");
     await page.setViewportSize({ width: 1280, height: 680 });
     await page.goto("./");
     await page.locator('details.chevron-row summary:has-text("Advanced")').click();
-    const columns = page.locator(".columns");
-    const sizes = await columns.evaluate((el) => ({
+    const source = page.locator("[data-column=source] .column__scroll");
+    const sizes = await source.evaluate((el) => ({
       scroll: el.scrollHeight,
       client: el.clientHeight,
       overflow: getComputedStyle(el).overflowY,
@@ -78,17 +78,38 @@ test.describe("responsive shell (spec 6.1)", () => {
     expect(sizes.overflow).toBe("auto");
     const header = await box(page, "header");
     const area = await box(page, ".columns");
-    const drawer = await box(page, "[data-testid=export-drawer]");
     const footer = await box(page, "footer");
     expect(area.y).toBeCloseTo(header.y + header.height, 0);
-    expect(area.y + area.height).toBeCloseTo(drawer.y, 0);
+    expect(area.y + area.height).toBeCloseTo(footer.y, 0);
     expect(footer.y + footer.height).toBeCloseTo(680, 0);
-    // The page itself doesn't scroll; the columns do.
+    // The page itself doesn't scroll; the column does, and the others stay where they are.
     expect(
       await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight),
     ).toBe(true);
-    await columns.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    const others = await page.evaluate(() =>
+      ["palette", "gradient"].map((name) => {
+        const el = document.querySelector(`[data-column=${name}] .column__scroll`) as HTMLElement;
+        return el.scrollTop;
+      }),
+    );
+    await source.evaluate((el) => el.scrollTo(0, el.scrollHeight));
     await expect(page.locator("#setting-seed")).toBeInViewport();
+    expect(await source.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    expect(
+      await page.evaluate(() =>
+        ["palette", "gradient"].map(
+          (name) =>
+            (document.querySelector(`[data-column=${name}] .column__scroll`) as HTMLElement)
+              .scrollTop,
+        ),
+      ),
+    ).toEqual(others);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // Each column's box fills the area, so a long column leaves no white gap beside the others.
+    const heights = await page
+      .locator("[data-column]")
+      .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+    expect(new Set(heights).size).toBe(1);
   });
 
   test("below 320 px wide the page stops shrinking and scrolls sideways", async ({ page }) => {
@@ -129,9 +150,8 @@ test.describe("responsive shell (spec 6.1)", () => {
       ).toBeGreaterThanOrEqual(640);
       const columns = await box(page, ".columns");
       expect(columns.height).toBeCloseTo(atMinimum.height, 0);
-      const drawer = await box(page, "[data-testid=export-drawer]");
       const footer = await box(page, "footer");
-      expect(drawer.y + drawer.height).toBeCloseTo(footer.y, 0);
+      expect(columns.y + columns.height).toBeCloseTo(footer.y, 0);
       expect(footer.y + footer.height).toBeCloseTo(640, 0);
     }
   });
@@ -233,6 +253,26 @@ test.describe("responsive shell (spec 6.1)", () => {
             await hasHorizontalScroll(page),
             `${viewport.width}×${viewport.height} ${tab}`,
           ).toBe(false);
+        }
+      }
+    }
+  });
+
+  test("320, 375, 390, 430 px, light and dark: with every M3 sheet open there is no horizontal scroll, every control is at least 44 px and the colors, type and radii are tokens", async ({
+    page,
+  }) => {
+    for (const theme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: theme });
+      for (const size of PHONE_SIZES) {
+        await page.setViewportSize(size);
+        for (const row of ["swatch", "adjustments", "ramp", "contrast", "cvd"]) {
+          const at = `${theme} ${size.width} ${row}`;
+          await page.goto(demo(`tab=palette&rows=${row}`));
+          await expect(page.getByRole("dialog")).toBeVisible();
+          await sheetSettled(page);
+          expect(await hasHorizontalScroll(page), `${at}: scroll`).toBe(false);
+          const failures = await checkTokens(page, { touchTargets: true });
+          expect(failures, `${at}: ${describeFailures(failures)}`).toEqual([]);
         }
       }
     }

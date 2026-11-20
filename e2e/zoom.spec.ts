@@ -8,9 +8,11 @@ import { fixture } from "./helpers/files";
  */
 
 const well = (page: Page) => page.locator("[data-testid=image-well]:visible").first();
-const zoomLevel = (page: Page) => well(page).getByTestId("zoom-level");
-const button = (page: Page, name: "Zoom in" | "Zoom out" | "Fit") =>
-  well(page).getByRole("button", { name, exact: true });
+/** The toolbar row under the well (M3 decision 42). */
+const toolbar = (page: Page) => page.locator("[data-testid=image-toolbar]:visible").first();
+const zoomLevel = (page: Page) => toolbar(page).getByTestId("zoom-level");
+const button = (page: Page, name: "Zoom in" | "Zoom out" | "Fit" | "Markers" | "Eyedropper") =>
+  toolbar(page).getByRole("button", { name, exact: true });
 
 interface View {
   scale: number;
@@ -91,7 +93,7 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
     await expect(button(page, "Zoom in")).toBeEnabled();
   });
 
-  test("Ctrl + wheel over the image zooms around the pointer; a plain wheel scrolls the page", async ({
+  test("Ctrl + wheel over the image zooms around the pointer; a plain wheel scrolls column 1", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "desktop wheel");
@@ -118,13 +120,9 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
     expect(after.y).toBeCloseTo(before.y, 2);
     await expect(zoomLevel(page)).toHaveText(`${Math.round(zoomed.scale * 100)}%`);
 
-    // A plain wheel isn't taken: the view stays and the column scrolls.
+    // A plain wheel isn't taken: the view stays and column 1's scroll container scrolls (decision 37).
     const scrolled = () =>
-      page.evaluate(
-        () =>
-          (document.scrollingElement?.scrollTop ?? 0) +
-          (document.querySelector(".columns")?.scrollTop ?? 0),
-      );
+      page.evaluate(() => document.querySelector(".column__scroll")?.scrollTop ?? 0);
     const top = await scrolled();
     await page.mouse.wheel(0, 120);
     await expect.poll(scrolled).toBeGreaterThan(top);
@@ -185,9 +183,22 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
     expect(await view(page)).toEqual({ scale: 1, x: 0, y: 0 });
     // The zoom buttons are reachable with Tab from the image. WebKit on macOS tabs only to form
     // fields by default, so it is checked in the other browsers.
+    // Since M3-T12 the six markers, the Markers toggle and the Eyedropper (M3-T16) come first in the tab order.
     if (!info.project.name.includes("webkit")) {
+      for (let n = 1; n <= 6; n += 1) {
+        await page.keyboard.press("Tab");
+        await expect(well(page).locator(`[data-marker="${n}"]`)).toBeFocused();
+      }
+      await page.keyboard.press("Tab");
+      await expect(button(page, "Markers")).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(button(page, "Eyedropper")).toBeFocused();
       await page.keyboard.press("Tab");
       await expect(button(page, "Zoom out")).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(button(page, "Fit")).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(button(page, "Zoom in")).toBeFocused();
     }
   });
 
@@ -283,13 +294,17 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
         expect(b?.width ?? 0, name).toBeGreaterThanOrEqual(44);
         expect(b?.height ?? 0, name).toBeGreaterThanOrEqual(44);
       }
-      // They sit in the well's bottom-right corner.
-      const controls = await well(page).getByTestId("zoom-controls").boundingBox();
+      // They sit on the right of the toolbar row under the well, and never cover the image (M3 decision 42).
+      const controls = await toolbar(page).getByTestId("zoom-controls").boundingBox();
       const box = await wellBox(page);
-      expect((controls?.x ?? 0) + (controls?.width ?? 0)).toBeLessThanOrEqual(box.x + box.width);
-      expect((controls?.y ?? 0) + (controls?.height ?? 0)).toBeLessThanOrEqual(box.y + box.height);
+      // The toolbar is as wide as the well, border included, so compare with its outer edge.
+      expect((controls?.x ?? 0) + (controls?.width ?? 0)).toBeLessThanOrEqual(
+        box.x + box.width + 2 * (await well(page).evaluate((el) => el.clientLeft)),
+      );
+      expect(controls?.y ?? 0).toBeGreaterThanOrEqual(box.y + box.height);
       expect(controls?.x ?? 0).toBeGreaterThan(box.x + box.width / 2);
-      expect(controls?.y ?? 0).toBeGreaterThan(box.y + box.height / 2);
+      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(scrollWidth).toBeLessThanOrEqual(size.width);
     }
   });
 });

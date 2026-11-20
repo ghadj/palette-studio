@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { demo, isPhoneProject } from "./helpers/app";
+import { openExport } from "./helpers/sheet";
 
 const HEX = "#E8693A\n#1DB07A\n#14386B\n#D4527F\n#1E8A2E\n#5039B0";
 const CSS = [
@@ -34,7 +35,7 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(demo());
-    const drawer = page.getByTestId("export-drawer");
+    const drawer = await openExport(page);
     await drawer.getByRole("button", { name: "Copy HEX" }).click();
     await expect(region(page)).toHaveAttribute("aria-live", "polite");
     await expect(region(page)).toHaveText("Copied HEX");
@@ -44,32 +45,29 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
   test("Copy CSS puts the :root block on the clipboard", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto(demo());
-    await page.getByTestId("export-drawer").getByRole("button", { name: "Copy CSS" }).click();
+    await (await openExport(page)).getByRole("button", { name: "Copy CSS" }).click();
     await expect(region(page)).toHaveText("Copied CSS");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(CSS);
   });
 
-  test("on phones the buttons sit under the swatch strip on the Source and Palette tabs", async ({
+  test("on phones the header's Export button opens the Palette section with the copy buttons", async ({
     page,
     context,
   }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    // Phones and medium screens share the tabbed layout (decision 4 as revised).
-    for (const [width, height, tab] of [
-      [390, 844, "source"],
-      [390, 844, "palette"],
-      [820, 1180, "source"],
-      [820, 1180, "palette"],
+    // Phones and medium screens share the tabbed layout (decision 4 as revised); M3 decision 53.
+    for (const [width, height] of [
+      [390, 844],
+      [820, 1180],
     ] as const) {
       await page.setViewportSize({ width, height });
-      await page.goto(demo(`tab=${tab}`));
-      await expect(page.getByTestId("export-drawer")).toHaveCount(0);
-      const strip = await page.locator("[data-testid=swatch-strip]:visible").boundingBox();
-      const button = page.getByRole("button", { name: "Copy HEX" });
-      const box = await button.boundingBox();
-      expect(box?.y ?? 0).toBeGreaterThan((strip?.y ?? 0) + (strip?.height ?? 0));
-      expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
-      await button.click();
+      await page.goto(demo("tab=source"));
+      await expect(page.getByTestId("export-panel")).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Copy HEX", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Copy CSS", exact: true })).toHaveCount(0);
+      await page.goto(demo("tab=palette"));
+      const sheet = await openExport(page);
+      await sheet.getByRole("button", { name: "Copy HEX", exact: true }).click();
       await expect(region(page)).toHaveText("Copied HEX");
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(HEX);
     }
@@ -84,7 +82,8 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
       });
     });
     await page.goto(demo());
-    await page.getByTestId("export-drawer").getByRole("button", { name: "Copy CSS" }).click();
+    const panel = await openExport(page);
+    await panel.getByRole("button", { name: "Copy CSS" }).click();
     await expect(region(page)).toContainText("Couldn't copy the CSS");
     await expect(region(page)).toContainText("the browser didn't allow access to the clipboard");
     // The toast offers Download instead (spec 6.3).
@@ -93,7 +92,7 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
     const file = await download;
     expect(file.suggestedFilename()).toBe("Harbor mural palette.css");
     // A new failure toast stays until it is dismissed with its close button.
-    await page.getByTestId("export-drawer").getByRole("button", { name: "Copy HEX" }).click();
+    await panel.getByRole("button", { name: "Copy HEX" }).click();
     await expect(region(page)).toContainText("Couldn't copy the HEX");
     await page.waitForTimeout(9000);
     await expect(region(page)).toContainText("Couldn't copy the HEX");
@@ -107,16 +106,14 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
 
   test("copy buttons are disabled with no palette", async ({ page }) => {
     await page.goto("./");
-    await expect(
-      page.getByTestId("export-drawer").getByRole("button", { name: "Copy HEX" }),
-    ).toBeDisabled();
+    await expect((await openExport(page)).getByRole("button", { name: "Copy HEX" })).toBeDisabled();
   });
 
   test("the toast respects reduced motion", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(demo());
-    await page.getByTestId("export-drawer").getByRole("button", { name: "Copy HEX" }).click();
+    await (await openExport(page)).getByRole("button", { name: "Copy HEX" }).click();
     const toast = region(page).locator(".toast");
     await expect(toast).toBeVisible();
     expect(await toast.evaluate((el) => getComputedStyle(el).animationDuration)).toBe("0s");

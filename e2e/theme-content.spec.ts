@@ -8,13 +8,16 @@ import { demo, isPhoneProject } from "./helpers/app";
  */
 
 /**
- * The zoom controls are themed UI over the image (decision 15e). Hiding them for the shot compares
- * every image pixel, including those under them. The CSP blocks injected style sheets, so this
+ * The selected marker's accent ring is themed UI over the image (decision 15e, M3-T12; the zoom controls
+ * and well tools sit under the well since decision 42, and stay in the list in case they move); the marker fills and rings are user content and stay compared.
+ * Hiding the rest for the shot compares every image pixel, including those under them. The CSP blocks injected style sheets, so this
  * goes through the element's style.
  */
 async function hideZoomControls(page: Page): Promise<void> {
   await page.evaluate(() => {
-    for (const el of document.querySelectorAll<HTMLElement>("[data-testid=zoom-controls]"))
+    for (const el of document.querySelectorAll<HTMLElement>(
+      "[data-testid=zoom-controls], [data-testid=well-tools], [data-marker-accent]",
+    ))
       el.style.setProperty("visibility", "hidden");
   });
 }
@@ -127,6 +130,11 @@ test("overlay pixels are identical in light and dark (spec 2.6, M2 decision 13b)
       well.locator("[data-testid=cluster-overlay][data-index='2']:not([data-settling])"),
     ).toHaveCount(1, { timeout: 15_000 });
     await well.locator("img").evaluate((el) => (el as HTMLImageElement).decode?.());
+    // The glow-in (M3 decisions 61, 64) is a timed animation: capture the settled overlay, not a
+    // frame of it, so the two themes are compared at the same point.
+    await page.waitForFunction(() =>
+      document.getAnimations().every((a) => a.playState !== "running"),
+    );
     const box = await well.boundingBox();
     if (!box) throw new Error("no well");
     const inset = 12;
@@ -159,7 +167,9 @@ test("the zoomed image keeps its colors in light and dark (decision 15)", async 
     await page.goto(demo("zoom=4"));
     await page.waitForLoadState("networkidle");
     const well = page.locator("[data-testid=image-well]:visible").first();
-    await expect(well.getByTestId("zoom-level")).toHaveText("400%");
+    await expect(
+      page.locator("[data-testid=image-toolbar]:visible").getByTestId("zoom-level"),
+    ).toHaveText("400%");
     await well.locator("img").evaluate((el) => (el as HTMLImageElement).decode?.());
     const box = await well.boundingBox();
     if (!box) throw new Error("no well");

@@ -3,7 +3,12 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { hexToOklab, oklchToHex } from "../../src/color/convert";
 import { SPEC_DEFAULT_SETTINGS } from "../../src/state/defaults";
-import { buildMockupState, parseMockupParams } from "../../src/state/mockup";
+import {
+  buildMockupState,
+  parseMockupImage,
+  parseMockupLoupe,
+  parseMockupParams,
+} from "../../src/state/mockup";
 
 const HEXES = ["#E8693A", "#1DB07A", "#14386B", "#D4527F", "#1E8A2E", "#5039B0"];
 const POINTS = [
@@ -33,6 +38,7 @@ describe("mockup state (mockup-state.md)", () => {
     for (const swatch of state.project.palette) {
       expect(swatch.origin).toBe("extracted");
       expect(swatch.locked).toBe(false);
+      expect(swatch.pinned).toBe(false);
       expect(swatch.sampleRadius).toBe("auto");
       expect(swatch.alpha).toBe(1);
     }
@@ -140,5 +146,42 @@ describe("mockup state (mockup-state.md)", () => {
         expect(path).not.toMatch(/storage|autosave|library|theme/);
       }
     }
+  });
+});
+
+describe("M3 mockup parameters (plan D20, M3-T2)", () => {
+  it("parses rows=adjustments, image=values, loupe=3", () => {
+    const search = "?demo=mockup&rows=adjustments&image=values&loupe=3";
+    expect(parseMockupParams(search)?.rows).toEqual(["adjustments"]);
+    expect(buildMockupState(parseMockupParams(search)).openRows).toEqual(["adjustments"]);
+    expect(parseMockupImage(search)).toBe("values");
+    // The loupe shows over swatch 3's marker: zero-based palette index 2.
+    expect(parseMockupLoupe(search)).toBe(2);
+    // Every M3 row, combined with M2's.
+    expect(
+      parseMockupParams("?demo=mockup&rows=swatch,adjustments,ramp,contrast,cvd,filters")?.rows,
+    ).toEqual(["filters", "swatch", "adjustments", "ramp", "contrast", "cvd"]);
+    expect(parseMockupImage("?demo=mockup&image=palette")).toBe("palette");
+    expect(parseMockupImage("?demo=mockup&image=image")).toBe("image");
+    expect(parseMockupLoupe("?demo=mockup&loupe=1")).toBe(0);
+    expect(parseMockupLoupe("?demo=mockup&loupe=6")).toBe(5);
+  });
+
+  it("ignores unknown values", () => {
+    expect(parseMockupParams("?demo=mockup&rows=bogus,ramps,Swatch")?.rows).toEqual([]);
+    expect(parseMockupImage("?demo=mockup")).toBe("image");
+    expect(parseMockupImage("?demo=mockup&image=grid")).toBe("image");
+    expect(parseMockupImage("?demo=mockup&image=Values")).toBe("image");
+    for (const loupe of ["", "0", "7", "3.5", "x", "-1"]) {
+      expect(parseMockupLoupe(`?demo=mockup&loupe=${loupe}`), loupe).toBeNull();
+    }
+    expect(parseMockupLoupe("?demo=mockup")).toBeNull();
+    // The M1 parameters keep their shape: image and loupe have their own parsers.
+    expect(parseMockupParams("?demo=mockup&image=values&loupe=3")).toEqual({
+      view: "studio",
+      tab: "source",
+      theme: null,
+      rows: [],
+    });
   });
 });

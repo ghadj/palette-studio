@@ -55,3 +55,24 @@ export const PHONE_SIZES: ReadonlyArray<{ width: number; height: number }> = [
   { width: 390, height: 844 },
   { width: 430, height: 932 },
 ];
+
+/**
+ * Makes the phone page long enough to scroll, without opening a drawer: the Source and Palette
+ * tabs' collapsed rows are bottom sheets below 1024 px (M3 decision 34), so they no longer
+ * lengthen the page. The spacer sits after the panel, outside the app's own nodes.
+ */
+export async function addScrollSpace(page: Page, px = 1400): Promise<void> {
+  await page.evaluate((height) => {
+    const spacer = document.createElement("div");
+    spacer.setAttribute("data-testid", "test-scroll-space");
+    spacer.style.height = `${height}px`;
+    (document.querySelector("[data-panel]") ?? document.body).append(spacer);
+  }, px);
+}
+
+/** Switches to a phone tab; does nothing in the three-column layout, where every panel shows. */
+export async function showTab(page: Page, name: "Source" | "Palette"): Promise<void> {
+  const bar = page.getByTestId("tabbar");
+  if ((await bar.count()) === 0) return;
+  await bar.getByRole("tab", { name }).click();
+}

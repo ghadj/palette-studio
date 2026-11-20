@@ -4,7 +4,7 @@ import { demo, isPhoneProject } from "./helpers/app";
 
 /**
  * The cluster map (spec 2.6; M2 decisions 13 and 14b): hovering or focusing a swatch, or the
- * phone's Cluster map toggle, shows the pixels nearest that swatch over the image, with every
+ * phone's Cluster map toggle (in the Swatch sheet since M3-T2, decision 13d), shows the pixels nearest that swatch over the image, with every
  * other pixel dimmed, and the selection label gives its share. The overlay follows zoom and pan.
  */
 
@@ -54,6 +54,20 @@ async function tab(page: Page, name: "Source" | "Palette"): Promise<void> {
   await page.getByTestId("tabbar").getByRole("tab", { name }).click();
 }
 
+/** Opens the Swatch sheet on the phone Palette tab, which holds the toggle (decision 13d). */
+async function openSwatchSheet(page: Page): Promise<void> {
+  await page
+    .locator("[data-panel=palette]")
+    .getByRole("button", { name: "Swatch", exact: true })
+    .click();
+  await expect(page.getByRole("dialog", { name: "Swatch" })).toBeVisible();
+}
+
+async function closeSheet(page: Page): Promise<void> {
+  await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+}
+
 /** The overlay canvas's clear (undimmed) pixels, in fractions of the image. */
 async function clearPixels(canvas: Locator) {
   return canvas.evaluate((el) => {
@@ -96,6 +110,74 @@ async function colorAt(page: Page, x: number, y: number): Promise<[number, numbe
   }, png.toString("base64"));
 }
 
+/** Counts of the overlay's clear and dimmed pixels. */
+async function overlayDump(canvas: Locator) {
+  return canvas.evaluate((el) => {
+    const c = el as HTMLCanvasElement;
+    const ctx = c.getContext("2d");
+    if (!ctx) throw new Error("no 2d context");
+    const { data, width, height } = ctx.getImageData(0, 0, c.width, c.height);
+    let clear = 0;
+    let dimmed = 0;
+    for (let y = 1; y < height - 1; y += 1) {
+      for (let x = 1; x < width - 1; x += 1) {
+        const at = (y * width + x) * 4;
+        const alpha = data[at + 3];
+        if (alpha === 0) clear += 1;
+        else if (alpha === 179) dimmed += 1;
+      }
+    }
+    let sum = 0;
+    for (let i = 0; i < data.length; i += 1) sum = (sum * 31 + (data[i] ?? 0)) % 2147483647;
+    return { clear, dimmed, hash: sum };
+  });
+}
+
+test.describe("cluster map glow-in (M3 decisions 61, 64)", () => {
+  test("the overlay is the clear region and the dimmed outside only, with no outline; the same in both themes", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "hover needs a fine pointer; phones use the toggle");
+    const dumps = [];
+    for (const theme of ["light", "dark"]) {
+      await page.goto(demo(`theme=${theme}`));
+      await demoMapReady(page);
+      await swatches(page).nth(2).hover();
+      await overlayShows(page, 2);
+      dumps.push(await overlayDump(overlay(page)));
+    }
+    const [light, dark] = dumps;
+    expect(light?.clear ?? 0).toBeGreaterThan(0);
+    expect(light?.dimmed ?? 0).toBeGreaterThan(0);
+    expect(dark).toEqual(light);
+  });
+
+  test("the glow-in is a short animation on the overlay, and absent with reduced motion", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "hover needs a fine pointer; phones use the toggle");
+    await page.goto(demo());
+    await demoMapReady(page);
+    await swatches(page).nth(2).hover();
+    await expect(overlay(page)).toHaveCount(1);
+    const names = () =>
+      overlay(page).evaluate((el) =>
+        el.getAnimations().map((a) => (a as CSSAnimation).animationName),
+      );
+    await expect.poll(names).toContain("overlay-glow-in");
+    // It settles to a plain overlay.
+    await expect
+      .poll(() => overlay(page).evaluate((el) => getComputedStyle(el).filter), { timeout: 3000 })
+      .toBe("none");
+    await page.mouse.move(0, 0);
+    await expect(overlay(page)).toHaveCount(0);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await swatches(page).nth(2).hover();
+    await overlayShows(page, 2);
+    expect(await names()).toEqual([]);
+  });
+});
+
 test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
   test("hovering swatch 3 in demo mode shows the overlay; its undimmed pixels lie within 0.05 of (0.769, 0.167)", async ({
     page,
@@ -117,12 +199,35 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
     const mean = (k: "x" | "y") => points.reduce((s, p) => s + p[k], 0) / points.length;
     expect(Math.abs(mean("x") - PATCH.x)).toBeLessThan(0.01);
     expect(Math.abs(mean("y") - PATCH.y)).toBeLessThan(0.02);
-    // Every other pixel is neutral mid-gray at about 70% (decision 13b).
+    // Every other pixel is neutral mid-gray at about 70% (decision 13b); there is no outline (64).
     expect(alphas).toEqual([0, 179]);
     expect(rgb).toEqual([128, 128, 128]);
     // Leaving the swatch hides it.
     await page.mouse.move(0, 0);
     await expect(overlay(page)).toHaveCount(0);
+  });
+
+  test("the overlay canvas is at least as large as the display copy's long side, capped at 1024 (M3 decision 36)", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "hover needs a fine pointer; phones use the toggle");
+    await page.goto(demo());
+    await demoMapReady(page);
+    await swatches(page).nth(2).hover();
+    await overlayShows(page, 2);
+    const sizes = await overlay(page).evaluate((el) => {
+      const c = el as HTMLCanvasElement;
+      const img = document.querySelector<HTMLImageElement>("[data-testid=image-well] img");
+      return {
+        long: Math.max(c.width, c.height),
+        display: Math.max(img?.naturalWidth ?? 0, img?.naturalHeight ?? 0),
+        smooth: getComputedStyle(c).imageRendering,
+      };
+    });
+    expect(sizes.display).toBeGreaterThan(0);
+    expect(sizes.long).toBeGreaterThanOrEqual(Math.min(sizes.display, 1024));
+    // Smooth edges: the overlay isn't drawn pixelated.
+    expect(sizes.smooth).not.toBe("pixelated");
   });
 
   test("the label reads 'Swatch 3 · 0.5% of the image'", async ({ page }, info) => {
@@ -131,6 +236,7 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
       await page.goto(demo("tab=palette"));
       await demoMapReady(page);
       await expect(label(page)).toHaveText("Swatch 3");
+      await openSwatchSheet(page);
       await toggle(page).click();
     } else {
       await page.goto(demo());
@@ -167,10 +273,10 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
     await expect(overlay(page)).toHaveCount(0);
   });
 
-  test("phone: the Cluster map toggle on the Palette tab shows the selected swatch's map", async ({
+  test("phone: the Cluster map toggle in the Swatch sheet shows the selected swatch's map", async ({
     page,
   }, info) => {
-    test.skip(!isPhoneProject(info), "the toggle is on the phone Palette tab");
+    test.skip(!isPhoneProject(info), "the toggle is in the phone Swatch sheet");
     await page.goto(demo());
     await demoMapReady(page);
     // Tapping a swatch selects it and shows no map: nothing depends on hover (spec 6.1).
@@ -178,19 +284,23 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
     await expect(swatches(page).nth(0)).toHaveAttribute("aria-pressed", "true");
     await expect(overlay(page)).toHaveCount(0);
     await tab(page, "Palette");
+    await openSwatchSheet(page);
     await expect(toggle(page)).toHaveAttribute("aria-checked", "false");
     await expect(toggle(page)).toHaveAccessibleName("Cluster map");
     await toggle(page).tap();
     await expect(toggle(page)).toHaveAttribute("aria-checked", "true");
     await expectShareLabel(page, 0);
     // Changing the selection changes the map.
+    await closeSheet(page);
     await swatches(page).nth(3).tap();
     await expectShareLabel(page, 3);
     await tab(page, "Source");
     await overlayShows(page, 3);
     await tab(page, "Palette");
+    await openSwatchSheet(page);
     await toggle(page).tap();
     await expect(toggle(page)).toHaveAttribute("aria-checked", "false");
+    await closeSheet(page);
     await expect(label(page)).toHaveText("Swatch 4");
     await tab(page, "Source");
     await expect(overlay(page)).toHaveCount(0);
@@ -201,6 +311,10 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
   }) => {
     await page.goto(demo("cluster=3"));
     await overlayShows(page, 2);
+    // Sample colors after the glow-in (decision 61) has settled.
+    await page.waitForFunction(() =>
+      document.getAnimations().every((a) => a.playState !== "running"),
+    );
     const w = well(page);
     await w.focus();
     await page.keyboard.press("+");
@@ -270,7 +384,9 @@ test.describe("cluster map overlay (spec 2.6, M2 decision 13)", () => {
     if (phone) {
       await swatches(page).nth(0).tap();
       await tab(page, "Palette");
+      await openSwatchSheet(page);
       await toggle(page).tap();
+      await closeSheet(page);
       await tab(page, "Source");
     } else {
       await swatches(page).nth(0).hover();

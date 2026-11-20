@@ -107,8 +107,8 @@ fieldset {
 }
 
 /*
- * Desktop: the app fills the window. The columns take the space between the header and the export
- * drawer and scroll inside it, so the drawer and the footer stay at the bottom (fix L3).
+ * Desktop: the app fills the window. The columns take the space between the header and the footer
+ * and scroll inside it, so the footer stays at the bottom (fix L3).
  */
 .app--desktop {
   height: 100dvh;
@@ -271,6 +271,13 @@ fieldset {
   color: var(--color-text);
 }
 
+/* Undo and Redo with nothing to undo or redo (spec 3.6): aria-disabled, so focus stays. */
+.text-button[aria-disabled="true"],
+.icon-button[aria-disabled="true"] {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
 /* Icon-only pill button: the desktop theme button (ui-contract Components "Theme button"). */
 .icon-pill {
   display: inline-flex;
@@ -363,11 +370,36 @@ fieldset {
 .shell--desktop .columns {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
+  /* One row as tall as the area; each column scrolls on its own (M3 decision 37). */
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .column {
   min-width: 0;
+}
+
+.shell--desktop .column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/*
+ * The scrolling part of a desktop column (M3 decision 37). Its padding and equal negative margin
+ * leave room for the 2 px focus ring plus offset at the column's edges, which a scroll container
+ * would otherwise clip, without moving the content.
+ */
+.column__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--space-1);
+  margin: calc(-1 * var(--space-1));
+  overflow-y: auto;
+  /* The containing block for absolutely positioned content inside (visually-hidden captions and
+     legends, chevron extras): without it they sit against the page and stretch the document (F30). */
+  position: relative;
 }
 
 .panel {
@@ -454,7 +486,7 @@ fieldset {
 
 /*
  * The cluster-map overlay (spec 2.6, M2 decision 13b): user content over the image, in the same
- * layer so it follows zoom and pan. The map is at analysis size, so it scales without smoothing.
+ * layer so it follows zoom and pan. The map is at display resolution (at most 1024 px), so it scales smoothly (M3 decision 36).
  * While a new palette is extracted, the old map is dimmed like the strip (spec 6.3).
  */
 .image-well__overlay {
@@ -463,7 +495,37 @@ fieldset {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  image-rendering: pixelated;
+}
+
+/*
+ * A short glow-in when the map appears (M3 decision 61): the overlay fades in with a light glow
+ * that settles to the plain overlay. Only opacity and a filter on the canvas change, never its
+ * colors. The duration is two slow steps, 0 ms under reduced motion (spec 6.4), and the media query
+ * below drops the animation outright.
+ */
+.image-well__overlay:not([data-settling]) {
+  animation: overlay-glow-in calc(var(--duration-slow) * 2) var(--ease-out);
+}
+
+@keyframes overlay-glow-in {
+  from {
+    opacity: 0;
+    filter: drop-shadow(0 0 var(--space-3) var(--marker-ring-outer));
+  }
+  40% {
+    opacity: 1;
+    filter: drop-shadow(0 0 var(--space-2) var(--marker-ring-outer));
+  }
+  to {
+    opacity: 1;
+    filter: drop-shadow(0 0 0 transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-well__overlay:not([data-settling]) {
+    animation: none;
+  }
 }
 
 .image-well__overlay[data-busy] {
@@ -471,12 +533,21 @@ fieldset {
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-/* Zoom out, Zoom in and Fit in the well's bottom-right corner (decision 15e). */
-.zoom-controls {
-  position: absolute;
-  right: var(--space-2);
-  bottom: var(--space-2);
+/* The toolbar row under the image well (decision 42): Markers and Eyedropper on the left, Zoom out,
+   Fit and Zoom in on the right. Nothing in it covers the image. */
+.image-toolbar {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.zoom-controls {
+  display: flex;
+  /* Always on the right, even when Markers and Eyedropper are hidden (M3 decision 48). */
+  margin: 0 0 0 auto;
+  padding: 0;
+  min-width: 0;
   background: var(--color-surface);
   border: var(--stroke) solid var(--color-border-control);
   border-radius: var(--radius-pill);
@@ -665,8 +736,9 @@ fieldset {
   position: sticky;
   top: calc(var(--header-height) + env(safe-area-inset-top));
   z-index: 5;
-  margin: calc(-1 * var(--space-2)) 0;
-  padding: var(--space-2) 0;
+  /* Room above the swatches for the Remove X, which reaches --space-3 past their top edge (decision 38). */
+  margin: calc(-1 * var(--space-3)) 0;
+  padding: var(--space-3) 0;
   background: var(--color-surface);
 }
 
@@ -702,13 +774,49 @@ fieldset {
   }
 }
 
+/* From 1024 px, with a window at least 640 px tall (fix L4's floor), the document never scrolls:
+   each column does (decision 37, F30). Shorter windows keep L4: the page scrolls instead. */
+@media (min-width: 1024px) and (min-height: 640px) {
+  html,
+  body {
+    overflow: hidden;
+  }
+}
+
+/* From 1024 px the strip pins at the top of column 2's scroll container (M3 decision 45). */
+@media (min-width: 1024px) {
+  .column__scroll {
+    scroll-padding-top: calc(var(--strip-dock-height, 0px) + var(--space-2));
+  }
+
+  .strip-dock {
+    top: calc(-1 * var(--space-1));
+  }
+}
+
+/* An open drawer is the only scroller (M3 decision 46); sheetDock.ts adds the class. */
+@media (max-width: 1023.98px) {
+  html.sheet-locked {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+  }
+}
+
 .strip-dock[data-stuck] {
   box-shadow: 0 var(--stroke) 0 var(--color-border);
 }
 
 .swatch {
+  position: relative;
   height: calc(var(--space-4) * 5);
   border-radius: var(--radius-swatch);
+}
+
+/* M3-T5: no text selection when a swatch is pressed or dragged. */
+.swatch {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .app--phone .swatch {
@@ -1067,6 +1175,61 @@ fieldset {
 }
 
 /* Working state (spec 6.3): the previous result dims; a progress bar shows after about 300 ms. */
+/*
+ * A swatch sits in a cell so the selected one can carry its Remove button (decision 38). The button's
+ * hit area is --hit square (44 px on phones), centered near the corner and reaching 12 px past the
+ * swatch's top and right edges, so it covers as little of the swatch as it can; the visible chip is
+ * small. It stays clear of the neighbours' presses and of the reorder press on the rest of the swatch.
+ */
+.swatch-cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.swatch-cell > .swatch {
+  flex: 1;
+  min-width: 0;
+}
+
+.swatch-remove {
+  position: absolute;
+  top: calc(var(--space-3) * -1);
+  right: calc(var(--space-3) * -1);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hit);
+  height: var(--hit);
+}
+
+.swatch-remove__chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.swatch-remove__chip svg {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+
+.swatch-remove:focus-visible {
+  outline: none;
+}
+
+.swatch-remove:focus-visible .swatch-remove__chip {
+  outline: var(--stroke-selected) solid var(--color-accent);
+  outline-offset: var(--stroke-selected);
+}
+
 .swatch-strip[data-busy] {
   opacity: 0.6;
   transition: opacity var(--duration-fast) var(--ease-out);
@@ -1159,41 +1322,145 @@ fieldset {
 }
 
 .app--phone {
-  padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
+  /* --sheet-extra lets the page scroll far enough to pin the strip while a sheet is open. */
+  padding-bottom: calc(
+    var(--tabbar-height) +
+    env(safe-area-inset-bottom) +
+    var(--sheet-extra, 0px)
+  );
 }
 
-/* Export drawer (ui-contract "Export drawer"). Its top border stays inside the page gutters (L11). */
-.export-drawer {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0 var(--space-6);
-  border-top: var(--stroke) solid var(--color-divider);
+/* Export panel (M3 decision 56; ui-contract "Export panel"). From 1024 px a right-side drawer under
+   the header that overlays column 3; below that the bottom sheet holds the same sections. */
+.export-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: clip;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
 }
 
-.shell--desktop .export-drawer {
-  flex: none;
+.export-dialog::backdrop {
+  background: transparent;
 }
 
-.export-half {
+.export-dialog__scrim {
+  position: absolute;
+  inset: 0;
+}
+
+.export-drawer__panel {
+  position: absolute;
+  top: calc(var(--header-height) + var(--stroke));
+  right: 0;
+  bottom: 0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-6);
-  padding: var(--space-4) 0;
-}
-
-.export-half + .export-half {
-  padding-left: var(--space-6);
+  flex-direction: column;
+  gap: var(--space-4);
+  width: calc(var(--space-8) * 12);
+  max-width: 100%;
+  padding: var(--space-4);
+  overflow-y: auto;
   border-left: var(--stroke) solid var(--color-divider);
+  background: var(--color-surface);
+  animation: export-in var(--duration-slow) var(--ease-out);
 }
 
-.export-title {
-  font-size: var(--text-sm);
+@keyframes export-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .export-drawer__panel {
+    animation: none;
+  }
+}
+
+.export-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.export-drawer__title {
+  font-size: var(--text-md);
   font-weight: var(--weight-strong);
 }
 
-.export-formats {
+.export-drawer__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+}
+
+.export-tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+}
+
+.bottom-sheet__body > .export-tabs {
+  margin-top: var(--space-2);
+}
+
+.export-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: var(--hit);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
   color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.export-tab[aria-selected="true"] {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: var(--weight-strong);
+  box-shadow: 0 0 0 var(--stroke) var(--color-border);
+}
+
+.export-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+}
+
+.export-note,
+.export-item__detail {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.export-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.export-item__title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
 }
 
 /*
@@ -1203,25 +1470,51 @@ fieldset {
 .footer {
   --footer-gutter: var(--space-6);
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0 var(--space-4);
+  gap: var(--space-4);
   margin: 0 calc(env(safe-area-inset-right) * -1) 0 calc(env(safe-area-inset-left) * -1);
-  padding: var(--space-2) calc(var(--footer-gutter) + env(safe-area-inset-right)) var(--space-2)
+  padding: 0 calc(var(--footer-gutter) + env(safe-area-inset-right)) 0
     calc(var(--footer-gutter) + env(safe-area-inset-left));
   border-top: var(--stroke) solid var(--color-divider);
   color: var(--color-text-muted);
   font-size: var(--text-xs);
 }
 
+/* One thin row (M3 decision 54): the links' hit area (--hit) sets its height, with no padding. */
+.footer__statement {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.footer__short {
+  display: none;
+}
+
 .app--phone .footer {
   --footer-gutter: var(--space-4);
+  gap: var(--space-2);
+  /* Keeps the links' focus clear of the fixed tab bar when the page is scrolled to its end. */
+  margin-bottom: var(--space-2);
+}
+
+.app--phone .footer__long {
+  display: none;
+}
+
+.app--phone .footer__short {
+  display: inline;
 }
 
 .footer__links {
   display: flex;
-  gap: var(--space-4);
+  flex: none;
+  gap: var(--space-2);
+  white-space: nowrap;
 }
 
 .footer a {
@@ -1297,5 +1590,1020 @@ fieldset {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/*
+ * ==== M3 ====
+ * One labelled section per M3 task (plan M3-T2, "Parallel execution"). Each task adds its rules
+ * only inside its own section, below its "styles go here" line, so parallel branches touch
+ * separate hunks. Don't reformat or reorder the sections.
+ */
+
+/* ---- M3-T2 scaffolding: chevron rows, bottom sheet, editor row, stubs ---- */
+
+/* Chevron rows in the Palette column (ui-contract column 2 item 5; Components "Chevron row"). */
+.chevron-rows {
+  border-top: var(--stroke) solid var(--color-divider);
+}
+
+/* A button version of the summary: it keeps the summary's padding and touch text size (M2 F4, F7). */
+.chevron-row__button {
+  width: 100%;
+  text-align: left;
+}
+
+/* On desktop the row expands in place; on phones it opens a sheet and the chevron stays put. */
+.app--desktop .chevron-row__button[aria-expanded="true"] .chevron-row__chevron {
+  transform: rotate(90deg);
+}
+
+.chevron-row__content {
+  padding: var(--space-2) 0 var(--space-3);
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+/* The editor's HEX, Lock and Ramp row (ui-contract column 2 item 4). */
+.swatch-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.swatch-editor__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch-editor > .chevron-row__content {
+  border-top: var(--stroke) solid var(--color-divider);
+}
+
+/* A panel that is still to come: one muted line ("Coming in a later version"). */
+.panel-stub {
+  padding: var(--space-2) 0;
+}
+
+/*
+ * Bottom sheet (ui-contract Components "Bottom sheet (phone)"; spec 6.1). A modal dialog that
+ * fills the viewport and holds the scrim and the panel, so both use tokens (a ::backdrop can't
+ * read them in older browsers). The panel clears the home indicator and the side insets.
+ */
+.bottom-sheet {
+  position: fixed;
+  /* --sheet-top is the pinned strip's bottom edge, when there is one (M3 decision 35). */
+  inset: var(--sheet-top, 0px) 0 0 0;
+  width: 100%;
+  height: calc(100% - var(--sheet-top, 0px));
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  /* clip, not hidden: focus during the slide-in must not scroll the sheet's own box */
+  overflow: clip;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.bottom-sheet::backdrop {
+  background: transparent;
+}
+
+.bottom-sheet__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--color-scrim);
+  animation: sheet-fade var(--duration-slow) var(--ease-out);
+}
+
+.bottom-sheet__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: calc(var(--space-8) * 20);
+  max-height: calc(100dvh - var(--sheet-top, var(--header-height)) - var(--sheet-gap, 0px));
+  margin: 0 auto;
+  padding-top: 0;
+  padding-right: calc(var(--space-4) + env(safe-area-inset-right));
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+  padding-left: calc(var(--space-4) + env(safe-area-inset-left));
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  background: var(--color-surface);
+  animation: sheet-in var(--duration-slow) var(--ease-out);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.bottom-sheet__panel[data-dragging] {
+  transition: none;
+}
+
+/* The grabber and title take the downward swipe, so the browser mustn't scroll them. */
+.bottom-sheet__header {
+  flex: none;
+  padding-top: var(--space-2);
+  touch-action: none;
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.bottom-sheet__grabber {
+  display: block;
+  width: var(--space-8);
+  height: var(--space-1);
+  margin: 0 auto var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+}
+
+.bottom-sheet__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.bottom-sheet__title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-strong);
+}
+
+.bottom-sheet__title-row .bottom-sheet__title {
+  margin-right: auto;
+}
+
+.bottom-sheet__action,
+.bottom-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  margin-right: calc(var(--space-2) * -1);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.bottom-sheet__action {
+  margin-right: 0;
+}
+
+.bottom-sheet__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  cursor: auto;
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-sheet__panel,
+  .bottom-sheet__scrim {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ---- end M3-T2 ---- */
+
+/* ---- M3-T3 color editor (SwatchEditor.tsx) ---- */
+.swatch-editor__axis {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch-editor__letter {
+  width: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.swatch-editor__axis .slider-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.swatch-editor__axis .slider {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+.hex-field {
+  width: calc(var(--space-8) * 3);
+  min-height: var(--hit);
+  padding: 0 var(--space-2);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}
+
+.hex-field:disabled {
+  border-color: var(--color-divider);
+  color: var(--color-text-muted);
+}
+
+.hex-field[aria-invalid="true"] {
+  border-color: var(--color-warn);
+}
+
+/* Warn is always paired with a label (tokens.css). */
+.gamut-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.gamut-flag__dot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-warn);
+}
+
+@media (max-width: 1023.98px), (pointer: coarse) {
+  .hex-field {
+    font-size: var(--text-input-touch);
+  }
+}
+
+/* Pin state (decision 24): the badge on a strip swatch. */
+.pin-icon {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+
+.swatch__badge {
+  position: absolute;
+  /* Bottom-left, so the selected swatch's Remove X at the top-right never covers it (M3 decision 48). */
+  bottom: var(--space-1);
+  left: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-4);
+  height: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  pointer-events: none;
+}
+
+.swatch__badge svg {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+
+/* ---- end M3-T3 ---- */
+
+/* ---- M3-T4 swatch row and sheet (SwatchDetails.tsx) ---- */
+.swatch-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.swatch-fields {
+  display: flex;
+  flex-direction: column;
+}
+
+.swatch-fields .number-field,
+.swatch-name .number-field {
+  width: calc(var(--space-8) * 3);
+}
+
+.swatch-fields .swatch-hex-field,
+.swatch-name .swatch-name-field {
+  text-align: left;
+}
+
+/* The copy icon sits directly beside the color code (decision 39). */
+.copy-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.copy-icon {
+  min-width: var(--hit);
+  min-height: var(--hit);
+}
+
+.swatch-name {
+  display: flex;
+  flex-direction: column;
+}
+
+.swatch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch-note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.swatch-segmented {
+  flex-wrap: nowrap;
+}
+
+/* ---- end M3-T4 ---- */
+
+/* ---- M3-T5 strip actions: "+" tile, reorder (SwatchStrip.tsx) ---- */
+.swatch[data-dragging] {
+  opacity: 0.6;
+  outline: var(--stroke-selected) dashed var(--color-accent);
+  outline-offset: var(--stroke-selected);
+}
+
+.strip-add {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.strip-add__tile {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: var(--stroke) dashed var(--color-border-control);
+  border-radius: var(--radius-swatch);
+  color: var(--color-text-muted);
+}
+
+.strip-add__tile:focus-visible {
+  outline: var(--stroke-selected) solid var(--color-accent);
+  outline-offset: var(--stroke-selected);
+}
+
+/* ---- end M3-T5 ---- */
+
+/* ---- M3-T6 adjustments and compare (AdjustmentsPanel.tsx) ---- */
+.adjustments-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.adjustments-panel__note {
+  margin: 0;
+}
+
+/* ---- end M3-T6 ---- */
+
+/* ---- M3-T7 ramps and harmonies (RampPanel.tsx) ---- */
+/* M3-T7 styles go here. */
+.ramp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+
+/* The sheet body clips at its edges; room for the 4 px focus ring and the source tile's outline
+   keeps the first and last tiles' rings whole (M3-F28). */
+.bottom-sheet__body .ramp-panel {
+  padding-inline: var(--space-1);
+}
+
+.ramp-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ramp-section > .section-label {
+  margin: 0;
+}
+
+.ramp-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ramp-group__label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.ramp-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ramp-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.ramp-tile__chip {
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-swatch);
+  cursor: pointer;
+}
+
+.ramp-tile[data-source] .ramp-tile__chip {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.ramp-tile__chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ramp-tile__caption,
+.ramp-tile__hex {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.ramp-tile__hex {
+  font-family: var(--font-mono);
+}
+
+/* ---- end M3-T7 ---- */
+
+/* ---- M3-T8 contrast matrix and close pairs (ContrastPanel.tsx, ClosePairsMark.tsx) ---- */
+/* M3-T8 styles go here. */
+.contrast-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.contrast-scroll {
+  overflow-x: auto;
+  /* Sideways only: a vertical wheel or swipe over the matrix must chain to the column or sheet (F30). */
+  overscroll-behavior-x: contain;
+  max-width: 100%;
+}
+
+.contrast-matrix {
+  border-collapse: separate;
+  border-spacing: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+}
+
+.contrast-matrix th,
+.contrast-matrix td {
+  min-width: calc(var(--space-8) * 2);
+  padding: 0;
+  font-weight: var(--weight-regular);
+  text-align: center;
+}
+
+.contrast-head {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+}
+
+.contrast-head__chip {
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-pill);
+  border: var(--stroke) solid var(--color-border);
+}
+
+.contrast-sample {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--space-6);
+  margin-bottom: var(--space-1);
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-input);
+}
+
+.contrast-sample__ink {
+  width: var(--space-4);
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
+}
+
+.contrast-ratio {
+  display: block;
+  font-weight: var(--weight-strong);
+}
+
+.contrast-badge {
+  display: block;
+  color: var(--color-text-muted);
+}
+
+.close-dot {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--space-3);
+  height: var(--space-3);
+  border: var(--stroke-selected) solid var(--color-surface);
+  border-radius: var(--radius-pill);
+  background: var(--color-warn);
+  box-shadow: 0 0 0 var(--stroke) var(--color-text);
+}
+
+/* The line under the strip: the legend. It is only as tall as its content. */
+.strip-marks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The legend under the strip: the corner dot, then what it means (M3 decisions 51, 52). */
+.close-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* The dot on a flagged swatch's top-left corner. UI, not user content: the surface ring and the text
+   ring keep it visible on any swatch color, in both themes. */
+.swatch__flag {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  box-sizing: border-box;
+  width: var(--space-3);
+  height: var(--space-3);
+  border: var(--stroke-selected) solid var(--color-surface);
+  border-radius: var(--radius-pill);
+  background: var(--color-warn);
+  box-shadow: 0 0 0 var(--stroke) var(--color-text);
+  pointer-events: none;
+}
+
+/* ---- end M3-T8 ---- */
+
+/* ---- M3-T9 CVD simulation (CvdPanel.tsx) ---- */
+.cvd-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 0 var(--space-3);
+}
+
+.cvd-strip__label {
+  margin-bottom: var(--space-1);
+}
+
+.cvd-strip__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.cvd-strip__swatch {
+  flex: 1 1 var(--space-6);
+  height: var(--space-8);
+  border-radius: var(--radius-swatch);
+}
+
+/* ---- end M3-T9 ---- */
+
+/* ---- M3-T12 markers, linking, well tools, loupe (MarkerLayer.tsx, WellTools.tsx, Loupe.tsx) ---- */
+/* Markers sit over the well, outside the zoomed layer, so they keep their size at any zoom. */
+.marker-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.marker {
+  position: absolute;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  margin: calc(var(--touch-target) / -2) 0 0 calc(var(--touch-target) / -2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  border-radius: var(--radius-pill);
+}
+
+/* The selected or focused marker rises above its neighbours (nothing overlays the markers, decision 42). */
+.marker[aria-pressed="true"],
+.marker:focus-visible,
+.marker[data-linked] {
+  z-index: 1;
+}
+
+/* Light outer stroke, dark inner stroke, then the swatch color: visible on any image (spec 3.7). */
+.marker__ring {
+  position: relative;
+  box-sizing: border-box;
+  width: calc(var(--space-6) - var(--space-1) / 2);
+  height: calc(var(--space-6) - var(--space-1) / 2);
+  border-radius: var(--radius-pill);
+  border: var(--stroke-selected) solid var(--marker-ring-outer);
+  box-shadow: inset 0 0 0 var(--stroke-selected) var(--marker-ring-inner);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.marker[data-linked] .marker__ring {
+  transform: scale(1.2);
+}
+
+.marker__accent {
+  position: absolute;
+  inset: calc((var(--stroke-selected) + var(--space-1)) * -1);
+  border-radius: var(--radius-pill);
+  border: var(--stroke-selected) solid var(--color-accent);
+  pointer-events: none;
+}
+
+.marker:focus-visible {
+  outline: none;
+}
+
+.marker:focus-visible .marker__ring {
+  outline: var(--stroke-selected) solid var(--color-accent);
+  outline-offset: var(--space-1);
+}
+
+/* Markers and Eyedropper, left in the toolbar row under the well (decision 42). */
+.well-tools {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  background: var(--color-surface);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  cursor: default;
+  touch-action: manipulation;
+}
+
+.well-tools__button[aria-pressed="true"] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* The loupe: the crop at 8x, a crosshair on the sampled pixel and the live HEX. */
+.loupe {
+  position: absolute;
+  z-index: 4;
+  width: calc(var(--space-8) * 3.75);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: var(--stroke-selected) solid var(--marker-ring-outer);
+  border-radius: var(--radius-card);
+  box-shadow: 0 0 0 var(--stroke) var(--marker-ring-inner);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.loupe__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--color-surface-sunken);
+}
+
+.loupe__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.loupe__cross {
+  position: absolute;
+  background: var(--marker-ring-inner);
+  box-shadow: 0 0 0 var(--stroke) var(--marker-ring-outer);
+}
+
+.loupe__cross--h {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--stroke);
+}
+
+.loupe__cross--v {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: var(--stroke);
+}
+
+.loupe__hex {
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  text-align: center;
+}
+
+/* ---- end M3-T12 ---- */
+
+/* ---- M3-T13 Place on image (SwatchDetails.tsx) ---- */
+/* M3-T13 styles go here. */
+
+/* ---- end M3-T13 ---- */
+
+/* ---- M3-T14 Palette and Values views (ViewLayer.tsx, *ViewRows.tsx, StripMarks.tsx) ---- */
+/*
+ * The image view layer: user content over the image in the zoomed layer (spec 3.8, 6.2), the same
+ * in both themes. While a new view is computed the old one dims, like the cluster overlay.
+ */
+.image-well__view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.image-well__view[data-settling] {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.view-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Palette view: the area-share bar and its legend (ui-contract "Image views" items 3 and 4). */
+.share-bar {
+  display: flex;
+  height: var(--space-4);
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+}
+
+.share-bar__part {
+  flex-basis: 0;
+  flex-shrink: 1;
+  min-width: var(--stroke);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.legend__entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.legend__squares {
+  display: flex;
+  gap: var(--stroke);
+}
+
+.legend__square {
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--stroke-selected);
+}
+
+/* Values view: the band strip, dark to light, with its outline (ui-contract Values view item 3). */
+.band-strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.band-strip__blocks {
+  display: flex;
+  height: var(--space-4);
+  overflow: hidden;
+  border: var(--stroke) solid var(--color-border);
+}
+
+.band-strip__block {
+  flex: 1 1 0;
+}
+
+.band-strip__ends {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* ---- end M3-T14 ---- */
+
+/* ---- M3-T15 marker drag (MarkerLayer.tsx) ---- */
+/* The marker being dragged stays on top and shows it is held. */
+.marker[data-dragging] {
+  z-index: 4;
+  cursor: grabbing;
+}
+
+.marker[data-dragging] .marker__ring {
+  transform: scale(1.2);
+}
+
+.marker[data-dragging],
+.marker[data-dragging] * {
+  transition: none;
+}
+
+/* ---- end M3-T15 ---- */
+
+/* ---- M3-T16 eyedropper (WellTools.tsx, EyedropperLayer.tsx) ---- */
+/* The layer takes every press while the eyedropper is on; a swipe on the image never scrolls. */
+.eyedropper-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  cursor: crosshair;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.eyedropper-layer[data-disabled] {
+  cursor: not-allowed;
+}
+
+.hint-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---- end M3-T16 ---- */
+
+/* The Cluster map row follows other rows, whose divider already closes them. */
+.swatch-details .setting-rows {
+  border-top: none;
+}
+
+/* A mounted live region that adds no box of its own (spec 6.3). */
+.live-region {
+  display: contents;
+}
+
+/* ---- M3 decision 58: Adjustments header indicator, reset icons ---- */
+.chevron-row__head {
+  position: relative;
+}
+
+.chevron-row__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chevron-row__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+.chevron-row__dot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+/* The reset-all icon sits left of the chevron, outside the toggle button. */
+.chevron-row__extra {
+  position: absolute;
+  top: 50%;
+  right: var(--space-6);
+  display: inline-flex;
+  transform: translateY(-50%);
+}
+
+.reset-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.setting-row__reset {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: var(--hit);
+  min-height: var(--hit);
+  margin-left: var(--space-1);
+}
+
+.setting-row__value[data-resettable]:has(.slider-group) {
+  flex-basis: calc(
+    var(--slider-min) +
+    var(--space-2) +
+    var(--number-width) +
+    var(--hit) +
+    var(--space-1)
+  );
+  max-width: calc(
+    var(--slider-natural) +
+    var(--space-2) +
+    var(--number-width) +
+    var(--hit) +
+    var(--space-1)
+  );
+}
+
+/* At 320 px the reset slot needs room: a tighter label gap and a shorter slider minimum. */
+@media (max-width: 359.98px) {
+  .setting-row:has(> [data-resettable]) {
+    --slider-min: calc(var(--space-8) * 1.5);
+    column-gap: var(--space-2);
+  }
+
+  /*
+   * A segmented value (Gamut) has its text's natural width, which wider fonts (Linux, CI) push
+   * past the row. Tighter segments and a shorter label minimum keep it on the label's line.
+   */
+  .setting-row:has(> [data-resettable] .segmented) {
+    --setting-label-min: calc(var(--space-8) * 2);
+  }
+
+  .setting-row:has(> [data-resettable] .segmented) .segment {
+    padding: 0 var(--space-2);
   }
 }

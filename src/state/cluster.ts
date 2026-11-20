@@ -3,13 +3,13 @@
  * not in undo (spec 3.6).
  *
  * On desktop, hovering a swatch with a fine pointer or focusing it from the keyboard shows its map.
- * Nothing depends on hover (spec 6.1 "No hover"): on phones a "Cluster map" toggle on the Palette
- * tab shows the selected swatch's map until M3 moves it into the swatch sheet (M2 decision 13d).
+ * Nothing depends on hover (spec 6.1 "No hover"): on phones a "Cluster map" toggle in the swatch
+ * sheet shows the selected swatch's map (M2 decision 13d).
  * The mockup state's `cluster=<n>` parameter pins a swatch's map (decision 14b).
  */
 import { computed, signal } from "@preact/signals";
 import type { ClusterMap } from "../extract/cluster-map";
-import { clusterMap, palette, selectedSwatchId } from "./signals";
+import { clusterMap, outputPalette, selectedSwatchId } from "./signals";
 
 /** The swatch under a fine pointer. */
 export const clusterHover = signal<string | null>(null);
@@ -41,7 +41,7 @@ export const shownCluster = computed<ShownCluster | null>(() => {
     clusterPinned.value ??
     (clusterToggle.value ? selectedSwatchId.value : null);
   const map = clusterMap.value;
-  const swatches = palette.value;
+  const swatches = outputPalette.value;
   if (id === null || !map || map.shares.length !== swatches.length) return null;
   const index = swatches.findIndex((s) => s.id === id);
   if (index < 0) return null;
