@@ -4,7 +4,8 @@
  * `pointerRouting.ts`), so this layer takes them: a press shows the loupe, a move updates it and
  * release samples the working master through the worker's `sample` (spec 7.4). A pick always adds
  * a new picked, pinned swatch with its point, as one undo step; there is no Replace mode, since
- * dragging a marker updates a swatch (decision 38). At 12 swatches the eyedropper can't add, so it
+ * dragging a marker updates a swatch (decision 38). A successful pick turns the eyedropper off
+ * (decision 63). At 12 swatches the eyedropper can't add, so it
  * turns off and its button is disabled with the limit note. Esc cancels a press in progress, or
  * else turns the eyedropper off. Nothing here uses the browser's EyeDropper API (spec 6.1).
  *
@@ -193,6 +194,8 @@ export function EyedropperLayer() {
       palette.value = next;
       selectSwatch(next[next.length - 1]?.id ?? null);
       commit("Add picked color");
+      // One pick per press of the Eyedropper button or the E key (decision 63).
+      eyedropperMode.value = "off";
     } catch {
       imageMessage.value = { kind: "error", text: "The color couldn't be picked. Try again." };
     }

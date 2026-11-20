@@ -98,6 +98,72 @@ test.describe("eyedropper (spec 3.2, 3.7)", () => {
     await expectHex(page, 7, "#D4527F");
   });
 
+  test("the eyedropper turns off after one pick (decision 63)", async ({ page }, info) => {
+    const phone = isPhoneProject(info);
+    await page.goto(demo());
+    await tool(page).click();
+    await expect(page.getByText("Pick a color from the image to add it")).toBeVisible();
+    await pick(page, PATCH[4], phone);
+    await expect(swatches(page)).toHaveCount(7);
+    await expect(tool(page)).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByText("Pick a color from the image to add it")).toHaveCount(0);
+    await expect(page.getByTestId("eyedropper-layer")).toHaveCount(0);
+    await expect(swatches(page).nth(6)).toHaveAttribute("aria-pressed", "true");
+    // A second tap on the image adds nothing.
+    await pick(page, PATCH[6], phone);
+    await page.waitForTimeout(300);
+    await expect(swatches(page)).toHaveCount(7);
+  });
+
+  test("a pick takes one undo step; picking again needs the button", async ({ page }, info) => {
+    const phone = isPhoneProject(info);
+    await page.goto(demo());
+    await tool(page).click();
+    await pick(page, PATCH[4], phone);
+    await expect(swatches(page)).toHaveCount(7);
+    await tool(page).click();
+    await expect(tool(page)).toHaveAttribute("aria-pressed", "true");
+    await pick(page, PATCH[6], phone);
+    await expect(swatches(page)).toHaveCount(8);
+    await undoButton(page).click();
+    await expect(swatches(page)).toHaveCount(7);
+    await undoButton(page).click();
+    await expect(swatches(page)).toHaveCount(6);
+  });
+
+  test("E turns it on again after a pick; the button keeps focus after a keyboard start", async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "keyboard shortcut");
+    await page.goto(demo());
+    await page.locator("body").click({ position: { x: 1, y: 1 } });
+    await page.keyboard.press("e");
+    await expect(tool(page)).toHaveAttribute("aria-pressed", "true");
+    await pick(page, PATCH[4], false);
+    await expect(swatches(page)).toHaveCount(7);
+    await expect(tool(page)).toHaveAttribute("aria-pressed", "false");
+    await page.keyboard.press("e");
+    await expect(tool(page)).toHaveAttribute("aria-pressed", "true");
+    await pick(page, PATCH[6], false);
+    await expect(swatches(page)).toHaveCount(8);
+    await expect(tool(page)).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("Esc, or pressing the button again before a pick, cancels without adding", async ({
+    page,
+  }, info) => {
+    await page.goto(demo());
+    await tool(page).click();
+    await tool(page).click();
+    await expect(tool(page)).toHaveAttribute("aria-pressed", "false");
+    await expect(swatches(page)).toHaveCount(6);
+    test.skip(isPhoneProject(info), "keyboard shortcut");
+    await tool(page).click();
+    await page.keyboard.press("Escape");
+    await expect(tool(page)).toHaveAttribute("aria-pressed", "false");
+    await expect(swatches(page)).toHaveCount(6);
+  });
+
   test("E toggles it, but not in a text field; Esc turns it off", async ({ page }, info) => {
     test.skip(isPhoneProject(info), "keyboard shortcut");
     await page.goto(demo());

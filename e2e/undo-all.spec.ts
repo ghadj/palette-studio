@@ -127,7 +127,11 @@ test("edit, adjust, ramp, reorder, drag, pick and re-extract; undo all, redo all
   await page.getByRole("button", { name: "Eyedropper" }).click();
   await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
   await expect(strip(page)).toHaveCount(8);
-  await page.getByRole("button", { name: "Eyedropper" }).click();
+  // The pick turned the eyedropper off by itself (decision 63).
+  await expect(page.getByRole("button", { name: "Eyedropper" })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
   await record("pick");
 
   // 7. Re-extract: Colors 6 -> 5 keeps the locked swatches.

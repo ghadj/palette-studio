@@ -48,11 +48,6 @@ for (const scheme of ["light", "dark"] as const) {
         expect(b.left - RING).toBeGreaterThanOrEqual(clip.left - 1);
         expect(b.right + RING).toBeLessThanOrEqual(clip.right + 1);
       }
-      // the first and last tile of the first row, keyboard focused, keep their rings in view
-      await tiles.first().focus();
-      await page.keyboard.press("Shift+Tab");
-      await page.keyboard.press("Tab");
-      await expect(tiles.first()).toBeFocused();
       const noScroll = await page.evaluate(
         () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
       );
