@@ -117,7 +117,7 @@ export const M1_SCREENS: readonly Screen[] = [
   ),
   // M4 (plan "Screens affected"), registered by M4-T2 so token and axe tests cover each screen from
   // the start. The tasks that build them fill them in; no task edits this list.
-  // Desktop: column 3's rows open in place (`rows=`), the gradient types, compare, surround, the
+  // Desktop: column 3's rows open in place (`rows=`), the gradient types, surround, the
   // technique parameters and the theme menu's Surround group.
   ...(
     [
@@ -125,12 +125,9 @@ export const M1_SCREENS: readonly Screen[] = [
       ["gradient-stop-desktop", "rows=stop", TALL_DESKTOP],
       ["gradient-geometry-desktop", "rows=geometry", TALL_DESKTOP],
       ["gradient-radial-desktop", "gradient=radial&rows=geometry", TALL_DESKTOP],
-      ["gradient-preview-desktop", "rows=preview", TALL_DESKTOP],
-      ["gradient-check-desktop", "overlay=on&cvd=deuteranopia&rows=preview", TALL_DESKTOP],
       ["gradient-technique-desktop", "technique=image-sample", TALL_DESKTOP],
       ["gradient-conic-desktop", "gradient=conic", DESKTOP],
-      ["gradient-compare-desktop", "compare=oklch", DESKTOP],
-      ["gradient-surround-desktop", "surround=mid-gray&aspect=1:1", DESKTOP],
+      ["gradient-surround-desktop", "surround=mid-gray", DESKTOP],
       ["surround-menu-desktop", "menu=theme", DESKTOP],
     ] as const
   ).map(
@@ -141,14 +138,12 @@ export const M1_SCREENS: readonly Screen[] = [
       device: "desktop",
     }),
   ),
-  // Phone: each Gradient-tab drawer open below the pinned preview, compare and the technique.
+  // Phone: each Gradient-tab drawer open below the pinned preview and stop bar, and the technique.
   ...(
     [
       ["interp-options-sheet-phone", "rows=interpolation&space=oklch"],
       ["stop-sheet-phone", "rows=stop"],
       ["geometry-sheet-phone", "rows=geometry"],
-      ["preview-sheet-phone", "rows=preview"],
-      ["gradient-compare-phone", "compare=oklch"],
       ["gradient-technique-phone", "technique=image-sample"],
     ] as const
   ).map(

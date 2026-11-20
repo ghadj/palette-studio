@@ -27,7 +27,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: DESKTOP,
     mockup: { light: "01-studio-light.png", dark: "02-studio-dark.png" },
     frame:
-      "Whole frame. The header has Export where the mockup has Share, and there is no export bar under the columns (D10). Column 2 has the chevron rows and the Lock and Ramp pills (M3-T2). Column 3 is built in M4: the preview pinned at the top (D12), the type chips, the stop bar, the Interpolation and Technique rows, then the Interpolation options, Stop, Geometry and Preview chevron rows (Q4).",
+      "Whole frame. The header has Export where the mockup has Share, and there is no export bar under the columns (D10). Column 2 has the chevron rows and the Lock and Ramp pills (M3-T2). Column 3 is built in M4: the preview pinned at the top (D12), the type chips, the stop bar, the Interpolation and Technique rows, then the Interpolation options, Stop, and Geometry chevron rows (Q4, decision 68).",
   },
   {
     // M2-T7. Taller than the other desktop shots, so the open Advanced rows fit in column 1
@@ -60,7 +60,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: PHONE,
     mockup: { light: "09-mobile-light.png", dark: "10-mobile-dark.png" },
     frame:
-      "Middle phone: the preview pinned under the header, the type chips, the stop bar, the Interpolation and Technique rows (the angle is whatever the state holds, D1), then the Interpolation options, Stop, Geometry and Preview rows (Q4, D12).",
+      "Middle phone: the preview pinned under the header, the type chips, the stop bar, the Interpolation and Technique rows (the angle is whatever the state holds, D1), then the Interpolation options, Stop, and Geometry rows (Q4, D12).",
   },
   {
     name: "studio-tablet",
@@ -293,22 +293,6 @@ export const M1_SHOTS: readonly Shot[] = [
       "Not drawn. A radial gradient with the Geometry row open: shape, size keyword and center, Reverse and Mirror (spec 4.3).",
   },
   {
-    name: "gradient-preview-desktop",
-    path: "./?demo=mockup&rows=preview",
-    viewport: TALL_DESKTOP,
-    mockup: null,
-    frame:
-      "Not drawn. Column 3 with the Preview row open: aspect ratio, Compare, Text check, Vision and Surround (spec 4.4, 6.2, plan D22).",
-  },
-  {
-    name: "gradient-check-desktop",
-    path: "./?demo=mockup&overlay=on&cvd=deuteranopia&rows=preview",
-    viewport: TALL_DESKTOP,
-    mockup: null,
-    frame:
-      "Not drawn. The text check on (White text with the lowest contrast ratio and its badge) and the deuteranopia simulation, with the Preview row open (spec 3.5, 4.4).",
-  },
-  {
     name: "gradient-technique-desktop",
     path: "./?demo=mockup&technique=image-sample",
     viewport: TALL_DESKTOP,
@@ -325,20 +309,12 @@ export const M1_SHOTS: readonly Shot[] = [
       "Column 3 with the Conic chip selected. The mockup draws a linear gradient; compare the layout, not the type (D1).",
   },
   {
-    name: "gradient-compare-desktop",
-    path: "./?demo=mockup&compare=oklch",
-    viewport: DESKTOP,
-    mockup: null,
-    frame:
-      "Not drawn. Compare mode: two labelled previews stacked at the same width, OKLab above OKLCH (spec 4.4, plan D22).",
-  },
-  {
     name: "gradient-surround-desktop",
-    path: "./?demo=mockup&surround=mid-gray&aspect=1:1",
+    path: "./?demo=mockup&surround=mid-gray",
     viewport: DESKTOP,
     mockup: null,
     frame:
-      "Not drawn. A 1:1 preview on a mid-gray surround (#777777), and the image well on the same surround (spec 6.2, plan Q3a).",
+      "Not drawn. The preview on a mid-gray surround (#777777), and the image well on the same surround (spec 6.2, plan Q3a).",
   },
   {
     name: "surround-menu-desktop",
@@ -369,21 +345,6 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: PHONE,
     mockup: null,
     frame: "Not drawn. The Geometry drawer below the pinned preview (spec 6.1).",
-  },
-  {
-    name: "preview-sheet-phone",
-    path: "./?demo=mockup&tab=gradient&rows=preview",
-    viewport: PHONE,
-    mockup: null,
-    frame: "Not drawn. The Preview drawer below the pinned preview (spec 6.1).",
-  },
-  {
-    name: "gradient-compare-phone",
-    path: "./?demo=mockup&tab=gradient&compare=oklch",
-    viewport: PHONE,
-    mockup: null,
-    frame:
-      "Not drawn. Compare mode on the Gradient tab: both previews stacked in the pinned dock, which may reach 30% of the screen (plan Q2, D22).",
   },
   {
     name: "gradient-technique-phone",

@@ -580,67 +580,51 @@ Rules that hold for every task:
   - Note: the Technique select adds a disabled "Custom" option while Custom, and a visually hidden `technique-value` span keeps T7's testid. Population-weighted is tested for shape (first 0, last 100, increasing, not even), not exact positions. A parameter change that doesn't change a live technique records nothing. A technique edit that causes a scan is committed once its colors land (one step); a scan after a new image with an empty history is not an undo step. `TechniqueRows` selects the first stop when none is selected (T8 follow-up). The Alpha/Midpoint commit-on-Enter follow-up is left for T14 (it needs `StopDetails.tsx` and `Slider.tsx`).
 
 ### M4-T12: Gradient preview
+Scope changed by decisions 67 and 68 (see "Decisions"): the stop bar is pinned in the dock with the preview, and compare, vision, the text check and the aspect control were removed.
 - Files:
   - `src/ui/GradientPreview.tsx` (4.4, 4.5; contract column 3 item 1; D22):
     - A stage with the surround background: `--color-surface-sunken` for Match theme, otherwise the new tokens.
-    - Inside it, the preview at the chosen aspect: Free is 2:1 at full width; the others fit the width, up to 60vh on desktop and the dock's 30dvh on phones.
+    - Inside it, the preview at one fixed aspect, 2:1 at full width. On phones the frame's height is capped so the dock (preview and stop bar) stays within about 35% of the screen.
     - It renders `render.css`, and `data-render` says whether that is native or baked.
     - A checkerboard (`--checker-*`) behind the gradient, only while a stop has alpha below 1.
-    - Compare: a second preview under the first, using `render.compareCss`. Both are labelled with their space in muted text, outside the user content.
-    - CVD: when `cvd` isn't normal, both previews render `simulateBaked` stops, labelled "Deuteranopia simulation" and so on.
     - It keeps T2's `data-*` attributes and the `TextOverlay` slot.
-  - `src/gradient/analysis.ts`: `simulateBaked(baked, type)`, using `src/color/cvd.ts` (3.5).
+  - `src/ui/GradientPanel.tsx` (T2's file, minimal change): `<StopBar/>` moves into `<GradientDock>` under the preview, and the Preview chevron row is gone (decision 67, 68).
+  - Removed: `src/ui/PreviewPanel.tsx` and `src/gradient/analysis.ts` (the `simulateBaked` and `lowestContrast` stubs), the registered screens and shots `gradient-preview-desktop`, `gradient-check-desktop`, `gradient-compare-desktop`, `preview-sheet-phone` and `gradient-compare-phone`, and `aspect=1:1` from the surround shot.
   - `app.css`: the T12 section.
-- Tests to write first:
-  - `tests/gradient/analysis.test.ts`:
-    - "normal is the identity"
-    - "achromatopsia gives R = G = B"
-    - "the output is in gamut"
-  - `e2e/gradient-preview.spec.ts`:
-    - "Chromium: the native and forced-baked fixture previews match within 3/255 per channel, averaged over 4 rows to absorb gradient dithering" (v1 acceptance 6, the M4 part)
-    - "preview pixels are identical in light and dark" (6.2 theme 3)
-    - "aspect=1:1 is square ± 1 px; aspect=9:16 stays within 60vh"
-    - "the checkerboard shows only while a stop has alpha below 1"
-    - "compare=oklch shows two labelled previews"
-    - "cvd=achromatopsia renders grays"
-    - "surround=black: the stage is #000000 and the preview pixels don't change"
-    - "dragging marker 4 changes the 50% stop's color in the preview before release" (3.7)
-    - "phone: the dock pins, and the preview is at most 30dvh"
+- Tests to write first (`e2e/gradient-preview.spec.ts`):
+  - "Chromium: the native and forced-baked fixture previews match within 3/255 per channel, averaged over 4 rows" (v1 acceptance 6, the M4 part)
+  - "preview pixels are identical in light and dark" (6.2 theme 3)
+  - "the preview is 2:1 at full width on desktop"
+  - "the checkerboard shows only while a stop has alpha below 1"
+  - "surround=black: the stage is #000000 and the preview pixels don't change"
+  - "dragging marker 4 changes the 50% stop's color in the preview before release, with no long task over 50 ms" (3.7)
+  - "phone: the dock holds the preview and the stop bar, pinned, within about 35% of the screen"
+  - "at 390 x 844 and 820 x 1180, with the Stop drawer open and scrolled, the stop bar and the selected handle stay above it" (decision 67)
+  - "desktop: column 3 scrolled to the bottom keeps the stop bar pinned at its top" (decision 67)
 - Done when: tests pass, and dragging a stop updates the preview within a frame.
-- [ ] Done
+- [x] Done. Notes:
+  - The preview is a stage (the surround) holding a `.gradient-frame` (aspect, checkerboard) with the `data-user-content` preview filling it, so the `data-*` contract and `style.background` on `gradient-preview` are unchanged. The surround is read from `signals.surround`; T13 owns the control and the image-well use.
+  - The phone cap is `35dvh - 13 * --space-2` on the frame (stop bar 70 px plus the paddings); the dock measured within 35% of the viewport at 390 x 844.
+  - `StopBar.tsx` is unchanged; `sheetDock` and focus clearance already read `[data-dock]`, so drawers stop below the taller dock.
+  - The native-against-baked test is skipped on WebKit, where the two differ by up to 8/255 (measured); on Chromium the worst is 1/255.
+  - For T14: the demo parameters `compare=`, `overlay=`, `cvd=` and `aspect=` are still parsed (`src/state/mockup.ts`, `tests/state/mockup.test.ts`, `GradientPreviewSettings`) but nothing reads them; remove them with `rows=preview` from the parser and the mockup-state doc if T14 wants it tidy. `data-cvd` stays on the preview and reads "normal".
 
-### M4-T13: Preview row, text check, vision and surround
+### M4-T13: Surround
+Shrunk by decision 68: the Preview row, text check, lowest contrast and vision were removed by the user. Only the Surround control remains.
 - Files:
-  - `src/ui/PreviewPanel.tsx` (4.4; D22). All of its settings are view state, never undo steps (3.6):
-    - Aspect: Free, 1:1, 16:9, 9:16, 4:3, Banner or Custom. Custom shows width × height fields, 16 to 8192 px.
-    - Compare: Off, or a space.
-    - Text check: a toggle and a Text color (White, Black or a swatch). The readout, such as "Lowest contrast 4.54:1 · AA", uses M3's `badge` and is announced through a live region.
-    - Vision: Normal, Protanopia, Deuteranopia, Tritanopia or Achromatopsia.
-    - A count and reset-all on the header (M3 decision 58).
-  - `src/ui/TextOverlay.tsx`: "Aa Sample" at `--text-lg`, centered, marked `data-user-content`.
-  - `src/gradient/analysis.ts`: `lowestContrast(textHex, samples, backdropHex)`. Alpha samples are composed over the backdrop: the surround color, or white for Match theme (6.2, D22).
   - Surround (Q3):
     - `src/state/surround.ts`: an app setting under the localStorage key `palette-studio:surround`, handled as `theme.ts` handles the theme. It is never read or written in `?demo=mockup`, where `surround=` sets it.
     - `src/ui/ThemeButton.tsx`: the theme menu gets a "Surround" group with Match theme, Mid-gray, White and Black, as menu items (44 px on touch).
-    - It applies to the gradient preview's stage and to the image well's background (`ImageWell.tsx`).
+    - It applies to the gradient preview's stage (read by T12) and to the image well's background (`ImageWell.tsx`).
   - `app.css`: the T13 section.
 - Tests to write first:
-  - `tests/gradient/analysis.test.ts` (add):
-    - "white over #000000→#767676 in sRGB: 4.54, AA"
-    - "black over the same: 1.00, Fail"
-    - "an alpha-0 stop over White counts as #FFFFFF"
   - `tests/state/surround.test.ts`:
     - "the demo never reads or writes storage"
     - "the URL parameter wins in the demo"
-  - `e2e/preview-panel.spec.ts`:
-    - "Aspect 16:9 gives 16:9 ± 1 px; Custom 1200 × 400 gives 3:1"
-    - "turning Compare on picks OKLCH (D22)"
-    - "Text check shows the overlay and a ratio; a Black text color changes the ratio"
-    - "Vision sets data-cvd"
+  - `e2e/surround.spec.ts`:
     - "Surround in the theme menu changes the stage and the image well but not the preview pixels, and survives a reload (outside the demo)"
     - "the demo writes no localStorage"
-    - "none of these is an undo step"
-    - "phone: the Preview sheet sits below the dock"
+    - "it is not an undo step"
 - Done when: tests pass.
 - [ ] Done
 
@@ -713,14 +697,14 @@ Keep the existing four lines, and add these:
   - easing: linear, ease-in, ease-out, ease-in-out, smoothstep, cubic-bezier, as 8 to 32 intermediate stops per segment
   - gamut handling: clamp or reduce chroma
   - geometry: angle with dial and presets, center, shape and size, reverse, mirror
-- [ ] Preview: aspect ratios (free, 1:1, 16:9, 9:16, 4:3, banner, custom px), compare mode for two interpolation spaces, text-overlay check with contrast ratio, CVD preview, checkerboard for alpha. (spec 4.4)
+- ~~Preview: aspect ratios (free, 1:1, 16:9, 9:16, 4:3, banner, custom px), compare mode for two interpolation spaces, text-overlay check with contrast ratio, CVD preview, checkerboard for alpha. (spec 4.4)~~ (removed by the user, decision 68)
 - [ ] The live preview is a native CSS gradient with an explicit `in <space>` clause, feature-detected with `CSS.supports`; baked stops render identically everywhere. (spec 4.5 paths 1 and 2)
 - [ ] CVD simulation is applied to gradients. (spec 3.5)
 - [ ] Undo and redo cover gradients; view state (selection, open panel, preview options, surround) isn't recorded. (spec 3.6)
 - [ ] During a marker drag, the gradient preview updates live. (spec 3.7 "Dragging")
 - [ ] 60 fps gradient preview while dragging. (spec 7.7, a target to validate)
 - [ ] Content is never themed: the gradient preview, stop handles, stop bar and thumbnails look identical in both themes. A preview-surround setting (Match theme, Mid-gray, White, Black) changes only the surround. (spec 6.2)
-- [ ] The text-overlay check uses the preview background, never the UI theme. (spec 6.2 "Background-dependent tools")
+- ~~The text-overlay check uses the preview background, never the UI theme. (spec 6.2 "Background-dependent tools")~~ (removed by the user, decision 68)
 - [ ] Theme 3: swatch, image and gradient colors are identical in both themes (a screenshot comparison of the preview areas). (spec 6.2)
 - [ ] Theme 4: all text and controls meet AA contrast in both themes. (spec 6.2)
 - [ ] Touch: (spec 6.1)
@@ -752,8 +736,8 @@ Keep the existing four lines, and add these:
 - [ ] Safari 16.2 to 16.4 (if available) and Firefox 127+:
   - the preview uses the native clause where it is supported and falls back to baked stops elsewhere
   - native and baked look the same
-- [ ] Judge the interpolation spaces side by side with compare (OKLab against OKLCH, and sRGB's gray dip on complementary colors), and the easing curves, on real palettes. There are no reference values for "looks right".
-- [ ] Compare the CVD preview with Chrome DevTools' "Emulate vision deficiencies", and a few text-check ratios with an external WCAG checker.
+- ~~Judge the interpolation spaces side by side with compare (OKLab against OKLCH, and sRGB's gray dip on complementary colors), and the easing curves, on real palettes. There are no reference values for "looks right".~~ (removed by the user, decision 68). The easing curves still need a look on real palettes.
+- ~~Compare the CVD preview with Chrome DevTools' "Emulate vision deficiencies", and a few text-check ratios with an external WCAG checker.~~ (removed by the user, decision 68)
 - [ ] The Mid-gray, White and Black surrounds, in both themes.
 - [ ] Time a stop drag and a marker drag on a mid-range phone (the 60 fps target, 7.7).
 - [ ] Open `artifacts/visual-review/index.html`, compare it with the mockups and the contract, and sign off or list changes.
@@ -940,6 +924,8 @@ All accepted by the user (Q5, 2026-11-20).
     - the screens table and the mockup-state additions
     - D12, D24 and D25
 - **Q5: A.** Defaults D1 to D30 are accepted.
+- **Decision 67 (user, 2026-11-20): the stop bar is pinned with the preview.** "Because I need to scroll I do not see what is already selected; the row of colors of the gradient should be always on top." The `GradientDock` holds the preview and, under it, the stop bar, on the phone Gradient tab and at the top of desktop column 3. The selected stop stays visible while a drawer or the column scrolls; drawers stop below the dock. On phones the preview shrinks so the dock stays within about 35% of the viewport height. This extends Q2 and ui-contract D12.
+- **Decision 68 (user, 2026-11-20): the Preview feature is removed.** "The preview feature is not needed. Aspect can be part of gradient export. The rest are useless." Removed from M4: compare, vision (CVD) rendering, the text check with its lowest-contrast readout, the aspect control, and the Preview chevron row. The preview has one fixed 2:1 aspect. The surround stays (spec 6.2; Q3a to c), as do the checkerboard and the native-against-baked check. **M5 note:** aspect (Free, 1:1, 16:9, 9:16, 4:3, Banner, Custom px) becomes an option of the gradient export (image sizes), not of the preview. D22 is superseded for compare, the text check and aspect.
 
 Notes on spec conflicts, as the plan resolves them:
 1. **Image sample from markers (spec 3.7) and M3 decision 65.** Swatches edited by value have no point, so the marker modes skip them (D18).

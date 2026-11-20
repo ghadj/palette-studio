@@ -3030,23 +3030,73 @@ fieldset {
 /* ---- end M4-T11 ---- */
 
 /* ---- M4-T12 gradient preview (GradientPreview.tsx) ---- */
-/* About 2:1 at full width (plan D22), at most 30% of the screen tall below 1024 px (plan Q2). */
-.gradient-preview {
+/*
+ * The stage holds the surround (plan D23, Q3a). The frame sets the aspect, 2:1 at full width (plan
+ * D22), and carries the checkerboard; the preview (data-user-content, never themed) fills it. On
+ * phones the dock holds the preview and the stop bar within about 35% of the screen (decision 67):
+ * the frame's height is capped at 35dvh less the stop bar and the paddings (104px, thirteen --space-2 units).
+ */
+.gradient-stage {
+  padding: var(--space-2);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-sunken);
+}
+
+.gradient-stage[data-surround="mid-gray"] {
+  background: var(--surround-mid-gray);
+}
+
+.gradient-stage[data-surround="white"] {
+  background: var(--surround-white);
+}
+
+.gradient-stage[data-surround="black"] {
+  background: var(--surround-black);
+}
+
+.gradient-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 2 / 1;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+}
+
+/* The checkerboard (--checker-*, 8 px cells) shows through a gradient with alpha. */
+.gradient-frame[data-checker] {
+  background:
+    conic-gradient(
+      var(--checker-dark) 25%,
+      var(--checker-light) 0 50%,
+      var(--checker-dark) 0 75%,
+      var(--checker-light) 0
+    )
+    0 0 / calc(2 * var(--space-2)) calc(2 * var(--space-2));
+}
+
+.gradient-preview {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   border: var(--stroke) solid var(--color-border);
   border-radius: var(--radius-card);
 }
 
 @media (max-width: 1023.98px) {
-  .gradient-preview {
-    max-height: 30dvh;
+  .gradient-frame {
+    max-height: calc(35dvh - 13 * var(--space-2));
   }
 }
 
-/* M4-T12 styles go here. */
+/* Whole pixels, so everything below the dock sits on whole pixels too (drag targets, sheets). */
+@supports (height: round(down, 1.5px, 1px)) {
+  @media (max-width: 1023.98px) {
+    .gradient-frame {
+      max-height: round(down, calc(35dvh - 13 * var(--space-2)), 1px);
+    }
+  }
+}
+
 /* ---- end M4-T12 ---- */
 
 /* ---- M4-T13 preview row, text check, surround (PreviewPanel.tsx, TextOverlay.tsx) ---- */

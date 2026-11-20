@@ -10,8 +10,8 @@ import { openExport, sheetSettled } from "./helpers/sheet";
 async function order(scope: Locator): Promise<string[]> {
   const parts: Array<[string, Locator]> = [
     ["preview", scope.getByTestId("gradient-preview")],
-    ["chips", scope.getByTestId("gradient-types")],
     ["stop-bar", scope.getByTestId("stop-bar")],
+    ["chips", scope.getByTestId("gradient-types")],
     [
       "interpolation",
       scope.getByTestId("gradient-rows").getByText("Interpolation", { exact: true }),
@@ -20,7 +20,6 @@ async function order(scope: Locator): Promise<string[]> {
     ["interpolation-options", scope.locator("[data-row=interpolation]")],
     ["stop", scope.locator("[data-row=stop]")],
     ["geometry", scope.locator("[data-row=geometry]")],
-    ["preview-row", scope.locator("[data-row=preview]")],
   ];
   const tops = await Promise.all(
     parts.map(async ([name, locator]) => {
@@ -34,18 +33,17 @@ async function order(scope: Locator): Promise<string[]> {
 
 const EXPECTED = [
   "preview",
-  "chips",
   "stop-bar",
+  "chips",
   "interpolation",
   "technique",
   "interpolation-options",
   "stop",
   "geometry",
-  "preview-row",
 ];
 
 test.describe("Gradient column and tab (M4-T2)", () => {
-  test("desktop: column 3 holds the preview, chips, stop bar, the Interpolation and Technique rows, then the Interpolation options, Stop, Geometry and Preview chevron rows, in that order", async ({
+  test("desktop: column 3 holds the preview, stop bar (both pinned), chips, the Interpolation and Technique rows, then the Interpolation options, Stop and Geometry chevron rows, in that order", async ({
     page,
   }, info) => {
     test.skip(isPhoneProject(info), "desktop layout");
@@ -53,12 +51,11 @@ test.describe("Gradient column and tab (M4-T2)", () => {
     await page.goto(demo());
     const column = page.locator("[data-column=gradient]");
     expect(await order(column)).toEqual(EXPECTED);
-    await expect(column.locator("[data-row]")).toHaveCount(4);
+    await expect(column.locator("[data-row]")).toHaveCount(3);
     await expect(column.locator("[data-row]")).toHaveText([
       /^Interpolation options/,
       /^Stop/,
       /^Geometry/,
-      /^Preview/,
     ]);
   });
 
@@ -166,16 +163,17 @@ test.describe("Gradient-tab drawers stop below the pinned preview (M4 plan Q2; M
     });
   }
 
-  test("phone: the dock is sticky under the header, at most 30% of the screen tall", async ({
+  test("phone: the dock (preview and stop bar) is sticky under the header, at most about 35% of the screen tall", async ({
     page,
   }, info) => {
     test.skip(!isPhoneProject(info), "phone projects");
     await page.goto(demo("tab=gradient"));
     const dock = page.getByTestId("gradient-dock");
     expect(await dock.evaluate((el) => getComputedStyle(el).position)).toBe("sticky");
-    const preview = await page.getByTestId("gradient-preview").boundingBox();
+    const box = await dock.boundingBox();
     const viewport = page.viewportSize();
-    expect(preview?.height).toBeLessThanOrEqual((viewport?.height ?? 0) * 0.3 + 0.5);
+    expect(box?.height).toBeLessThanOrEqual((viewport?.height ?? 0) * 0.35 + 8);
+    await expect(page.getByTestId("stop-bar")).toBeVisible();
     // --dock-height carries the dock's height, for the scroll padding.
     const height = await dock.evaluate((el) => el.getBoundingClientRect().height);
     const written = await page.evaluate(() =>

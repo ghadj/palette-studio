@@ -1,11 +1,12 @@
 /**
  * The Gradient column and tab (ui-contract "Column 3: GRADIENT" and the phone "Gradient tab"; plan
  * M4-T2, Q4). The layout is the same on desktop and phone (spec 6.6 rule 6) and is fixed here:
- * 1. the preview, pinned in `GradientDock` (plan Q2)
+ * 1. the preview and the stop bar, pinned together in `GradientDock` (plan Q2, decision 67), so the
+ *    selected stop is always in view
  * 2. the type chips
- * 3. the stop bar
- * 4. the inline setting rows: Interpolation, then Technique and its parameter rows
- * 5. the chevron rows: Interpolation options, Stop, Geometry and Preview. They expand in place on
+ * 3. the inline setting rows: Interpolation, then Technique and its parameter rows
+ * 4. the chevron rows: Interpolation options, Stop and Geometry (the Preview row was removed,
+ *    decision 68). They expand in place on
  *    desktop and open bottom sheets, below the dock, on phones.
  *
  * Each piece lives in its own file and owns its own styles in app.css, so the M4 tasks that fill
@@ -18,7 +19,6 @@ import { GradientPreview } from "./GradientPreview";
 import { GradientTypeChips } from "./GradientTypeChips";
 import { InterpolationOptionsRow } from "./InterpolationOptions";
 import { InterpolationRow } from "./InterpolationRow";
-import { PreviewRow } from "./PreviewPanel";
 import { StopBar } from "./StopBar";
 import { StopRow } from "./StopDetails";
 import { TechniqueRows } from "./TechniqueRows";
@@ -34,9 +34,9 @@ export function GradientPanel({ variant }: { variant: "desktop" | "phone" }) {
         <>
           <GradientDock>
             <GradientPreview />
+            <StopBar />
           </GradientDock>
           <GradientTypeChips />
-          <StopBar />
           <div class="setting-rows" data-testid="gradient-rows">
             <InterpolationRow />
             <TechniqueRows />
@@ -45,7 +45,6 @@ export function GradientPanel({ variant }: { variant: "desktop" | "phone" }) {
             <InterpolationOptionsRow />
             <StopRow />
             <GeometryRow />
-            <PreviewRow />
           </div>
         </>
       )}

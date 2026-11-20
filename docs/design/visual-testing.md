@@ -69,18 +69,13 @@ A failure names the element (a selector path) and the value that isn't a token. 
 | gradient-stop-desktop | `?demo=mockup&rows=stop` | 1280 × 1280 | contract text (not drawn): the Stop row open (M4 plan D29) |
 | gradient-geometry-desktop | `?demo=mockup&rows=geometry` | 1280 × 1280 | contract text (not drawn): the Geometry row for a linear gradient (spec 4.3) |
 | gradient-radial-desktop | `?demo=mockup&gradient=radial&rows=geometry` | 1280 × 1280 | contract text (not drawn): the Geometry row for a radial gradient |
-| gradient-preview-desktop | `?demo=mockup&rows=preview` | 1280 × 1280 | contract text (not drawn): the Preview row open (spec 4.4, 6.2) |
-| gradient-check-desktop | `?demo=mockup&overlay=on&cvd=deuteranopia&rows=preview` | 1280 × 1280 | contract text (not drawn): the text check and the deuteranopia simulation |
 | gradient-technique-desktop | `?demo=mockup&technique=image-sample` | 1280 × 1280 | contract text (not drawn): the Image sample parameter rows and thumbnail (M4 plan D18) |
 | gradient-conic-desktop | `?demo=mockup&gradient=conic` | 1280 × 800 | `01`, `02` (layout only: the mockup draws a linear gradient, D1) |
-| gradient-compare-desktop | `?demo=mockup&compare=oklch` | 1280 × 800 | contract text (not drawn): compare mode (spec 4.4) |
-| gradient-surround-desktop | `?demo=mockup&surround=mid-gray&aspect=1:1` | 1280 × 800 | contract text (not drawn): a mid-gray surround and a 1:1 preview (spec 6.2) |
+| gradient-surround-desktop | `?demo=mockup&surround=mid-gray` | 1280 × 800 | contract text (not drawn): a mid-gray surround (spec 6.2) |
 | surround-menu-desktop | `?demo=mockup&menu=theme` | 1280 × 800 | contract text (not drawn): the theme menu's Surround group |
 | interp-options-sheet-phone | `?demo=mockup&tab=gradient&rows=interpolation&space=oklch` | 390 × 844 | contract text (not drawn): the Interpolation options drawer below the pinned preview (D12) |
 | stop-sheet-phone | `?demo=mockup&tab=gradient&rows=stop` | 390 × 844 | contract text (not drawn): the Stop drawer |
 | geometry-sheet-phone | `?demo=mockup&tab=gradient&rows=geometry` | 390 × 844 | contract text (not drawn): the Geometry drawer |
-| preview-sheet-phone | `?demo=mockup&tab=gradient&rows=preview` | 390 × 844 | contract text (not drawn): the Preview drawer |
-| gradient-compare-phone | `?demo=mockup&tab=gradient&compare=oklch` | 390 × 844 | contract text (not drawn): compare mode in the pinned dock |
 | gradient-technique-phone | `?demo=mockup&tab=gradient&technique=image-sample` | 390 × 844 | contract text (not drawn): the Image sample rows and thumbnail |
 | gradient-tablet | `?demo=mockup&tab=gradient` | 820 × 1180 | contract text (not drawn): the Gradient tab at tablet width |
 

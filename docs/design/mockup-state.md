@@ -77,7 +77,7 @@ Swatch 3 is selected, so its marker and swatch show as selected.
 - Interpolation options (M4): OKLab, so Hue stays Shorter and is hidden (OKLab isn't polar); premultiplied on, hidden because no stop has alpha; easing Linear; gamut Reduce chroma, hidden because everything is in gamut. The drawer shows only Easing, and its header has no badge.
 - Technique (M4): Smooth path, with Colors set to Picked: swatches 2, 4 and 6. The stops are the technique's output, not stored: the gradient is live, not Custom.
 - Stops (M4): swatch 2 at 0%, swatch 4 at 50% and swatch 6 at 100%, all linked, alpha 100%, midpoints 50%, unlocked. The 50% stop is selected.
-- Preview (M4): aspect Free (2:1), compare off, text check off (White text), Vision Normal, surround Match theme.
+- Preview (M4): one fixed 2:1 aspect, surround Match theme. Compare, the text check, Vision and the aspect control were removed (decision 68); `compare`, `overlay`, `cvd` and `aspect` parse but have no effect.
 - Expected native CSS: `linear-gradient(90deg in oklab, #1DB07A 0%, #D4527F 50%, #5039B0 100%)`. The preview's `data-stops` attribute reads `#1DB07A@0,#D4527F@50,#5039B0@100`: the resolved stops after reverse and mirror, as `HEX@percent` entries (8-digit HEX when a stop is not opaque), with `~percent` entries for midpoints other than 50%, such as `#1DB07A@0,~30,#D4527F@50,#5039B0@100`. The preview also carries `data-type`, `data-angle`, `data-space`, `data-hue`, `data-easing`, `data-render` (`native` or `baked`) and `data-cvd`.
 
 **Image views** (defaults unless the URL says otherwise): Image view, grid off, 5 bands, close-in-value threshold 0.03, Colors from Palette, dither off, 6 squares across, labels on.
