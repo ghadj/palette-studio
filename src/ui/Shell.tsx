@@ -5,6 +5,7 @@
  *   readable width. This departs on purpose, by the user's choice, from spec 6.1's two-column row.
  * - 1024 px and up: three equal columns plus the export drawer
  */
+import { useLayoutEffect, useRef } from "preact/hooks";
 import { activeTab } from "../state/signals";
 import type { Tab } from "../types";
 import { ExportDrawer } from "./ExportDrawer";
@@ -32,8 +33,51 @@ function ActivePanel({ tab }: { tab: Tab }) {
   }
 }
 
+/**
+ * Each phone and tablet tab keeps its own scroll position (M3 decision 44). The window stays the
+ * scroll container. The outgoing tab's position is saved while rendering, before the DOM changes;
+ * the new tab's is restored in a layout effect, before paint. A tab not visited yet starts at 0.
+ */
+function usePerTabScroll(tab: Tab, active: boolean): void {
+  const saved = useRef(new Map<Tab, number>());
+  const current = useRef(tab);
+  const pending = useRef(false);
+  if (active && current.current !== tab) {
+    saved.current.set(current.current, window.scrollY);
+    current.current = tab;
+    pending.current = true;
+  }
+  useLayoutEffect(() => {
+    if (!active || !pending.current) return;
+    pending.current = false;
+    const target = saved.current.get(tab) ?? 0;
+    window.scrollTo(0, target);
+    // Panels fill in over the next frames and the page may be too short at first, which clamps the
+    // scroll. Keep restoring for a few frames, until the page reaches it or the user scrolls.
+    let frames = 0;
+    let frame = 0;
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      for (const type of ["wheel", "touchstart", "keydown", "pointerdown"])
+        window.removeEventListener(type, stop, true);
+    };
+    const retry = () => {
+      if (Math.abs(window.scrollY - target) > 0.5) window.scrollTo(0, target);
+      if (++frames < 30 && Math.abs(window.scrollY - target) > 0.5)
+        frame = requestAnimationFrame(retry);
+      else stop();
+    };
+    if (target > 0) {
+      for (const type of ["wheel", "touchstart", "keydown", "pointerdown"])
+        window.addEventListener(type, stop, { capture: true, passive: true });
+      frame = requestAnimationFrame(retry);
+    }
+  });
+}
+
 export function Shell({ layout }: { layout: Layout }) {
   const tab = activeTab.value;
+  usePerTabScroll(tab, layout === "phone");
 
   if (layout === "desktop") {
     return (

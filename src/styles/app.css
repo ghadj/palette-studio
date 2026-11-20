@@ -739,6 +739,17 @@ fieldset {
   }
 }
 
+/* From 1024 px the strip pins at the top of column 2's scroll container (M3 decision 45). */
+@media (min-width: 1024px) {
+  .column__scroll {
+    scroll-padding-top: calc(var(--strip-dock-height, 0px) + var(--space-2));
+  }
+
+  .strip-dock {
+    top: calc(-1 * var(--space-1));
+  }
+}
+
 .strip-dock[data-stuck] {
   box-shadow: 0 var(--stroke) 0 var(--color-border);
 }

@@ -19,7 +19,6 @@ import { ContrastPanel } from "./ContrastPanel";
 import { CopyButtons } from "./CopyButtons";
 import { CvdPanel } from "./CvdPanel";
 import { StripDock } from "./StripDock";
-import { StripMarks } from "./StripMarks";
 import { SwatchDetails } from "./SwatchDetails";
 import { SwatchEditor } from "./SwatchEditor";
 import { EmptyRolesNote, SelectionLabel, SwatchStrip } from "./SwatchStrip";
@@ -29,15 +28,9 @@ export function PalettePanel({ variant }: { variant: "desktop" | "phone" }) {
   return (
     <div class="panel" data-panel="palette">
       {variant === "desktop" && <h2 class="section-label">Palette</h2>}
-      {/* Below 1024 px the strip and its marks pin under the header (M3 decision 33). */}
-      {variant === "phone" && !empty ? (
-        <StripDock host="palette" />
-      ) : (
-        <>
-          <SwatchStrip />
-          {!empty && <StripMarks />}
-        </>
-      )}
+      {/* The strip and its marks pin: under the header below 1024 px (M3 decision 33), at the top
+          of the column from 1024 px (M3 decision 45). */}
+      {!empty ? <StripDock host="palette" /> : <SwatchStrip />}
       <SelectionLabel />
       <EmptyRolesNote />
       {!empty && <SwatchEditor />}

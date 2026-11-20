@@ -227,6 +227,7 @@ Visual review treats these as correct.
 - **D5, drawers under the strip, and the Palette tab's pinned strip.** The mockups draw sheets that rise from the bottom over the page and a Source tab with inline Filters and Advanced rows. Below 1024 px those two rows open as bottom sheets, a sheet on the Source or Palette tab stops under the pinned swatch strip so the palette stays visible, and the Palette tab's strip pins like the Source tab's (M3 decisions 33 to 35).
 - **D6, the Source tab's strip shows only swatches.** Below 1024 px the "+" tile and the close-pair mark are on the Palette tab, not the Source tab (M3 decision 32). On desktop, where the strip is in column 2, nothing changes.
 - **D7, the image toolbar sits under the well.** The image well's controls never cover image content (M3 decision 42). A slim toolbar row sits directly under the well, above the view bar: Markers and Eyedropper on the left (Image view only), Zoom out, Fit and Zoom in on the right (every view). On phones it scrolls with the Source tab's content and fits at 320 px. The eyedropper hint row stays below it. Targets are `--hit` (44 px on touch).
+- Note (M3 decisions 44 and 45): each phone tab keeps its own scroll position; on desktop the swatch strip and its marks pin at the top of column 2's scroll container, extending D4's idea. Neither is a new deviation.
 
 Earlier deviations from the previous version of the mockups (control borders, phone Undo and Redo, quality dots on phone cards, all four medium chips) are now drawn in the mockups.
 

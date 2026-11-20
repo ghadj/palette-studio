@@ -17,9 +17,27 @@ const keyboardFocus = (el: Element): boolean => {
   }
 };
 
+/**
+ * From 1024 px the strip pins inside column 2's scroll container (M3 decision 45). Firefox and
+ * WebKit ignore `scroll-padding` for focus scrolling there too, so scroll that container by
+ * whatever the pinned strip still covers.
+ */
+function nudgeColumnClear(el: Element): void {
+  const scroller = el.closest<HTMLElement>(".column__scroll");
+  const dock = scroller?.querySelector<HTMLElement>("[data-testid=strip-dock]");
+  if (!scroller || !dock || dock.contains(el)) return;
+  const covered = dock.getBoundingClientRect().bottom + GAP;
+  const r = el.getBoundingClientRect();
+  if (r.top < covered) scroller.scrollTop += r.top - covered;
+}
+
 export function nudgeFocusClear(): void {
   const el = document.activeElement;
-  if (!el || el === document.body || !window.matchMedia(PHONE).matches) return;
+  if (!el || el === document.body) return;
+  if (!window.matchMedia(PHONE).matches) {
+    nudgeColumnClear(el);
+    return;
+  }
   // Taps and clicks never scroll, and neither does focus inside the chrome (M2 decision 19).
   if (el.closest(CHROME) || !keyboardFocus(el)) return;
   const top = ["header", "[data-testid=strip-dock]"].reduce((edge, selector) => {
