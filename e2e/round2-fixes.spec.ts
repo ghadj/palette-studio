@@ -177,7 +177,7 @@ test.describe("editor HEX copy icon (decision 50)", () => {
       await page.goto(demo(size.width < 1024 ? "tab=palette" : ""));
       const editor = page.locator("[data-testid=swatch-editor]:visible");
       const hex = editor.getByLabel("HEX", { exact: true });
-      const icon = editor.getByRole("button", { name: "Copy HEX", exact: true });
+      const icon = editor.getByRole("button", { name: "Copy swatch HEX", exact: true });
       await expect(icon).toBeVisible();
       const h = await hex.boundingBox();
       const i = await icon.boundingBox();
@@ -199,7 +199,7 @@ test.describe("editor HEX copy icon (decision 50)", () => {
     await page.goto(demo("tab=palette"));
     const icon = page
       .locator("[data-testid=swatch-editor]:visible")
-      .getByRole("button", { name: "Copy HEX", exact: true });
+      .getByRole("button", { name: "Copy swatch HEX", exact: true });
     const box = await icon.boundingBox();
     expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);

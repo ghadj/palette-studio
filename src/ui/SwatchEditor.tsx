@@ -149,7 +149,7 @@ export function SwatchEditor() {
             type="button"
             class="icon-pill copy-icon"
             data-testid="copy-hex"
-            aria-label="Copy HEX"
+            aria-label="Copy swatch HEX"
             disabled={color === null}
             onClick={() => color && void copySelected(color, "hex")}
           >
