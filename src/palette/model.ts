@@ -1,6 +1,16 @@
-/** Swatch creation and selection helpers (spec 3.1). */
+/**
+ * Swatch creation, selection helpers and the palette operations (spec 3.1, 3.2, 3.7). Every
+ * operation is pure: it returns a new list, keeps the other swatch objects' identity, and returns
+ * the list unchanged when there is nothing to do.
+ */
 import { type Oklab, oklabToOklch, oklchToHex, oklchToOklab } from "../color/convert";
-import type { Swatch } from "../types";
+import type { ImagePoint, Oklch, Swatch } from "../types";
+
+/** A palette holds at most 12 swatches everywhere (M1 decision 13; M3 decision 4a). */
+export const MAX_SWATCHES = 12;
+
+/** The one wording for the limit, shown and announced everywhere (spec 6.3). */
+export const FULL_MESSAGE = `A palette holds at most ${MAX_SWATCHES} colors.`;
 
 let nextId = 1;
 
@@ -19,10 +29,13 @@ export function createSwatch(lab: Oklab, init: Partial<Omit<Swatch, "color">> = 
     alpha: init.alpha ?? 1,
     name: init.name ?? "",
     locked: init.locked ?? false,
+    pinned: init.pinned ?? false,
     origin: init.origin ?? "extracted",
     population: init.population ?? 0,
     point: init.point ?? null,
     sampleRadius: init.sampleRadius ?? "auto",
+    sampleStat: init.sampleStat ?? "mean",
+    extracted: init.extracted ?? null,
   };
 }
 
@@ -46,4 +59,108 @@ export function swatchLabel(palette: readonly Swatch[], id: string | null): stri
   const swatch = palette[index];
   if (!swatch) return "";
   return swatch.name || `Swatch ${index + 1}`;
+}
+
+// Palette operations (spec 3.2)
+
+/** True while the palette has room for another swatch (decision 4a). */
+export function canAdd(palette: readonly Swatch[]): boolean {
+  return palette.length < MAX_SWATCHES;
+}
+
+/** Inserts a swatch at `index` (the end by default); refuses at 12. */
+export function addSwatch(palette: Swatch[], swatch: Swatch, index = palette.length): Swatch[] {
+  if (!canAdd(palette)) return palette;
+  const at = Math.max(0, Math.min(palette.length, index));
+  return [...palette.slice(0, at), swatch, ...palette.slice(at)];
+}
+
+/**
+ * Inserts a copy after the source: a new id, origin manual, unlocked, with no point and nothing to
+ * reset to (plan D12). Refuses at 12.
+ */
+export function duplicateSwatch(palette: Swatch[], id: string): Swatch[] {
+  const index = palette.findIndex((s) => s.id === id);
+  const source = palette[index];
+  if (!source) return palette;
+  const copy: Swatch = {
+    ...source,
+    id: newSwatchId(),
+    origin: "manual",
+    locked: false,
+    pinned: false,
+    point: null,
+    extracted: null,
+  };
+  return addSwatch(palette, copy, index + 1);
+}
+
+export function deleteSwatch(palette: Swatch[], id: string): Swatch[] {
+  const next = palette.filter((s) => s.id !== id);
+  return next.length === palette.length ? palette : next;
+}
+
+/** Moves the swatch at `from` to `to`, shifting the ones between. */
+export function moveSwatch(palette: Swatch[], from: number, to: number): Swatch[] {
+  const swatch = palette[from];
+  if (!swatch || from === to || to < 0 || to >= palette.length) return palette;
+  const next = palette.filter((_, i) => i !== from);
+  next.splice(to, 0, swatch);
+  return next;
+}
+
+function patchSwatch(palette: Swatch[], id: string, patch: Partial<Omit<Swatch, "id">>): Swatch[] {
+  if (!palette.some((s) => s.id === id)) return palette;
+  return palette.map((s) => (s.id === id ? { ...s, ...patch } : s));
+}
+
+export function setLocked(palette: Swatch[], id: string, locked: boolean): Swatch[] {
+  return patchSwatch(palette, id, { locked });
+}
+
+/** Unlocks and unpins in one step, so re-extraction can replace the swatch (decision 55). */
+export function unlockSwatch(palette: Swatch[], id: string): Swatch[] {
+  return patchSwatch(palette, id, { locked: false, pinned: false });
+}
+
+/** Pins or unpins: kept on re-extraction, still adjusted (decision 24). */
+export function setPinned(palette: Swatch[], id: string, pinned: boolean): Swatch[] {
+  return patchSwatch(palette, id, { pinned });
+}
+
+/** True when re-extraction keeps the swatch: locked or pinned (decisions 24, 25). */
+export function isKept(swatch: Swatch): boolean {
+  return swatch.locked || swatch.pinned;
+}
+
+export function renameSwatch(palette: Swatch[], id: string, name: string): Swatch[] {
+  return patchSwatch(palette, id, { name });
+}
+
+/**
+ * Sets the base color by value and clears the image point, since the color no longer comes from the
+ * image (decision 65). `extracted` is kept, so the swatch can still be reset (spec 3.7).
+ */
+export function setSwatchColor(palette: Swatch[], id: string, color: Oklch): Swatch[] {
+  return patchSwatch(palette, id, { color, point: null });
+}
+
+export function setSwatchPoint(palette: Swatch[], id: string, point: ImagePoint | null): Swatch[] {
+  return patchSwatch(palette, id, { point });
+}
+
+/**
+ * Restores the extracted color and point, sets origin extracted and clears lock and pin (spec 3.7 "Reset to
+ * extracted"). A swatch extraction didn't make has nothing to restore.
+ */
+export function resetToExtracted(palette: Swatch[], id: string): Swatch[] {
+  const extracted = palette.find((s) => s.id === id)?.extracted;
+  if (!extracted) return palette;
+  return patchSwatch(palette, id, {
+    color: extracted.color,
+    point: extracted.point,
+    origin: "extracted",
+    locked: false,
+    pinned: false,
+  });
 }

@@ -5,6 +5,8 @@ import { encodePng } from "../tools/png";
 import { hasHorizontalScroll, isPhoneProject, tokenColor } from "./helpers/app";
 import { fixture } from "./helpers/files";
 import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
+import { isSheetLayout, openRow, rowBox } from "./helpers/rows";
+import { sheetSettled } from "./helpers/sheet";
 
 const strip = (page: Page) =>
   page.locator("[data-testid=swatch-strip]:visible").first().locator("[data-swatch]");
@@ -171,7 +173,7 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     await loadSample(page, "Orbits");
     await waitForPalette(page, 6);
     await expect(page.locator("#setting-algorithm:visible")).toHaveValue("balanced");
-    await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+    await openRow(page, "Advanced");
     const seed = page.locator("#setting-seed:visible");
     await expect(seed).toBeDisabled();
     await expect(page.getByRole("button", { name: "Randomize" })).toBeDisabled();
@@ -238,9 +240,10 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
     await waitForPalette(page);
     await page.locator("#setting-algorithm:visible").selectOption({ label: "Exact colors" });
-    await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
-    await page.locator("#setting-resampling:visible").selectOption({ label: "Nearest" });
+    // Colors is inline, so it is set before the Advanced drawer opens over it (M3 decision 34).
     await page.locator("#setting-colors:visible").fill("12");
+    await openRow(page, "Advanced");
+    await page.locator("#setting-resampling:visible").selectOption({ label: "Nearest" });
     await waitForPalette(page, 12);
     await expect
       .poll(async () => [...(await hexes(page))].sort())
@@ -262,11 +265,7 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     await changed();
     await page.locator("#setting-space:visible").selectOption({ label: "sRGB" });
     await changed();
-    const advanced = page.locator(
-      'details.chevron-row:visible:has(> summary:has-text("Advanced"))',
-    );
-    await expect(advanced).not.toHaveAttribute("open", "");
-    await advanced.locator("summary").click();
+    await openRow(page, "Advanced");
     await page.locator("#setting-sample-size:visible").selectOption({ label: "64 px" });
     await changed();
     await page.locator("#setting-resampling:visible").selectOption({ label: "Nearest" });
@@ -282,7 +281,7 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     await waitForPalette(page, 6);
     // The default is Balanced, which doesn't use Seed: start from k-means++.
     await page.locator("#setting-algorithm:visible").selectOption({ label: "K-means++" });
-    await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+    await openRow(page, "Advanced");
     const seed = page.locator("#setting-seed:visible");
     const randomize = page.getByRole("button", { name: "Randomize" });
     await expect(seed).toBeEnabled();
@@ -404,13 +403,14 @@ test.describe("extraction with live settings (spec 2.1, 2.4, 7.4, 8)", () => {
     const field = page.locator("#setting-colors:visible");
     await expect(field).toHaveAttribute("inputmode", "decimal");
     expect(await field.evaluate((el) => getComputedStyle(el).fontSize)).toBe("16px");
-    const seed = page.locator("#setting-seed");
-    await expect(seed).toHaveAttribute("inputmode", "decimal");
     for (const id of ["#setting-algorithm", "#setting-space"]) {
       expect(
         await page.locator(`${id}:visible`).evaluate((el) => getComputedStyle(el).fontSize),
       ).toBe("16px");
     }
+    // Seed is in the Advanced drawer below 1024 px (M3 decision 34).
+    await openRow(page, "Advanced");
+    await expect(page.locator("#setting-seed")).toHaveAttribute("inputmode", "decimal");
   });
 
   test("the mockup state shows its fixture without running extraction", async ({ page }) => {
@@ -475,8 +475,7 @@ async function lastJob(page: Page): Promise<Record<string, unknown> | undefined>
   );
 }
 
-const advanced = (page: Page) =>
-  page.locator("details.chevron-row:visible").filter({ hasText: "Advanced" });
+const advanced = (page: Page) => rowBox(page, "Advanced");
 
 test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
   test.beforeEach(async ({ page }) => {
@@ -489,7 +488,7 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
     await waitForPalette(page, 6);
     // K-means++ uses every Advanced setting.
     await page.locator("#setting-algorithm:visible").selectOption({ label: "K-means++" });
-    await advanced(page).locator("summary").click();
+    await openRow(page, "Advanced");
     const changes: Array<[string, () => Promise<unknown>, unknown]> = [
       ["iterations", () => page.locator("#setting-iterations:visible").fill("10"), 10],
       ["restarts", () => page.locator("#setting-restarts:visible").fill("2"), 2],
@@ -547,7 +546,7 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
     await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
     await waitForPalette(page);
     await page.locator("#setting-colors:visible").fill("12");
-    await advanced(page).locator("summary").click();
+    await openRow(page, "Advanced");
     const merge = page.locator("#setting-merge:visible");
     await merge.fill("0");
     await expect.poll(async () => (await lastJob(page))?.mergeThreshold).toBe(0);
@@ -564,7 +563,7 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
   });
 
   test("switching the metric to CIEDE2000 shows the threshold as 3.0", async ({ page }) => {
-    await advanced(page).locator("summary").click();
+    await openRow(page, "Advanced");
     const merge = page.locator("#setting-merge:visible");
     const slider = page.locator("[aria-label='Merge threshold slider']:visible");
     await expect(merge).toHaveValue("0.030");
@@ -585,7 +584,7 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
   test("iterations and restarts are disabled for algorithms that don't use them, with the note", async ({
     page,
   }) => {
-    await advanced(page).locator("summary").click();
+    await openRow(page, "Advanced");
     const iterations = page.locator("#setting-iterations:visible");
     const restarts = page.locator("#setting-restarts:visible");
     const select = page.locator("#setting-algorithm:visible");
@@ -622,7 +621,7 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
     page,
   }) => {
     // M2 decisions 10c and 14b.
-    await advanced(page).locator("summary").click();
+    await openRow(page, "Advanced");
     const select = page.locator("#setting-algorithm:visible");
     const rows = [
       ["#setting-merge", "#setting-merge-note", "Not used by swatch roles"],
@@ -655,7 +654,7 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
   });
 
   test("Keep one outlier is a switch the keyboard can operate", async ({ page }) => {
-    await advanced(page).locator("summary").click();
+    await openRow(page, "Advanced");
     const toggle = page.locator("#setting-outlier:visible");
     await expect(page.getByRole("switch", { name: "Keep one outlier" }).first()).toBeAttached();
     await expect(toggle).toHaveAttribute("aria-checked", "false");
@@ -667,7 +666,7 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
   });
 
   test("decimal fields step with the arrow keys and clamp on commit", async ({ page }) => {
-    await advanced(page).locator("summary").click();
+    await openRow(page, "Advanced");
     const vividness = page.locator("#setting-vividness:visible");
     await expect(vividness).toHaveAttribute("inputmode", "decimal");
     await expect(vividness).toHaveAttribute("role", "spinbutton");
@@ -687,6 +686,8 @@ test.describe("Advanced settings (spec 2.4; M2-T7)", () => {
   }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto("./?demo=mockup&rows=advanced");
+    // Below 1024 px the row is a sheet: measure it at rest, not mid-slide.
+    if (await isSheetLayout(page)) await sheetSettled(page);
     const rows = advanced(page).locator(".setting-row");
     expect(await rows.count()).toBeGreaterThanOrEqual(11);
     const boxes = (selector: string) =>

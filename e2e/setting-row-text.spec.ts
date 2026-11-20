@@ -31,6 +31,29 @@ for (const width of [390, 820] as const) {
   });
 }
 
+// M3-T2: the Palette tab's chevron rows and the rows in its sheets step up too.
+for (const width of [390, 820] as const) {
+  test(`Palette-tab chevron rows and sheet rows are 15 px at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(demo("tab=palette&rows=swatch"));
+    await expect(page.getByRole("dialog")).toBeVisible();
+    const s = await page.evaluate(() => {
+      const px = (sel: string) =>
+        [...document.querySelectorAll(sel)]
+          .filter((e) => (e as HTMLElement).getClientRects().length)
+          .map((e) => getComputedStyle(e).fontSize);
+      return {
+        rows: px("[data-testid=palette-rows] .chevron-row__summary"),
+        sheet: px("dialog .setting-row__label"),
+      };
+    });
+    expect(s.rows).toEqual(["15px", "15px", "15px", "15px"]);
+    // The sheet holds the swatch fields (Format, HEX, Name, ...) and the Cluster map row.
+    expect(s.sheet.length).toBeGreaterThan(1);
+    for (const size of s.sheet) expect(size).toBe("15px");
+  });
+}
+
 test("labels stay 13 px at 1280 px with a fine pointer", async ({ page, hasTouch }) => {
   test.skip(hasTouch, "needs a fine pointer");
   await page.setViewportSize({ width: 1280, height: 800 });

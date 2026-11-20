@@ -10,14 +10,15 @@ A fixed demo state that reproduces the mockups' content, so screenshots of the r
 | --- | --- | --- | --- |
 | `view` | `studio` (default), `materials` | Desktop view to open | `01`, `05` |
 | `tab` | `source` (default), `palette`, `gradient`, `materials` | Phone tab to open | `09` |
-| `image` | `image` (default), `palette`, `values` | Image view (spec 3.8) | `03`, `11` |
+| `image` | `image` (default), `palette`, `values` | Image view (spec 3.8). Parsed from M3; the view is view state, so nothing stores it | `03`, `11` |
 | `grid` | `on` | Turns the transfer grid on | `03`, `11` |
 | `library` | `open`, `menu`, `undo` | Opens the library drawer or Projects sheet; `menu` also opens the current project's ⋯ menu; `undo` shows the toast after deleting "Old test" | `07`, `11` |
 | `brands` | comma-separated brand names, such as `Brand A,Brand C` | Sets the brand filter on the Materials view | `13` |
 | `filters` | `all`, `medium` | Phone only: opens the Filters sheet in the All brands or By medium scope | `13` |
 | `cluster` | `1` to `6` | Shows that swatch's cluster map over the image, as hovering or focusing the swatch does (spec 2.6, M2 decisions 13 and 14b) | not drawn |
 | `zoom` | `2`, `4`, `8` | Opens the image at that zoom, centered on the image (M2 decision 15g). Zoom is view state, so nothing stores it | not drawn |
-| `rows` | `filters`, `advanced`, or both comma-separated | Opens the Filters or Advanced chevron row under the image (M2) | not drawn |
+| `rows` | `filters`, `advanced`, `swatch`, `adjustments`, `ramp`, `contrast`, `cvd`, or several comma-separated | Opens chevron rows: Filters and Advanced under the image (M2); Swatch, Adjustments, Contrast and CVD in the Palette column, and the editor's Ramp panel (M3, plan D20). On desktop they expand in place; on phones and tablets the M3 ones open as bottom sheets, which show on the Palette tab (`tab=palette`) | not drawn |
+| `loupe` | `1` to `6` | Shows the loupe over that swatch's marker, as during a drag (spec 3.7, M3 plan D20) | not drawn |
 | `theme` | `light`, `dark` | Overrides the theme for this page load only | all |
 
 Rules:

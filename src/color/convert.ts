@@ -199,3 +199,15 @@ export function rgbToHsl(c: Rgb): Hsl {
   if (h < 0) h += 360;
   return { h, s, l };
 }
+
+/** HSL to gamma sRGB, channels 0 to 1; the inverse of `rgbToHsl`. Hue wraps; S and L are clamped. */
+export function hslToRgb(c: Hsl): Rgb {
+  const s = Math.min(1, Math.max(0, c.s));
+  const l = Math.min(1, Math.max(0, c.l));
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + (((c.h % 360) + 360) % 360) / 30) % 12;
+    return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+  };
+  return { r: f(0), g: f(8), b: f(4) };
+}

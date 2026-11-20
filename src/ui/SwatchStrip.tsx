@@ -3,20 +3,34 @@
  * With more than 6 swatches it breaks into two even rows when one row would make them smaller than
  * 44 px (decision 13). Swatches are user content and are never themed (spec 6.2). Hovering a
  * swatch with a fine pointer, or focusing it from the keyboard, shows its cluster map (spec 2.6).
+ *
+ * Swatch and marker are linked both ways (spec 3.7): pointing at a swatch (mouse or pen) or
+ * focusing it from the keyboard sets `hoveredSwatchId`, and the swatch it names carries
+ * `data-linked`, whether a swatch or its marker (M3-T12) set it.
  */
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
-import { swatchHex, swatchLabel } from "../palette/model";
+import { Lock, Pin, Plus, X } from "lucide-preact";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { canAdd, FULL_MESSAGE, moveSwatch, swatchHex, swatchLabel } from "../palette/model";
+import { addColor, adding } from "../state/add-color";
 import { clusterFocus, clusterHover, shareText, shownCluster } from "../state/cluster";
+import { commit } from "../state/history";
+import { removeSwatch } from "../state/remove-swatch";
 import {
   clusterMap,
   emptyRoles,
   extracting,
+  hoveredSwatchId,
   imageLoading,
+  outputPalette,
   palette,
   selectedSwatchId,
   selectSwatch,
+  viewSettings,
 } from "../state/signals";
-import { stripColumns } from "./stripLayout";
+import { viewShares } from "../state/view-result";
+import { closeDescription, closeFlags } from "./closeFlags";
+import { stripCells, stripColumns } from "./stripLayout";
+import { showToast } from "./Toast";
 
 /** Only a fine pointer hovers (spec 6.1 "No hover"); touch uses the Cluster map toggle. */
 const hovers = (event: PointerEvent): boolean =>
@@ -31,15 +45,70 @@ const keyboardFocus = (el: Element): boolean => {
   }
 };
 
+/** Touch has no hover (spec 6.1): a tap selects instead. */
+const points = (event: PointerEvent): boolean => event.pointerType !== "touch";
+
 const clear = (target: typeof clusterHover, id: string): void => {
   if (target.peek() === id) target.value = null;
 };
 
-export function SwatchStrip() {
-  const swatches = palette.value;
+/** Reorder starts after 4 px of mouse movement, or a 300 ms touch press (plan D10). */
+const MOUSE_SLOP = 4;
+const HOLD_MS = 300;
+/** A touch that moves this far before the hold ends is a scroll, not a reorder. */
+const TOUCH_SLOP = 10;
+
+interface Press {
+  id: string;
+  pointerId: number;
+  touch: boolean;
+  x: number;
+  y: number;
+  active: boolean;
+  timer: number;
+  before: typeof palette.value;
+  map: typeof clusterMap.value;
+  moved: boolean;
+}
+
+/**
+ * The "+" tile (decision 40): one button that adds the next color at once, with no menu. At 12 it
+ * is hidden (M3 decision 49) and the limit note says why; `onAdded` moves focus off the tile that
+ * just went away.
+ */
+function AddTile({ onAdded }: { onAdded: () => void }) {
+  return (
+    <div class="strip-add">
+      <button
+        type="button"
+        class="strip-add__tile"
+        data-testid="add-swatch"
+        aria-label="Add color"
+        aria-busy={adding.value || undefined}
+        onClick={() => void addColor(null, showToast).then(onAdded)}
+      >
+        <Plus aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * With `showAdd` false the strip shows only the swatches: no "+" tile and no 12-color note. The
+ * Source tab below 1024 px does this (M3 decision 32).
+ */
+export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
+  const swatches = outputPalette.value;
   const selected = selectedSwatchId.value;
+  const linked = hoveredSwatchId.value;
   const strip = useRef<HTMLFieldSetElement>(null);
   const [size, setSize] = useState({ width: 0, gap: 0 });
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const press = useRef<Press | null>(null);
+  const suppressClick = useRef(false);
+  const stop = useRef<() => void>(() => {});
+  useEffect(() => () => stop.current(), []);
   const shown = swatches.length > 0;
   useLayoutEffect(() => {
     const el = strip.current;
@@ -54,45 +123,309 @@ export function SwatchStrip() {
     return () => observer.disconnect();
   }, [shown]);
   if (!shown) return null;
-  const columns = stripColumns(swatches.length, size.width, size.gap);
+  // The "+" tile is a cell of the same row as the swatches, which shrink to make room and wrap
+  // only when 44 px no longer fits (decisions 13, 29). At 12 it is hidden (decision 49). Without
+  // the tile (the Source tab below 1024 px) only the swatches count (decision 48).
+  const full = !canAdd(swatches);
+  const columns = stripColumns(
+    showAdd ? stripCells(swatches.length) : swatches.length,
+    size.width,
+    size.gap,
+  );
+
+  const announce = (id: string, to: number) => {
+    const list = palette.peek();
+    const swatch = list.find((s) => s.id === id);
+    if (!swatch) return;
+    const name = swatch.name || swatchHex(swatch);
+    setAnnouncement(`${name} moved to position ${to + 1} of ${list.length}`);
+  };
+
+  /** Moves a swatch to a place, live while dragging. */
+  const moveTo = (id: string, to: number): boolean => {
+    const list = palette.peek();
+    const from = list.findIndex((s) => s.id === id);
+    const next = moveSwatch(list, from, to);
+    if (next === list) return false;
+    palette.value = next;
+    // The cluster map labels pixels by palette index, so it no longer matches (spec 2.6).
+    clusterMap.value = null;
+    return true;
+  };
+
+  const endPress = () => {
+    const p = press.current;
+    if (!p) return;
+    clearTimeout(p.timer);
+    press.current = null;
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onCancel);
+    window.removeEventListener("keydown", onKey, true);
+    window.removeEventListener("touchmove", onTouchMove);
+    setDragging(null);
+  };
+  stop.current = endPress;
+
+  const restore = () => {
+    const p = press.current;
+    if (!p) return;
+    if (p.moved) {
+      palette.value = p.before;
+      clusterMap.value = p.map;
+    }
+    endPress();
+  };
+
+  function onTouchMove(e: TouchEvent) {
+    // Once the hold has begun a reorder the finger must not scroll the page.
+    if (press.current?.active && e.cancelable) e.preventDefault();
+  }
+  function onKey(e: KeyboardEvent) {
+    if (e.key !== "Escape" || !press.current?.active) return;
+    e.preventDefault();
+    e.stopPropagation();
+    suppressClick.current = true;
+    setTimeout(() => {
+      suppressClick.current = false;
+    }, 0);
+    restore();
+  }
+  function onCancel(e: PointerEvent) {
+    if (e.pointerId === press.current?.pointerId) restore();
+  }
+  function onUp(e: PointerEvent) {
+    const p = press.current;
+    if (!p || e.pointerId !== p.pointerId) return;
+    if (p.active) {
+      // The release's click must not select; a reorder is one undo step.
+      suppressClick.current = true;
+      setTimeout(() => {
+        suppressClick.current = false;
+      }, 0);
+      if (p.moved) {
+        commit("Reorder");
+        announce(
+          p.id,
+          palette.peek().findIndex((s) => s.id === p.id),
+        );
+      }
+    }
+    endPress();
+  }
+  function onMove(e: PointerEvent) {
+    const p = press.current;
+    if (!p || e.pointerId !== p.pointerId) return;
+    if (!p.active) {
+      const dist = Math.hypot(e.clientX - p.x, e.clientY - p.y);
+      if (p.touch) {
+        // Moving before the hold ends is a scroll: leave the gesture to the browser.
+        if (dist > TOUCH_SLOP) endPress();
+        return;
+      }
+      if (dist < MOUSE_SLOP) return;
+      p.active = true;
+      setDragging(p.id);
+    }
+    const over = document
+      .elementFromPoint(e.clientX, e.clientY)
+      ?.closest<HTMLElement>("[data-swatch]");
+    const target = over?.dataset.swatchId;
+    if (!over || !target || target === p.id || !strip.current?.contains(over)) return;
+    const to = palette.peek().findIndex((s) => s.id === target);
+    if (moveTo(p.id, to)) p.moved = true;
+  }
+
+  const startPress = (e: PointerEvent, id: string) => {
+    if (press.current || (e.pointerType === "mouse" && e.button !== 0)) return;
+    const touchLike = e.pointerType === "touch";
+    const p: Press = {
+      id,
+      pointerId: e.pointerId,
+      touch: touchLike,
+      x: e.clientX,
+      y: e.clientY,
+      active: false,
+      timer: 0,
+      before: palette.peek(),
+      map: clusterMap.peek(),
+      moved: false,
+    };
+    if (touchLike) {
+      p.timer = window.setTimeout(() => {
+        p.active = true;
+        setDragging(id);
+      }, HOLD_MS);
+      window.addEventListener("touchmove", onTouchMove, { passive: false });
+    }
+    press.current = p;
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+    window.addEventListener("keydown", onKey, true);
+  };
+
+  /** Removes a swatch and gives focus to the one that is selected after it (decision 38). */
+  const remove = (id: string) => {
+    removeSwatch(id);
+    const now = selectedSwatchId.peek();
+    requestAnimationFrame(() => {
+      // With no swatch left there is no strip (and no "+" on the Source tab): the selected tab's
+      // button on phones, else the first control on the page (round-2 note 3).
+      const next = now
+        ? strip.current?.querySelector<HTMLElement>(`[data-swatch-id="${now}"]`)
+        : (strip.current?.querySelector<HTMLElement>("[data-testid=add-swatch]") ??
+          document.querySelector<HTMLElement>(
+            "[data-testid=tabbar] [role=tab][aria-selected=true]",
+          ) ??
+          document.querySelector<HTMLElement>("main button, main input"));
+      next?.focus();
+    });
+  };
+
+  const onSwatchKey = (e: KeyboardEvent, id: string) => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      remove(id);
+      return;
+    }
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    const index = palette.peek().findIndex((s) => s.id === id);
+    const to = index + (e.key === "ArrowRight" ? 1 : -1);
+    if (!moveTo(id, to)) return;
+    commit("Reorder");
+    announce(id, to);
+    // A moved node can lose focus; give it back once the strip has re-rendered.
+    requestAnimationFrame(() =>
+      strip.current?.querySelector<HTMLElement>(`[data-swatch-id="${id}"]`)?.focus(),
+    );
+  };
   // Each swatch's share of the image from the cluster map (spec 2.6), when it matches the palette.
   const map = clusterMap.value;
   const shares = map && map.shares.length === swatches.length ? map.shares : null;
+  // The close-in-value dots show wherever the strip does; the very-close ones only where the "+"
+  // tile does (the Palette tab and desktop, M3 decisions 32, 51).
+  const flags = closeFlags();
+  const flagKind =
+    flags.kind === "value" || (flags.kind === "color" && showAdd) ? flags.kind : null;
   return (
-    <fieldset
-      ref={strip}
-      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-      class="swatch-strip"
-      data-testid="swatch-strip"
-      data-busy={extracting.value || imageLoading.value || undefined}
-    >
-      <legend class="visually-hidden">Palette swatches</legend>
-      {swatches.map((swatch, i) => {
-        const hex = swatchHex(swatch);
-        return (
-          <button
-            key={swatch.id}
-            type="button"
-            class="swatch"
-            data-swatch=""
-            data-user-content=""
-            data-share={shares?.[i]}
-            aria-label={`${swatchLabel(swatches, swatch.id)}, ${hex}`}
-            aria-pressed={swatch.id === selected}
-            style={{ backgroundColor: hex }}
-            onClick={() => selectSwatch(swatch.id)}
-            onPointerEnter={(e) => {
-              if (hovers(e)) clusterHover.value = swatch.id;
+    <>
+      <fieldset
+        ref={strip}
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+        class="swatch-strip"
+        data-testid="swatch-strip"
+        data-busy={extracting.value || imageLoading.value || undefined}
+      >
+        <legend class="visually-hidden">Palette swatches</legend>
+        {swatches.map((swatch, i) => {
+          const hex = swatchHex(swatch);
+          return (
+            <div key={swatch.id} class="swatch-cell">
+              <button
+                type="button"
+                class="swatch"
+                data-swatch=""
+                data-user-content=""
+                data-swatch-id={swatch.id}
+                data-origin={swatch.origin}
+                data-dragging={swatch.id === dragging ? "" : undefined}
+                data-share={shares?.[i]}
+                aria-label={`${swatchLabel(swatches, swatch.id)}, ${hex}`}
+                aria-description={
+                  [
+                    swatch.locked ? "Locked" : swatch.pinned ? "Pinned" : "",
+                    flagKind && flags.partners.has(i)
+                      ? closeDescription(flagKind, flags.partners.get(i) ?? [])
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(". ") || undefined
+                }
+                data-locked={swatch.locked ? "" : undefined}
+                data-pinned={swatch.pinned ? "" : undefined}
+                aria-pressed={swatch.id === selected}
+                data-linked={swatch.id === linked ? "" : undefined}
+                style={{ backgroundColor: hex }}
+                onClick={() => {
+                  if (!suppressClick.current) selectSwatch(swatch.id);
+                }}
+                onContextMenu={(e) => {
+                  if (press.current?.touch) e.preventDefault();
+                }}
+                onPointerDown={(e) => startPress(e, swatch.id)}
+                onKeyDown={(e) => onSwatchKey(e, swatch.id)}
+                onPointerEnter={(e) => {
+                  if (press.current?.active) return;
+                  if (hovers(e)) clusterHover.value = swatch.id;
+                  if (points(e)) hoveredSwatchId.value = swatch.id;
+                }}
+                onPointerLeave={() => {
+                  clear(clusterHover, swatch.id);
+                  clear(hoveredSwatchId, swatch.id);
+                }}
+                onFocus={(e) => {
+                  if (!keyboardFocus(e.currentTarget)) return;
+                  clusterFocus.value = swatch.id;
+                  hoveredSwatchId.value = swatch.id;
+                }}
+                onBlur={() => {
+                  clear(clusterFocus, swatch.id);
+                  clear(hoveredSwatchId, swatch.id);
+                }}
+              >
+                {flagKind && flags.partners.has(i) && (
+                  <span class="swatch__flag" data-testid="close-flag" aria-hidden="true" />
+                )}
+                {(swatch.locked || swatch.pinned) && (
+                  <span class="swatch__badge" aria-hidden="true">
+                    {swatch.locked ? <Lock /> : <Pin />}
+                  </span>
+                )}
+              </button>
+              {swatch.id === selected && (
+                <button
+                  type="button"
+                  class="swatch-remove"
+                  data-testid="remove-swatch"
+                  aria-label={`Remove swatch ${i + 1}`}
+                  onClick={() => remove(swatch.id)}
+                >
+                  <span class="swatch-remove__chip" aria-hidden="true">
+                    <X />
+                  </span>
+                </button>
+              )}
+            </div>
+          );
+        })}
+        {showAdd && !full && (
+          <AddTile
+            onAdded={() => {
+              // At the limit the tile has just left; the new swatch, now selected, takes focus.
+              if (canAdd(palette.peek())) return;
+              requestAnimationFrame(() =>
+                strip.current
+                  ?.querySelector<HTMLElement>(`[data-swatch-id="${selectedSwatchId.peek()}"]`)
+                  ?.focus(),
+              );
             }}
-            onPointerLeave={() => clear(clusterHover, swatch.id)}
-            onFocus={(e) => {
-              if (keyboardFocus(e.currentTarget)) clusterFocus.value = swatch.id;
-            }}
-            onBlur={() => clear(clusterFocus, swatch.id)}
           />
-        );
-      })}
-    </fieldset>
+        )}
+      </fieldset>
+      <div class="live-region" role="status">
+        {showAdd && full && (
+          <p class="hint" id="strip-full-note" data-testid="strip-full-note">
+            {FULL_MESSAGE}
+          </p>
+        )}
+      </div>
+      <p class="visually-hidden" role="status" data-testid="strip-announce">
+        {announcement}
+      </p>
+    </>
   );
 }
 
@@ -103,11 +436,19 @@ export function SwatchStrip() {
  */
 export function SelectionLabel() {
   const shown = shownCluster.value;
-  const label = swatchLabel(palette.value, shown?.id ?? selectedSwatchId.value);
+  const label = swatchLabel(outputPalette.value, shown?.id ?? selectedSwatchId.value);
   if (!label) return null;
+  // In the Palette view the label gives the selected swatch's share (spec 3.8; M3-T14).
+  const view = viewShares.value;
+  const index = outputPalette.value.findIndex((s) => s.id === selectedSwatchId.value);
+  const viewShare =
+    viewSettings.value.mode === "palette" && view?.mode === "palette" ? view.shares[index] : null;
+  const share = shown ? shown.share : viewShare;
   return (
     <p class="selection-label" data-testid="selection-label">
-      {shown ? `${label} · ${shareText(shown.share)} of the image` : label}
+      {share === null || share === undefined
+        ? label
+        : `${label} · ${shareText(share)} of the image`}
     </p>
   );
 }

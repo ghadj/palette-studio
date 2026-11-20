@@ -1,6 +1,31 @@
-import type { ExtractionSettings } from "../types";
+import type { Adjustments, ExtractionSettings, ViewSettings } from "../types";
 
+/** Stays 1 until project files exist (M5). */
 export const SCHEMA_VERSION = 1;
+
+/** Adjustments that change nothing (spec 3.3; plan D1). */
+export const DEFAULT_ADJUSTMENTS: Readonly<Adjustments> = Object.freeze({
+  lightness: 0,
+  chroma: 1,
+  hue: 0,
+  contrast: 1,
+  temperature: 0,
+  tint: 0,
+  gamma: 1,
+  lightnessRange: Object.freeze({ min: 0, max: 1 }),
+  evenOut: false,
+  harmonize: Object.freeze({ anchor: 0, amount: 0 }),
+  gamut: "off",
+});
+
+/** The Image view, 5 bands, Close in value 0.03, colors from the palette, no dither (D18, D19). */
+export const DEFAULT_VIEW_SETTINGS: Readonly<ViewSettings> = Object.freeze({
+  mode: "image",
+  bands: 5,
+  closeInValue: 0.03,
+  colorsFrom: "palette",
+  dither: false,
+});
 
 /** The defaults in the spec 2.4 table, with the M2 decision 3 thresholds (L 0.2 and 0.95). */
 export const SPEC_DEFAULT_SETTINGS: Readonly<ExtractionSettings> = Object.freeze({

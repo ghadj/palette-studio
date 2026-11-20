@@ -1,5 +1,5 @@
 /**
- * Zoom controls in the image well's bottom-right corner (M2 decision 15b, 15e): Zoom out, Zoom in
+ * Zoom controls on the right of the toolbar row under the image well (M2 decision 15b, 15e; M3 decision 42): Zoom out, Zoom in
  * and Fit. The buttons step through 100%, 200%, 400% and 800% about the well's center, and the zoom
  * level is announced through a live region. At the ends of the range a button is aria-disabled, so
  * keyboard focus stays on it.
@@ -40,6 +40,9 @@ export function ZoomControls() {
       >
         <ZoomOut size={20} strokeWidth={1.5} aria-hidden="true" />
       </button>
+      <button type="button" class="zoom-button" aria-label="Fit" onClick={zoomFit}>
+        <Maximize size={20} strokeWidth={1.5} aria-hidden="true" />
+      </button>
       <button
         type="button"
         class="zoom-button"
@@ -48,9 +51,6 @@ export function ZoomControls() {
         onClick={() => !atMax && zoomStep(1)}
       >
         <ZoomIn size={20} strokeWidth={1.5} aria-hidden="true" />
-      </button>
-      <button type="button" class="zoom-button" aria-label="Fit" onClick={zoomFit}>
-        <Maximize size={20} strokeWidth={1.5} aria-hidden="true" />
       </button>
       <span class="visually-hidden" role="status" aria-live="polite" data-testid="zoom-level">
         {zoomLabel(view)}

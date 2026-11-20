@@ -3,7 +3,7 @@
  * (spec 8 v1 acceptance 10; WCAG 2.2 SC 2.4.11; M2 re-evaluation failure 2).
  */
 import { expect, type Page, test } from "@playwright/test";
-import { demo } from "./helpers/app";
+import { addScrollSpace, demo } from "./helpers/app";
 
 const SIZES = [
   { width: 320, height: 568 },
@@ -62,10 +62,17 @@ async function walk(page: Page, key: "Tab" | "Shift+Tab"): Promise<string[]> {
 }
 
 test.describe("focus is never hidden under sticky chrome (spec 8 v1 acceptance 10)", () => {
-  for (const size of SIZES) {
-    test(`${size.width} × ${size.height}: Tab forward and Shift+Tab back`, async ({ page }) => {
+  // The Palette tab's strip is pinned too (M3 decision 33).
+  for (const [size, tab] of SIZES.flatMap((s) => [
+    [s, "source"] as const,
+    [s, "palette"] as const,
+  ])) {
+    test(`${size.width} × ${size.height}, ${tab} tab: Tab forward and Shift+Tab back`, async ({
+      page,
+    }) => {
       await page.setViewportSize(size);
-      await page.goto(demo("rows=filters,advanced"));
+      await page.goto(demo(`tab=${tab}`));
+      await addScrollSpace(page);
       await expect(page.locator("[data-testid=swatch-strip]:visible").first()).toBeVisible();
       await expect(page.locator(".tabbar")).toBeVisible();
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());

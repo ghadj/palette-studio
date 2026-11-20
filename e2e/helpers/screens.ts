@@ -1,6 +1,7 @@
 /**
- * The M1 screens, shared by the token conformance test, the accessibility test and the visual
- * review (visual-testing.md). A screen joins this list in the milestone that builds it.
+ * The screens (M1 onward, despite the list's name), shared by the token conformance test and the
+ * accessibility test (visual-testing.md). A screen joins this list in the milestone that builds
+ * it; M3-T2 registered all of M3's at once.
  */
 /** "tablet" screens use the tabbed phone layout, wider (decision 4 as revised). */
 export type Device = "desktop" | "tablet" | "phone";
@@ -62,7 +63,7 @@ export const M1_SCREENS: readonly Screen[] = [
     device: "phone",
   },
   // M2-T14: swatch 3's cluster map over the image (mockup-state `cluster=3`). The Palette tab
-  // with the Cluster map toggle is palette-phone above.
+  // with the Cluster map toggle is swatch-sheet-phone below (13d).
   {
     name: "cluster-map-desktop",
     path: "./?demo=mockup&cluster=3",
@@ -70,6 +71,48 @@ export const M1_SCREENS: readonly Screen[] = [
     device: "desktop",
   },
   { name: "cluster-map-phone", path: "./?demo=mockup&cluster=3", viewport: PHONE, device: "phone" },
+  // M3 (plan "Screens affected"), registered by M3-T2 so token and axe tests cover each screen
+  // from the start. The tasks that build them fill them in; no task edits this list.
+  // Desktop: each Palette-column row open in place (`rows=`), the loupe, and the image views.
+  ...(
+    [
+      ["swatch-desktop", "rows=swatch"],
+      ["adjustments-desktop", "rows=adjustments"],
+      ["contrast-desktop", "rows=contrast"],
+      ["cvd-desktop", "rows=cvd"],
+      ["ramp-desktop", "rows=ramp"],
+      ["loupe-desktop", "loupe=3"],
+      ["palette-view-desktop", "image=palette"],
+      ["values-view-desktop", "image=values"],
+    ] as const
+  ).map(
+    ([name, query]): Screen => ({
+      name,
+      path: `./?demo=mockup&${query}`,
+      viewport: DESKTOP,
+      device: "desktop",
+    }),
+  ),
+  // Phone: the Source tab's image views and loupe, and each Palette-tab bottom sheet open.
+  ...(
+    [
+      ["palette-view-phone", "image=palette"],
+      ["values-phone", "image=values"],
+      ["loupe-phone", "loupe=3"],
+      ["swatch-sheet-phone", "tab=palette&rows=swatch"],
+      ["adjustments-sheet-phone", "tab=palette&rows=adjustments"],
+      ["ramp-sheet-phone", "tab=palette&rows=ramp"],
+      ["contrast-sheet-phone", "tab=palette&rows=contrast"],
+      ["cvd-sheet-phone", "tab=palette&rows=cvd"],
+    ] as const
+  ).map(
+    ([name, query]): Screen => ({
+      name,
+      path: `./?demo=mockup&${query}`,
+      viewport: PHONE,
+      device: "phone",
+    }),
+  ),
 ];
 
 export const THEMES = ["light", "dark"] as const;

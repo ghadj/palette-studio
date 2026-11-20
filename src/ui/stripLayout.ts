@@ -5,6 +5,14 @@
  */
 export const MIN_SWATCH_PX = 44; // --touch-target
 
+/**
+ * The cells the strip lays out: the swatches and the "+" tile, which shares their row (decision 29).
+ * At the 12-swatch limit the tile is disabled and sits on a row of its own, so only swatches count.
+ */
+export function stripCells(swatches: number, max = 12): number {
+  return swatches >= max ? swatches : swatches + 1;
+}
+
 export function stripColumns(count: number, width: number, gap: number): number {
   if (count <= 6) return Math.max(1, count);
   const oneRow = count * MIN_SWATCH_PX + (count - 1) * gap;

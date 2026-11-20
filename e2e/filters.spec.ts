@@ -3,6 +3,8 @@ import { hexToOklab } from "../src/color/convert";
 import { deltaEOK } from "../src/color/delta-e";
 import { GRAYSCALE_RED, STUDIO_BACKDROP } from "../tools/fixture-colors";
 import { fixture } from "./helpers/files";
+import { isSheetLayout, openRow } from "./helpers/rows";
+import { sheetSettled } from "./helpers/sheet";
 
 // Pixel filters (spec 2.1 step 3, 2.4; M2 decisions 2b, 3 and 18).
 
@@ -20,11 +22,19 @@ async function settled(page: Page) {
   await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
 }
 
+/** Opens Filters in place from 1024 px, or as a bottom sheet below (M3 decision 34). */
 async function openFilters(page: Page) {
-  const row = page.locator("[data-testid=filters-row]:visible");
-  await expect(row).not.toHaveAttribute("open", "");
-  await row.locator("summary").click();
-  await expect(row).toHaveAttribute("open", "");
+  await openRow(page, "Filters");
+  await expect(page.locator("#setting-ignore-dark:visible")).toBeVisible();
+}
+
+/** True once the Filters row is open: its `open` attribute, or the sheet below 1024 px. */
+async function filtersOpen(page: Page) {
+  if (await isSheetLayout(page)) {
+    await expect(page.getByRole("dialog", { name: "Filters" })).toBeVisible();
+  } else {
+    await expect(page.locator("[data-testid=filters-row]:visible")).toHaveAttribute("open", "");
+  }
 }
 
 const lightness = (hex: string) => hexToOklab(hex).l;
@@ -203,8 +213,12 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
   test("the Filters row starts collapsed after Working space and opens with rows=filters in the mockup state", async ({
     page,
   }) => {
-    const row = page.locator("[data-testid=filters-row]:visible");
-    await expect(row).not.toHaveAttribute("open", "");
+    if (await isSheetLayout(page)) await expect(page.getByRole("dialog")).toHaveCount(0);
+    else
+      await expect(page.locator("[data-testid=filters-row]:visible")).not.toHaveAttribute(
+        "open",
+        "",
+      );
     // Order: Preset above Algorithm (M2 decision 2a), then Working space, Filters and Advanced
     // (M2 decision 2b).
     const order = await page
@@ -213,7 +227,7 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
       .evaluate((el) =>
         [...el.children].map(
           (c) =>
-            c.querySelector("summary")?.textContent ??
+            c.querySelector("summary, .chevron-row__summary")?.textContent ??
             c.querySelector(".setting-row__label")?.textContent ??
             "",
         ),
@@ -227,7 +241,7 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
       "Advanced",
     ]);
     await page.goto("./?demo=mockup&rows=filters");
-    await expect(page.locator("[data-testid=filters-row]:visible")).toHaveAttribute("open", "");
+    await filtersOpen(page);
     await expect(page.locator("#setting-ignore-dark:visible")).toBeVisible();
   });
 
@@ -237,6 +251,8 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto("./?demo=mockup&rows=filters");
     await expect(page.locator("#setting-ignore-dark:visible")).toBeVisible();
+    // At 320 px Filters is a drawer (decision 34); measure its resting geometry, not the slide-in.
+    await sheetSettled(page);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

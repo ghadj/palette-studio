@@ -3,6 +3,7 @@ import { hexToOklab } from "../src/color/convert";
 import { TWELVE_COLORS } from "../tools/fixture-colors";
 import { hasHorizontalScroll } from "./helpers/app";
 import { fixture } from "./helpers/files";
+import { openRow } from "./helpers/rows";
 
 // Presets (spec 2.5; M2 decisions 2a and 11).
 
@@ -61,7 +62,7 @@ test.describe("presets (spec 2.5)", () => {
       .poll(async () => [...(await hexes(page))].sort())
       .toEqual([...TWELVE_COLORS].sort());
     await expect(preset(page)).toHaveValue("flat-art");
-    await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+    await openRow(page, "Advanced");
     await expect(page.locator("#setting-resampling:visible")).toHaveValue("nearest");
     await expect(page.locator("#setting-merge:visible")).toHaveValue("0.000");
   });
@@ -81,7 +82,7 @@ test.describe("presets (spec 2.5)", () => {
     expect(after.length).toBeGreaterThan(0);
     expect(after.every((h) => hexToOklab(h).l <= 0.95)).toBe(true);
     // Vibrant turns both lightness filters on.
-    await page.locator("[data-testid=filters-row]:visible summary").click();
+    await openRow(page, "Filters");
     await expect(page.locator("#setting-ignore-dark:visible")).toHaveAttribute(
       "aria-checked",
       "true",
@@ -132,7 +133,7 @@ test.describe("presets (spec 2.5)", () => {
     } else {
       // Reach it with Tab from the image well, which comes before it in the page.
       await page.locator("[data-testid=image-well]:visible").focus();
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 40; i++) {
         if (await select.evaluate((el) => el === document.activeElement)) break;
         await page.keyboard.press("Tab");
       }

@@ -2,7 +2,9 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
 import { fixture } from "./helpers/files";
 import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
+import { openRow } from "./helpers/rows";
 import { M1_SCREENS, THEMES } from "./helpers/screens";
+import { openExport } from "./helpers/sheet";
 
 /** Axe judges contrast on what is painted, so let fades (such as the toast's) finish first. */
 const settled = (page: Page) =>
@@ -48,7 +50,8 @@ test.describe("accessibility @a11y", () => {
     for (const theme of THEMES) {
       await page.emulateMedia({ colorScheme: theme });
       await page.setViewportSize({ width: 390, height: 844 });
-      await page.goto("./?demo=mockup");
+      await page.goto("./?demo=mockup&tab=palette");
+      await openExport(page);
       await page.getByRole("button", { name: "Copy HEX" }).click();
       await expect(page.getByRole("button", { name: "Dismiss" })).toBeVisible();
       await settled(page);
@@ -62,7 +65,7 @@ test.describe("accessibility @a11y", () => {
       await page.emulateMedia({ colorScheme: theme });
       await page.goto("./");
       await page.locator("#setting-algorithm:visible").selectOption({ label: "Median cut" });
-      await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+      await openRow(page, "Advanced");
       await expect(page.locator("#setting-seed:visible")).toBeDisabled();
       await settled(page);
       const results = await new AxeBuilder({ page }).analyze();
@@ -82,7 +85,7 @@ test.describe("accessibility @a11y", () => {
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
-        await page.locator("[data-testid=filters-row]:visible summary").click();
+        await openRow(page, "Filters");
         await page.locator("#setting-ignore-background:visible").selectOption({ label: "Auto" });
         await expect(
           page.locator("[data-testid=filters-row]:visible #setting-ignore-background-note"),
@@ -126,7 +129,7 @@ test.describe("accessibility @a11y", () => {
     for (const theme of THEMES) {
       await page.emulateMedia({ colorScheme: theme });
       await page.goto("./");
-      await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+      await openRow(page, "Advanced");
       // The M2-T7 rows, with the Keep one outlier toggle off, then on.
       const toggle = page.locator("#setting-outlier:visible");
       for (const state of ["false", "true"]) {
@@ -147,7 +150,7 @@ test.describe("accessibility @a11y", () => {
       await page.setViewportSize({ width: 320, height: 568 });
       await page.goto("./");
       await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
-      await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+      await openRow(page, "Advanced");
       await expect(page.locator("#setting-restarts:visible")).toBeDisabled();
       await expect(page.locator("#setting-outlier:visible")).toBeDisabled();
       await settled(page);
@@ -160,7 +163,10 @@ test.describe("accessibility @a11y", () => {
     for (const theme of THEMES) {
       await page.emulateMedia({ colorScheme: theme });
       await page.goto("./?demo=mockup");
-      await page.getByRole("button", { name: "Undo" }).first().click();
+      await page
+        .locator("header")
+        .getByRole("button", { name: /Harbor mural/ })
+        .click();
       await page.getByRole("button", { name: /^Theme/ }).click();
       await expect(page.getByRole("menu")).toBeVisible();
       await settled(page);

@@ -30,16 +30,16 @@ The italic notes under the columns of `03` and `04` explain the fixture. They ar
 1. An accent dot and the app name (`--text-md`, strong).
 2. A muted "/" and the current project's name in text color, with a small chevron. It is a button that opens the project library (spec 5.5). While the library is open it shows `--color-surface-sunken` behind it and the chevron points up (`07`).
 3. View tabs: Studio and Materials. The active tab is strong, with a 2 px accent underline the width of its label; the inactive tab is muted.
-4. A Replace image icon button (shown once an image is loaded; it opens a menu with Choose image, Paste and the sample images), then text buttons in muted `--text-sm`: Undo, Redo, Share. There is no Save button, because every project autosaves (spec 5.3, 5.5).
+4. A Replace image icon button (shown once an image is loaded; it opens a menu with Choose image, Paste and the sample images), then text buttons in muted `--text-sm`: Undo, Redo, Export. Export is a text button that opens the Export panel (M3 decision 56; D10). There is no Save button, because every project autosaves (spec 5.3, 5.5).
 5. The theme button, far right: a pill with a half-filled circle icon.
 
-**Phone** (`09`). The project name (strong) with its chevron on the left; it opens the Projects sheet. On the right, icon buttons for Replace image (once an image is loaded), Undo, Redo and Share, then the theme button (icon only). The app name isn't shown on phones.
+**Phone** (`09`). The project name (strong) with its chevron on the left; it opens the Projects sheet. On the right, icon buttons for Replace image (once an image is loaded), Undo, Redo and Export (a 44 px icon button with the accessible name "Export"), then the theme button (icon only). The app name isn't shown on phones.
 
 **Theme button behavior (interpretation of spec 6.2).** It opens a small menu with System, Light and Dark. The icon shows the current choice: half-filled for System, sun for Light, moon for Dark.
 
 ## Desktop Studio view (`01` light, `02` dark)
 
-A frame below the header holds three equal columns with a `--space-4` gutter, then an export drawer across the full width. Each column starts with an uppercase muted section label at `--text-xs`.
+A frame below the header holds three equal columns with a `--space-4` gutter, with no export bar under them. Each column starts with an uppercase muted section label at `--text-xs`.
 
 **Column 1: SOURCE**
 1. Image well: the image, `--radius-card`, with a `--color-border` outline. The image is user content and keeps its own colors in both themes. Sample-point markers sit on it. Each is the swatch color inside a dark inner ring and a light outer ring; the selected marker has an accent ring instead.
@@ -62,7 +62,7 @@ A frame below the header holds three equal columns with a `--space-4` gutter, th
 3. Stop bar: a thin rounded bar showing the gradient, with round stop handles in each stop's color. The selected handle has an accent ring.
 4. Setting rows as in column 1: Interpolation, Technique.
 
-**Export drawer.** A divider above it. Two halves split by a vertical divider. Each half has a strong title ("Palette export", "Gradient export") followed by its formats in muted text. The halves stay separate (spec 5).
+**Export panel** (D10). Opened by the header's Export button. From 1024 px a right-side drawer under the header, `--color-surface` with a `--color-divider` left edge, about 384 px wide, overlaying column 3 without moving the columns; below 1024 px a bottom sheet. Title "Export" (strong, `--text-md`) with a 44 px close button. Under it a segmented control of four sections, keyboard operable (arrow keys, Home, End): Palette, Gradient, Image, Project; the selected one is strong on a `--color-surface` pill inside a `--color-surface-sunken` track. Palette: Copy HEX and Copy CSS pill buttons and a muted line that more formats arrive later. Gradient, Image and Project: "Coming in a later version" with a short muted description (Image: the image, its Palette view or Values view, with or without the grid, as PNG or PDF; Project: Project file and Share link). It opens on Palette from the Palette tab or column 2, and on Image from the Source tab (or column 1) in the Palette or Values view; otherwise on the last section used this session. Palette export and gradient export stay separate sections (spec 5).
 
 ## Image views (`03` light, `04` dark)
 
@@ -79,9 +79,9 @@ Each column of `03` is the SOURCE column of the Studio view in a different state
 1. The image in gray bands, no markers.
 2. View bar with Values selected.
 3. Band strip: one block per band, dark to light, with "Dark" and "Light" in muted text under its ends. It has a `--color-border` outline because its lightest band is close to the surface.
-4. Rows: Bands (value "5"), then Close in value with a warn dot and the count ("1 pair").
-5. Under the rows, each flagged pair: its two swatch chips, then muted text such as "Swatch 1 and 2, ΔL 0.004".
-6. On the swatch strip (column 2 on desktop, the strip on the phone's Source tab), the flagged pair is marked by a warn-colored bracket under the two swatches, with "Close in value" beside it in muted text (`11`).
+4. Rows: Bands (value "5"), then Close in value with its threshold slider (D8).
+5. (Drawn in the mockup, removed by D8.) Under the rows, each flagged pair: its two swatch chips, then muted text such as "Swatch 1 and 2, ΔL 0.004".
+6. On the swatch strip (column 2 on desktop, the strip on the phone's Source tab), every swatch of a flagged pair carries a small warn dot at its top-left corner, with a one-line legend under the strip: the dot and "Close in value" in muted text (D8; the mockup draws a bracket, `11`).
 
 **Transfer grid** (right)
 1. The image in the Image view, with grid lines over it and no markers. Lines are dark or light to suit the image (spec 3.8), not the theme.
@@ -137,10 +137,12 @@ A header at the top, one panel at a time, and a bottom tab bar: Source, Palette,
 1. Image well with markers.
 2. The view bar, as on desktop.
 3. The hint (Image view only).
-4. The swatch strip, with the selection outlined. It is a compact view of the palette, so the result stays visible while markers move; tapping a swatch selects its marker. Editing happens on the Palette tab.
-5. Setting rows for the current view. In the Image view: Algorithm, Colors, Working space. Below 1024 px each row has `--space-2` of padding above and below, so the 44 px controls don't fill the row from divider to divider (M2 decision 21). Row labels, toggle rows, chevron-row titles and plain-text values use `--text-row-touch` (15 px), on any touch device too (decision 22).
+4. The swatch strip, with the selection outlined. It is a compact view of the palette, so the result stays visible while markers move; tapping a swatch selects its marker. Editing happens on the Palette tab. Below 1024 px it shows only the swatches: the "+" tile and the close-pair mark are on the Palette tab (M3 decision 32). The Values view's "Close in value" dots and legend stay here (D8).
+5. Setting rows for the current view. In the Image view: Algorithm, Colors, Working space. Below 1024 px the Filters and Advanced rows are chevron rows that open bottom-sheet drawers, like the Palette tab's (M3 decision 34); Preset, Algorithm, Colors and Working space stay inline. Below 1024 px each row has `--space-2` of padding above and below, so the 44 px controls don't fill the row from divider to divider (M2 decision 21). Row labels, toggle rows, chevron-row titles and plain-text values use `--text-row-touch` (15 px), on any touch device too (decision 22).
 
-**Palette tab.** Not drawn. Use the desktop palette column stacked vertically (the swatch strip, then the editor), with the chevron rows opening bottom sheets.
+**Palette tab.** Not drawn. Use the desktop palette column stacked vertically (the swatch strip, then the editor), with the chevron rows opening bottom sheets. The strip, with the "+" tile and corner dots and a legend under it (D8), pins under the header like the Source tab's (M3 decision 33).
+
+**Drawers on both tabs.** A bottom sheet opened on the Source or Palette tab stops under the pinned swatch strip: its top edge is at or below the strip's bottom, the scrim starts there, and the sheet is sized to the space between the strip and the bottom edge and scrolls inside. The palette colors stay visible and update while a setting changes (M3 decision 35).
 
 **Gradient tab.** Preview, type chips, stop bar, then the Interpolation and Technique rows.
 
@@ -222,6 +224,16 @@ Visual review treats these as correct.
 - **D3, type sizes on phones.** To fit the scaled frames, the phone mockups use type smaller than `--text-xs` in places (tab labels, the view bar, counts in the Filters sheet). Use the type tokens; the 44 px touch targets win over matching the drawing.
 - **D4, sticky swatch strip on phone and tablet.** The mockups draw an unscrolled page; below 1024 px the Source tab's swatch strip pins under the header while the setting rows scroll, on an opaque `--color-surface` container with a `--color-border` divider while pinned (M2 decision 19).
 
+- **D5, drawers under the strip, and the Palette tab's pinned strip.** The mockups draw sheets that rise from the bottom over the page and a Source tab with inline Filters and Advanced rows. Below 1024 px those two rows open as bottom sheets, a sheet on the Source or Palette tab stops under the pinned swatch strip so the palette stays visible, and the Palette tab's strip pins like the Source tab's (M3 decisions 33 to 35).
+- **D6, the Source tab's strip shows only swatches.** Below 1024 px the "+" tile and the close-pair mark are on the Palette tab, not the Source tab (M3 decision 32). On desktop, where the strip is in column 2, nothing changes.
+- **D8, close swatches are marked by corner dots and a legend, not brackets and pair lists.** The mockups draw a warn bracket under the two close-in-value swatches, a "1 pair" count and a list of pairs with chips (Values view items 4 to 6). In the Values view every swatch in a close-in-value pair, and in the Image view every swatch in a very-close pair, shows a small warn dot at its top-left corner, with one legend line under the strip (the dot, then "Close in value" or "Very close colors"). Pairs are not listed anywhere, and the Contrast row has no "Close pairs" list; the threshold slider stays (M3 decisions 51 and 52). Corners: top-left the dot, top-right the Remove X, bottom-left the pin or lock badge.
+- **D11, no numbers beside the image markers; an active-adjustments indicator on the Adjustments row; a glow-in on the cluster map.** (a) The mockups draw the swatch number beside each marker ring; the app draws none (M3 decision 60, departing from spec 3.7). The marker's accessible name still carries the number. (b) The Adjustments chevron row shows an accent dot, a count ("Adjustments · 2") and a reset-all icon while any adjustment differs from its default, and each adjustment row shows its own reset icon; the panel has no Reset button, and there are no "After adjustments" lines in the editor or Swatch row (M3 decisions 57, 58). (c) A shown cluster map has no outline; it appears with a short glow-in (opacity and a light drop shadow) that reduced motion removes (M3 decisions 61 and 64; spec 2.6). Notes: below 1024 px the Export sheet is a plain bottom sheet and does not dock under the strip (decision 62), and a docked drawer leaves a `--space-2` gap under the strip (decision 59).
+- **D10, one central Export button in the header opens a sectioned panel, instead of an export drawer under the columns and a Share button.** Spec 6 and the desktop mockup draw a "Palette export" and "Gradient export" drawer across the bottom and a Share button in the header; the phone mockup has a Share icon. The Export button takes Share's slot (a text button on desktop, a 44 px icon on phones, accessible name "Export"). It opens the panel described under "Export panel": a right-side drawer from 1024 px, a bottom sheet below, with sections Palette, Gradient, Image and Project. The share link is an item in the Project section ("Coming in a later version"). The columns get the bottom drawer's height back. The grid's "Export grid" button (M5) is a shortcut that opens Export on Image with the grid preselected. Per-swatch copy icons are unchanged (M3 decision 56).
+- **D9 (superseded by D10), below 1024 px the palette-wide export is an "Export palette" button in the pinned strip dock, not a block at the end of a tab.** The mockups show Copy HEX and Copy CSS at the end of the phone Source and Palette columns, where they are easy to miss. The Source tab has none. On the Palette tab a compact "Export" button (icon, short label, accessible name "Export palette", 44 px) sits right-aligned on the legend line under the strip, inside the dock, alone on that line when no legend shows. It opens a bottom-sheet drawer titled "Export palette" with Copy HEX and Copy CSS, which stops below the dock and locks the page (M3 decisions 35, 46, 53). M5 adds its formats there. From 1024 px the "Palette export" bar is unchanged (M3 decision 53).
+- **D7, the image toolbar sits under the well.** The image well's controls never cover image content (M3 decision 42). A slim toolbar row sits directly under the well, above the view bar: Markers and Eyedropper on the left (Image view only), Zoom out, Fit and Zoom in on the right (every view). On phones it scrolls with the Source tab's content and fits at 320 px. The eyedropper hint row stays below it. Targets are `--hit` (44 px on touch).
+- Note (M3 decisions 44 and 45): each phone tab keeps its own scroll position; on desktop the swatch strip and its marks pin at the top of column 2's scroll container, extending D4's idea. Neither is a new deviation.
+- Note (M3 decisions 48 and 49): at 12 swatches the "+" tile is hidden and the limit note stays; the pin and lock badge sits at the swatch's bottom-left; below 1024 px the Swatch drawer's title bar has a "Duplicate swatch" button beside Close.
+
 Earlier deviations from the previous version of the mockups (control borders, phone Undo and Redo, quality dots on phone cards, all four medium chips) are now drawn in the mockups.
 
 ## Not drawn: build from the spec, then flag for design review
@@ -241,3 +253,5 @@ Earlier deviations from the previous version of the mockups (control borders, ph
 - The contents of More filters, and the Single brand and My paints scopes on phones (15)
 
 The evaluator lists every one of these a milestone touches as a manual design check.
+
+**App footer (M3 decision 54).** One thin row under a hairline divider, in muted `--text-xs`, with no vertical padding; the links' hit area sets its height: `--hit` (32 px with a pointer, 44 px on touch) from 1024 px, 44 px below it. Below 1024 px it never wraps: "Images stay in your browser" on the left (it truncates with an ellipsis if space runs out; the full sentence is its `title`), then "MIT License" and "GitHub" on the right, each a 44 px touch target. From 1024 px the left text is "Your images never leave this browser." The footer still sits above the tab bar.

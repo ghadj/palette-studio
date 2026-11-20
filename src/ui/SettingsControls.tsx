@@ -7,7 +7,7 @@
  * weighting (M2-T9), Keep one outlier and Sort (M2-T7). Every change re-extracts live (spec 1, 7.4).
  */
 import { ChevronDown, ChevronRight } from "lucide-preact";
-import { useLayoutEffect, useState } from "preact/hooks";
+import type { ComponentChildren } from "preact";
 import { type SettingKey, settingApplies, settingNote } from "../extract/applicability";
 import { AVAILABLE_ALGORITHMS } from "../extract/pipeline";
 import {
@@ -18,6 +18,7 @@ import {
   type PresetMatch,
 } from "../extract/presets";
 import { clampColors, MAX_COLORS, MIN_COLORS } from "../state/defaults";
+import { nameSettingsChange } from "../state/setting-labels";
 import { backgroundNotFound, initialOpenRows, settings } from "../state/signals";
 import type {
   Algorithm,
@@ -31,8 +32,12 @@ import type {
   SpatialWeighting,
   WorkingSpace,
 } from "../types";
+import { ChevronRow } from "./ChevronRow";
 import { DecimalField } from "./DecimalField";
+import { useLayout } from "./layout";
+import { NumberField } from "./NumberField";
 import { SettingRow } from "./SettingRow";
+import { Slider } from "./Slider";
 import { Toggle } from "./Toggle";
 
 export const ALGORITHM_LABELS: Record<Algorithm, string> = {
@@ -85,13 +90,13 @@ function update<K extends keyof ExtractionSettings>(key: K, value: ExtractionSet
   settings.value = { ...settings.peek(), [key]: value };
 }
 
-interface Option<T> {
+export interface Option<T> {
   value: T;
   label: string;
   disabled?: boolean;
 }
 
-function Select<T extends string | number>({
+export function Select<T extends string | number>({
   id,
   value,
   options,
@@ -128,70 +133,6 @@ function Select<T extends string | number>({
   );
 }
 
-/** A number field that accepts typing freely and commits valid integers in range. */
-function NumberField({
-  id,
-  value,
-  min,
-  max,
-  label,
-  disabled = false,
-  describedBy,
-  onCommit,
-}: {
-  id: string;
-  value: number;
-  min: number;
-  max: number;
-  label?: string;
-  disabled?: boolean;
-  describedBy?: string | undefined;
-  onCommit: (value: number) => void;
-}) {
-  const [text, setText] = useState<string | null>(null);
-  const parse = (raw: string): number | null => {
-    const n = Number(raw.trim());
-    return raw.trim() !== "" && Number.isInteger(n) && n >= min && n <= max ? n : null;
-  };
-  // A change from elsewhere, such as a preset, replaces a draft that no longer matches it. A
-  // layout effect runs with the render, before the next input event; a deferred effect could
-  // run after the user has typed again and drop that new draft.
-  useLayoutEffect(() => {
-    setText((t) => (t !== null && parse(t) !== value ? null : t));
-  }, [value]);
-  const onInput = (event: Event) => {
-    const raw = (event.currentTarget as HTMLInputElement).value;
-    setText(raw);
-    const n = parse(raw);
-    if (n !== null) onCommit(n);
-  };
-  return (
-    <input
-      id={id}
-      class="number-field"
-      type="number"
-      inputMode="decimal"
-      min={min}
-      max={max}
-      step={1}
-      aria-label={label}
-      aria-describedby={describedBy}
-      disabled={disabled}
-      value={text ?? String(value)}
-      onInput={onInput}
-      onChange={(event) => {
-        // On commit (blur or Enter), clamp out-of-range numbers instead of dropping them.
-        const n = Number((event.currentTarget as HTMLInputElement).value.trim());
-        if (Number.isFinite(n) && (event.currentTarget as HTMLInputElement).value.trim() !== "") {
-          onCommit(Math.min(max, Math.max(min, Math.round(n))));
-        }
-        setText(null);
-      }}
-      onBlur={() => setText(null)}
-    />
-  );
-}
-
 /**
  * Whether a setting applies to the algorithm, for a row's controls (M1 decision 14). Its "Used by …"
  * or "Not used by …" note shows only while the controls are disabled (M2 decision 14c).
@@ -200,6 +141,41 @@ function applicability(key: SettingKey, algorithm: Algorithm, noteId: string) {
   const enabled = settingApplies(key, algorithm);
   const note = enabled ? null : settingNote(key);
   return { enabled, note, noteId, describedBy: note ? noteId : undefined };
+}
+
+/**
+ * A collapsed row on the Source tab. From 1024 px it expands in place, as a `<details>`; below that
+ * it opens a bottom sheet with the Palette tab's `ChevronRow`, so both tabs share one drawer
+ * behavior (M3 decision 34). The rows that are always visible (Preset, Algorithm, Colors, Working
+ * space) stay inline.
+ */
+function CollapsibleRow({
+  id,
+  label,
+  testId,
+  children,
+}: {
+  id: string;
+  label: string;
+  testId?: string | undefined;
+  children: ComponentChildren;
+}) {
+  if (useLayout() === "phone") {
+    return (
+      <ChevronRow id={id} label={label} testId={testId}>
+        {children}
+      </ChevronRow>
+    );
+  }
+  return (
+    <details class="chevron-row" data-testid={testId} open={initialOpenRows.peek().includes(id)}>
+      <summary class="chevron-row__summary">
+        <span>{label}</span>
+        <ChevronRight class="chevron-row__chevron" size={16} strokeWidth={1.5} aria-hidden="true" />
+      </summary>
+      {children}
+    </details>
+  );
 }
 
 export function SettingsControls() {
@@ -242,7 +218,11 @@ export function SettingsControls() {
           value={presetMatch}
           options={presets}
           onChange={(v) => {
-            if (v !== "custom") settings.value = applyPreset(settings.peek(), v);
+            if (v === "custom") return;
+            const next = applyPreset(settings.peek(), v);
+            // Its undo step reads "Preset: Vibrant", not the fields it set (decision 3a).
+            nameSettingsChange(next, `Preset: ${PRESET_LABELS[v]}`);
+            settings.value = next;
           }}
         />
       </SettingRow>
@@ -261,29 +241,16 @@ export function SettingsControls() {
         noteId="setting-colors-note"
         disabled={!colorsApplies}
       >
-        <span class="slider-group">
-          <input
-            class="slider"
-            type="range"
-            min={MIN_COLORS}
-            max={MAX_COLORS}
-            step={1}
-            value={s.colors}
-            aria-label="Colors slider"
-            disabled={!colorsApplies}
-            aria-describedby={colorsNote ? "setting-colors-note" : undefined}
-            onInput={(event) => update("colors", clampColors(Number(event.currentTarget.value)))}
-          />
-          <NumberField
-            id="setting-colors"
-            value={s.colors}
-            min={MIN_COLORS}
-            max={MAX_COLORS}
-            disabled={!colorsApplies}
-            describedBy={colorsNote ? "setting-colors-note" : undefined}
-            onCommit={(v) => update("colors", clampColors(v))}
-          />
-        </span>
+        <Slider
+          id="setting-colors"
+          label="Colors"
+          value={s.colors}
+          min={MIN_COLORS}
+          max={MAX_COLORS}
+          disabled={!colorsApplies}
+          describedBy={colorsNote ? "setting-colors-note" : undefined}
+          onChange={(v) => update("colors", clampColors(v))}
+        />
       </SettingRow>
       <SettingRow label="Working space" htmlFor="setting-space">
         <Select
@@ -297,16 +264,7 @@ export function SettingsControls() {
         />
       </SettingRow>
       <FiltersRow s={s} />
-      <details class="chevron-row" open={initialOpenRows.peek().includes("advanced")}>
-        <summary class="chevron-row__summary">
-          <span>Advanced</span>
-          <ChevronRight
-            class="chevron-row__chevron"
-            size={16}
-            strokeWidth={1.5}
-            aria-hidden="true"
-          />
-        </summary>
+      <CollapsibleRow id="advanced" label="Advanced">
         <SettingRow label="Sample size" htmlFor="setting-sample-size">
           <Select
             id="setting-sample-size"
@@ -358,7 +316,7 @@ export function SettingsControls() {
           </span>
         </SettingRow>
         <AdvancedRows s={s} />
-      </details>
+      </CollapsibleRow>
     </div>
   );
 }
@@ -439,15 +397,7 @@ function FiltersRow({ s }: { s: ExtractionSettings }) {
   const backgroundNote =
     s.ignoreBackground === "auto" && backgroundNotFound.value ? NO_BACKGROUND_NOTE : null;
   return (
-    <details
-      class="chevron-row"
-      data-testid="filters-row"
-      open={initialOpenRows.peek().includes("filters")}
-    >
-      <summary class="chevron-row__summary">
-        <span>Filters</span>
-        <ChevronRight class="chevron-row__chevron" size={16} strokeWidth={1.5} aria-hidden="true" />
-      </summary>
+    <CollapsibleRow id="filters" label="Filters" testId="filters-row">
       <SettingRow label="Ignore dark" htmlFor="setting-ignore-dark">
         <Toggle
           id="setting-ignore-dark"
@@ -544,7 +494,7 @@ function FiltersRow({ s }: { s: ExtractionSettings }) {
           />
         </span>
       </SettingRow>
-    </details>
+    </CollapsibleRow>
   );
 }
 

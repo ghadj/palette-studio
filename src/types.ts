@@ -1,6 +1,5 @@
 /**
- * Shared types (spec 7.5). M1 holds only the fields M1 uses; later milestones add adjustments,
- * gradients, export preferences and view settings.
+ * Shared types (spec 7.5). Gradients and export preferences arrive in later milestones.
  */
 import type { Oklch } from "./color/convert";
 import type { DistanceMetric } from "./color/delta-e";
@@ -87,6 +86,15 @@ export interface ImagePoint {
   y: number;
 }
 
+/** How a sample patch is reduced to one color: the mean in OKLab, or the median (plan D8). */
+export type SampleStat = "mean" | "median";
+
+/** What extraction gave a swatch, kept so "Reset to extracted" can restore it (spec 3.7). */
+export interface ExtractedOrigin {
+  color: Oklch;
+  point: ImagePoint | null;
+}
+
 /** Spec 3.1 and 7.5. */
 export interface Swatch {
   id: string;
@@ -95,13 +103,69 @@ export interface Swatch {
   alpha: number;
   /** Empty when unnamed; the UI then shows "Swatch N". */
   name: string;
+  /** Kept on re-extraction and not adjusted (spec 3.3; the Lock button). */
   locked: boolean;
+  /** Kept on re-extraction but still adjusted: set by edits, drags and picks (spec 3.7; decision 24). */
+  pinned: boolean;
   origin: SwatchOrigin;
   /** Share of the image, 0 to 1. */
   population: number;
   /** Where the color lives on the image; null for manual swatches. */
   point: ImagePoint | null;
   sampleRadius: SampleRadius;
+  /** Mean by default; median for noisy images (spec 3.7, plan D8). */
+  sampleStat: SampleStat;
+  /** The extracted color and point; null for swatches extraction didn't make (spec 3.7). */
+  extracted: ExtractedOrigin | null;
+}
+
+/** Gamut mode (spec 3.3 "Gamut", 7.9): "off" shows the indicator only; "srgb" clamps chroma. */
+export type GamutMode = "off" | "srgb";
+
+/**
+ * Global adjustments (spec 3.3, 7.5), stored as parameters over the base swatches. Ranges and
+ * identity values follow plan D1; `evenOut` and `harmonize` are the 3.3 rows that 7.5 doesn't list.
+ */
+export interface Adjustments {
+  /** OKLab L shift, −0.5 to 0.5 (0). */
+  lightness: number;
+  /** OKLCH C scale, 0 to 2 (1, shown as 100%). */
+  chroma: number;
+  /** OKLCH hue rotation in degrees, −180 to 180 (0). */
+  hue: number;
+  /** Lightness expansion about 0.5, 0.5 to 2 (1). */
+  contrast: number;
+  /** Added to OKLab b, −0.1 to 0.1 (0). */
+  temperature: number;
+  /** Added to OKLab a, −0.1 to 0.1 (0). */
+  tint: number;
+  /** L' = L^gamma, 0.5 to 2 (1). */
+  gamma: number;
+  /** Lightness clamp, 0 to 1. */
+  lightnessRange: { min: number; max: number };
+  /** Space swatch lightness in equal steps. */
+  evenOut: boolean;
+  /** Pull hues toward `anchor` (degrees) by `amount` (0 to 1), along the shorter arc. */
+  harmonize: { anchor: number; amount: number };
+  gamut: GamutMode;
+}
+
+/** The image views (spec 3.8). */
+export type ImageViewMode = "image" | "palette" | "values";
+
+/** The eyedropper (spec 3.2): off, adding a swatch, or retargeting the selected one (plan 5c). */
+export type EyedropperMode = "off" | "add";
+
+/** View settings (spec 3.8, 7.5). The transfer grid joins them in M5. */
+export interface ViewSettings {
+  mode: ImageViewMode;
+  /** Values view bands (plan D19). */
+  bands: "continuous" | 3 | 5;
+  /** Close-in-value threshold in OKLab L, 0.01 to 0.10 (plan D19). */
+  closeInValue: number;
+  /** Where the Palette view takes its colors; "paints" needs Part 2 (plan D18). */
+  colorsFrom: "palette" | "paints";
+  dither: boolean;
 }
 
 /** Spec 7.5: name and pixel size. The pixels themselves are never saved. */
@@ -111,12 +175,17 @@ export interface ImageMeta {
   height: number;
 }
 
-/** Spec 7.5, M1 fields. The project's name belongs to its library entry (7.5, 5.5). */
+/**
+ * Spec 7.5. `palette` holds the base swatches; the adjusted palette is computed from them and
+ * `adjustments`. The project's name belongs to its library entry (7.5, 5.5).
+ */
 export interface Project {
   schemaVersion: number;
   settings: ExtractionSettings;
   palette: Swatch[];
+  adjustments: Adjustments;
   image: ImageMeta | null;
+  view: ViewSettings;
 }
 
 /** Phone tabs (spec 6.1) and, on tablets, the panel beside the Source column. */

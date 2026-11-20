@@ -16,6 +16,7 @@ export function SettingRow({
   noteId,
   live = false,
   disabled = false,
+  reset,
   children,
 }: {
   label: string;
@@ -25,6 +26,12 @@ export function SettingRow({
   live?: boolean;
   /** True while the row's control is disabled (M2 decision 20). */
   disabled?: boolean;
+  /**
+   * A per-row reset (M3 decision 58): `null` while the value is at its default, an icon button
+   * otherwise. Omit it for rows with no reset. The slot keeps its width either way, so a control
+   * doesn't move under a finger when the icon appears mid-drag.
+   */
+  reset?: ComponentChildren | null;
   children: ComponentChildren;
 }) {
   const labelEl = htmlFor ? (
@@ -51,7 +58,10 @@ export function SettingRow({
       ) : (
         labelEl
       )}
-      <span class="setting-row__value">{children}</span>
+      <span class="setting-row__value" data-resettable={reset === undefined ? undefined : ""}>
+        {children}
+        {reset !== undefined && <span class="setting-row__reset">{reset}</span>}
+      </span>
     </div>
   );
 }

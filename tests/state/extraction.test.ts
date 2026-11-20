@@ -3,10 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const extract = vi.fn();
 vi.mock("../../src/extract/client", () => ({ imageClient: () => ({ extract }) }));
 
-const { extractNewImage, extractNow } = await import("../../src/state/extraction");
+const { extractNewImage, extractNow, startLiveExtraction } = await import(
+  "../../src/state/extraction"
+);
+const history = await import("../../src/state/history");
+const { DEBOUNCE_MS } = await import("../../src/state/jobs");
 const {
   backgroundNotFound,
   clusterMap,
+  displayImage,
   emptyRoles,
   extracting,
   imageMessage,
@@ -210,5 +215,136 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
     await flush();
     expect(palette.value).toEqual([]);
     expect(clusterMap.value).toBeNull();
+  });
+});
+
+describe("extraction and history (spec 3.6; plan Q3a, Q3b)", () => {
+  const settle = () => new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS + 40));
+  const hexesOf = () => palette.value.map((s) => s.color.l.toFixed(3));
+
+  beforeEach(async () => {
+    startLiveExtraction();
+    extract.mockReset();
+    displayImage.value = {} as ImageBitmap;
+    settings.value = { ...settings.peek(), algorithm: "balanced", colors: 6 };
+    extract.mockResolvedValueOnce(result(color(0.4, 0.6), color(0.8, 0.4)));
+    extractNewImage();
+    await settle();
+    extract.mockReset();
+  });
+
+  it("extracted swatches remember their extracted color (reset to extracted, 3.7)", () => {
+    for (const swatch of palette.value) {
+      expect(swatch.extracted).toEqual({ color: swatch.color, point: swatch.point });
+    }
+  });
+
+  it("a settings change commits one step after its result lands", async () => {
+    expect(history.canUndo.value).toBe(false);
+    extract.mockResolvedValueOnce(result(color(0.3, 0.5), color(0.6, 0.3), color(0.9, 0.2)));
+    settings.value = { ...settings.peek(), colors: 8 };
+    expect(history.canUndo.value).toBe(false);
+    await settle();
+    expect(extract).toHaveBeenCalledTimes(1);
+    expect(palette.value).toHaveLength(3);
+    expect(history.canUndo.value).toBe(true);
+    expect(history.undoLabel.value).toBe("Colors");
+  });
+
+  it("undo restores settings and palette and starts no job", async () => {
+    const before = { palette: palette.value, settings: settings.value };
+    extract.mockResolvedValueOnce(result(color(0.3, 0.5), color(0.6, 0.3), color(0.9, 0.2)));
+    settings.value = { ...settings.peek(), colors: 8 };
+    await settle();
+    const after = { palette: palette.value, settings: settings.value, hexes: hexesOf() };
+
+    history.undo();
+    expect(settings.value).toBe(before.settings);
+    expect(palette.value).toBe(before.palette);
+    await settle();
+    expect(extract).toHaveBeenCalledTimes(1);
+    expect(extracting.value).toBe(false);
+
+    history.redo();
+    expect(settings.value).toBe(after.settings);
+    expect(palette.value).toBe(after.palette);
+    expect(hexesOf()).toEqual(after.hexes);
+    await settle();
+    expect(extract).toHaveBeenCalledTimes(1);
+  });
+
+  it("undo while a re-extraction is pending cancels it, so its result doesn't land", async () => {
+    extract.mockResolvedValueOnce(result(color(0.3, 0.5), color(0.6, 0.3), color(0.9, 0.2)));
+    settings.value = { ...settings.peek(), colors: 8 };
+    await settle();
+    const committed = palette.value;
+    let resolve!: (value: ReturnType<typeof result>) => void;
+    extract.mockReturnValueOnce(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+    settings.value = { ...settings.peek(), colors: 9 };
+    await settle();
+    expect(extracting.value).toBe(true);
+    history.undo();
+    expect(extracting.value).toBe(false);
+    resolve(result(color(0.5, 1)));
+    await settle();
+    expect(settings.value.colors).toBe(6);
+    expect(palette.value).not.toBe(committed);
+    expect(palette.value).toHaveLength(2);
+    expect(history.redoLabel.value).toBe("Colors");
+    history.redo();
+    expect(palette.value).toBe(committed);
+    expect(settings.value.colors).toBe(8);
+  });
+
+  it("undo and redo bring back each palette's own cluster map (spec 2.6)", async () => {
+    const mapA = { width: 2, height: 1, labels: Uint8Array.from([0, 1]), shares: [0.5, 0.5] };
+    const mapB = { width: 2, height: 1, labels: Uint8Array.from([1, 0]), shares: [0.4, 0.6] };
+    extract.mockResolvedValueOnce({ ...result(color(0.4, 0.5), color(0.8, 0.5)), map: mapA });
+    settings.value = { ...settings.peek(), seed: 5 };
+    await settle();
+    extract.mockResolvedValueOnce({ ...result(color(0.3, 0.4), color(0.7, 0.6)), map: mapB });
+    settings.value = { ...settings.peek(), seed: 6 };
+    await settle();
+    expect(clusterMap.value).toBe(mapB);
+    history.undo();
+    expect(clusterMap.value).toBe(mapA);
+    history.redo();
+    expect(clusterMap.value).toBe(mapB);
+  });
+
+  it("a new image clears history", async () => {
+    extract.mockResolvedValueOnce(result(color(0.3, 0.5), color(0.6, 0.3), color(0.9, 0.2)));
+    settings.value = { ...settings.peek(), colors: 8 };
+    await settle();
+    history.undo();
+    expect(history.canRedo.value).toBe(true);
+    history.redo();
+    expect(history.canUndo.value).toBe(true);
+
+    extract.mockResolvedValueOnce(result(color(0.5, 1)));
+    extractNewImage();
+    expect(history.canUndo.value).toBe(false);
+    expect(history.canRedo.value).toBe(false);
+    await settle();
+    expect(palette.value).toHaveLength(1);
+    expect(history.canUndo.value).toBe(false);
+  });
+
+  it("with no image loaded (the mockup state), a settings change is one step after the debounce and starts no job", async () => {
+    displayImage.value = null;
+    history.clear();
+    settings.value = { ...settings.peek(), colors: 7 };
+    settings.value = { ...settings.peek(), colors: 8 };
+    expect(history.canUndo.value).toBe(false);
+    await settle();
+    expect(extract).not.toHaveBeenCalled();
+    expect(history.undoLabel.value).toBe("Colors");
+    history.undo();
+    expect(settings.value.colors).toBe(6);
+    expect(history.canUndo.value).toBe(false);
   });
 });

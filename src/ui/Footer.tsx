@@ -8,7 +8,11 @@ export const REPO_URL = "https://github.com/ghadj/palette-studio";
 export function Footer() {
   return (
     <footer class="footer">
-      <p class="footer__statement">Your images never leave this browser.</p>
+      {/* One thin row; the short text replaces the long one below 1024 px (M3 decision 54). */}
+      <p class="footer__statement" title="Your images never leave this browser.">
+        <span class="footer__long">Your images never leave this browser.</span>
+        <span class="footer__short">Images stay in your browser</span>
+      </p>
       <p class="footer__links">
         <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer">
           MIT License
