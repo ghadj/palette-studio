@@ -34,6 +34,7 @@ export function RowContent({
   onClose,
   regionId,
   labelledBy,
+  sheetAction,
   children,
 }: {
   id: string;
@@ -44,13 +45,21 @@ export function RowContent({
   regionId: string;
   /** The trigger's id: it names the region and gets focus back when a sheet closes. */
   labelledBy: string;
+  /** An icon button for the sheet's title bar, below 1024 px only (M3 decision 48). */
+  sheetAction?: ComponentChildren;
   children: ComponentChildren;
 }) {
   const layout = useLayout();
   if (!open) return null;
   if (layout === "phone") {
     return (
-      <BottomSheet title={title} onClose={onClose} openerId={labelledBy} testId={`sheet-${id}`}>
+      <BottomSheet
+        title={title}
+        onClose={onClose}
+        openerId={labelledBy}
+        testId={`sheet-${id}`}
+        action={sheetAction}
+      >
         {children}
       </BottomSheet>
     );
@@ -71,8 +80,11 @@ export function ChevronRow({
   id,
   label,
   testId,
+  sheetAction,
   children,
 }: {
+  /** An icon button for the sheet's title bar, below 1024 px only (M3 decision 48). */
+  sheetAction?: ComponentChildren;
   /** Names the row for the mockup state's `rows` parameter and test ids, such as "adjustments". */
   id: string;
   label: string;
@@ -106,6 +118,7 @@ export function ChevronRow({
         onClose={() => setOpen(false)}
         regionId={regionId}
         labelledBy={buttonId}
+        sheetAction={sheetAction}
       >
         {children}
       </RowContent>

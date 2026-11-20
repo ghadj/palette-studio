@@ -248,7 +248,7 @@ test.describe('the "+" tile (decisions 4a, 40; D12)', () => {
     await expect(swatches(page)).toHaveCount(8);
   });
 
-  test("the '+' tile is disabled at 12, with the live note", async ({ page }) => {
+  test("the '+' tile is hidden at 12, with the live note (decision 49)", async ({ page }) => {
     await page.goto("./");
     await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
     await expect(swatches(page)).toHaveCount(6);
@@ -257,7 +257,7 @@ test.describe('the "+" tile (decisions 4a, 40; D12)', () => {
     await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
     // The "+" tile and its note are on the Palette tab below 1024 px (M3 decision 32).
     await showTab(page, "Palette");
-    await expect(addTile(page)).toBeDisabled();
+    await expect(page.locator("[data-testid=add-swatch]")).toHaveCount(0);
     await expect(page.getByTestId("strip-full-note")).toHaveText(
       "A palette holds at most 12 colors.",
     );
@@ -266,14 +266,18 @@ test.describe('the "+" tile (decisions 4a, 40; D12)', () => {
     ).toHaveCount(1);
   });
 
-  test("six presses reach 12, then it is disabled", async ({ page }) => {
+  test("six presses reach 12, then the tile is gone and focus is on the new swatch", async ({
+    page,
+  }) => {
     await page.goto(demo("tab=palette"));
     for (let i = 0; i < 6; i += 1) {
       await expect(addTile(page)).toBeEnabled();
       await addTile(page).click();
       await expect(swatches(page)).toHaveCount(7 + i);
     }
-    await expect(addTile(page)).toBeDisabled();
+    await expect(page.locator("[data-testid=add-swatch]")).toHaveCount(0);
+    await expect(page.getByTestId("strip-full-note")).toBeVisible();
+    await expect(swatches(page).locator("xpath=self::*[@aria-pressed='true']")).toBeFocused();
   });
 
   test("with 6 swatches the '+' tile is on the swatches' row, desktop and the phone Palette tab's dock (decision 29)", async ({

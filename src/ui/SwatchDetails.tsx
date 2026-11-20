@@ -196,7 +196,7 @@ function copyText(format: SwatchFormat, color: Oklch): string {
   return swatchHex({ color } as Swatch);
 }
 
-async function copySelected(color: Oklch, format: SwatchFormat): Promise<void> {
+export async function copySelected(color: Oklch, format: SwatchFormat): Promise<void> {
   const text = copyText(format, color);
   try {
     if (!navigator.clipboard?.writeText) throw new Error("No clipboard");

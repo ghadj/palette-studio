@@ -500,7 +500,7 @@ fieldset {
 }
 
 /* The toolbar row under the image well (decision 42): Markers and Eyedropper on the left, Zoom out,
-   Zoom in and Fit on the right. Nothing in it covers the image. */
+   Fit and Zoom in on the right. Nothing in it covers the image. */
 .image-toolbar {
   display: flex;
   align-items: center;
@@ -510,7 +510,8 @@ fieldset {
 
 .zoom-controls {
   display: flex;
-  margin: 0;
+  /* Always on the right, even when Markers and Eyedropper are hidden (M3 decision 48). */
+  margin: 0 0 0 auto;
   padding: 0;
   min-width: 0;
   background: var(--color-surface);
@@ -1565,6 +1566,11 @@ fieldset {
   font-weight: var(--weight-strong);
 }
 
+.bottom-sheet__title-row .bottom-sheet__title {
+  margin-right: auto;
+}
+
+.bottom-sheet__action,
 .bottom-sheet__close {
   display: inline-flex;
   align-items: center;
@@ -1575,6 +1581,10 @@ fieldset {
   border-radius: var(--radius-pill);
   color: var(--color-text);
   cursor: pointer;
+}
+
+.bottom-sheet__action {
+  margin-right: 0;
 }
 
 .bottom-sheet__body {
@@ -1689,8 +1699,9 @@ fieldset {
 
 .swatch__badge {
   position: absolute;
-  top: var(--space-1);
-  right: var(--space-1);
+  /* Bottom-left, so the selected swatch's Remove X at the top-right never covers it (M3 decision 48). */
+  bottom: var(--space-1);
+  left: var(--space-1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1788,10 +1799,6 @@ fieldset {
   min-width: 0;
 }
 
-.strip-add[data-alone] {
-  grid-column: 1 / -1;
-}
-
 .strip-add__tile {
   display: flex;
   flex: 1;
@@ -1802,10 +1809,6 @@ fieldset {
   border: var(--stroke) dashed var(--color-border-control);
   border-radius: var(--radius-swatch);
   color: var(--color-text-muted);
-}
-
-.strip-add__tile:disabled {
-  border-color: var(--color-divider);
 }
 
 .strip-add__tile:focus-visible {

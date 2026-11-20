@@ -18,6 +18,7 @@ import { ChevronRow } from "./ChevronRow";
 import { ContrastPanel } from "./ContrastPanel";
 import { CopyButtons } from "./CopyButtons";
 import { CvdPanel } from "./CvdPanel";
+import { DuplicateButton } from "./DuplicateButton";
 import { StripDock } from "./StripDock";
 import { SwatchDetails } from "./SwatchDetails";
 import { SwatchEditor } from "./SwatchEditor";
@@ -36,7 +37,7 @@ export function PalettePanel({ variant }: { variant: "desktop" | "phone" }) {
       {!empty && <SwatchEditor />}
       {!empty && (
         <div class="chevron-rows" data-testid="palette-rows">
-          <ChevronRow id="swatch" label="Swatch">
+          <ChevronRow id="swatch" label="Swatch" sheetAction={<DuplicateButton />}>
             <SwatchDetails />
           </ChevronRow>
           <ChevronRow id="adjustments" label="Adjustments">

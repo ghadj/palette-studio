@@ -71,21 +71,20 @@ interface Press {
 }
 
 /**
- * The "+" tile (decision 40): one button that adds the next color at once, with no menu. At 12 it is
- * disabled and the limit note under the strip says why.
+ * The "+" tile (decision 40): one button that adds the next color at once, with no menu. At 12 it
+ * is hidden (M3 decision 49) and the limit note says why; `onAdded` moves focus off the tile that
+ * just went away.
  */
-function AddTile({ alone, full }: { alone: boolean; full: boolean }) {
+function AddTile({ onAdded }: { onAdded: () => void }) {
   return (
-    <div class="strip-add" data-alone={alone ? "" : undefined}>
+    <div class="strip-add">
       <button
         type="button"
         class="strip-add__tile"
         data-testid="add-swatch"
         aria-label="Add color"
-        aria-describedby={full ? "strip-full-note" : undefined}
         aria-busy={adding.value || undefined}
-        disabled={full}
-        onClick={() => void addColor(null, showToast)}
+        onClick={() => void addColor(null, showToast).then(onAdded)}
       >
         <Plus aria-hidden="true" />
       </button>
@@ -124,10 +123,14 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
   }, [shown]);
   if (!shown) return null;
   // The "+" tile is a cell of the same row as the swatches, which shrink to make room and wrap
-  // only when 44 px no longer fits (decisions 13, 29). At 12 it is disabled, on a row of its own.
+  // only when 44 px no longer fits (decisions 13, 29). At 12 it is hidden (decision 49). Without
+  // the tile (the Source tab below 1024 px) only the swatches count (decision 48).
   const full = !canAdd(swatches);
-  const columns = stripColumns(stripCells(swatches.length), size.width, size.gap);
-  const aloneRow = full;
+  const columns = stripColumns(
+    showAdd ? stripCells(swatches.length) : swatches.length,
+    size.width,
+    size.gap,
+  );
 
   const announce = (id: string, to: number) => {
     const list = palette.peek();
@@ -266,9 +269,15 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
     removeSwatch(id);
     const now = selectedSwatchId.peek();
     requestAnimationFrame(() => {
+      // With no swatch left there is no strip (and no "+" on the Source tab): the selected tab's
+      // button on phones, else the first control on the page (round-2 note 3).
       const next = now
         ? strip.current?.querySelector<HTMLElement>(`[data-swatch-id="${now}"]`)
-        : strip.current?.querySelector<HTMLElement>("[data-testid=add-swatch]");
+        : (strip.current?.querySelector<HTMLElement>("[data-testid=add-swatch]") ??
+          document.querySelector<HTMLElement>(
+            "[data-testid=tabbar] [role=tab][aria-selected=true]",
+          ) ??
+          document.querySelector<HTMLElement>("main button, main input"));
       next?.focus();
     });
   };
@@ -374,7 +383,19 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
             </div>
           );
         })}
-        {showAdd && <AddTile alone={aloneRow} full={full} />}
+        {showAdd && !full && (
+          <AddTile
+            onAdded={() => {
+              // At the limit the tile has just left; the new swatch, now selected, takes focus.
+              if (canAdd(palette.peek())) return;
+              requestAnimationFrame(() =>
+                strip.current
+                  ?.querySelector<HTMLElement>(`[data-swatch-id="${selectedSwatchId.peek()}"]`)
+                  ?.focus(),
+              );
+            }}
+          />
+        )}
       </fieldset>
       <div class="live-region" role="status">
         {showAdd && full && (

@@ -26,6 +26,7 @@ export function BottomSheet({
   children,
   openerId,
   testId,
+  action,
 }: {
   title: string;
   /** Called once the sheet has closed, however it was closed. */
@@ -37,6 +38,8 @@ export function BottomSheet({
    */
   openerId?: string;
   testId?: string;
+  /** An icon button in the title bar, beside Close (M3 decision 48). */
+  action?: ComponentChildren;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -114,6 +117,7 @@ export function BottomSheet({
             <h2 class="bottom-sheet__title" id={titleId}>
               {title}
             </h2>
+            {action}
             <button type="button" class="bottom-sheet__close" aria-label="Close" onClick={dismiss}>
               <X size={20} strokeWidth={1.5} aria-hidden="true" />
             </button>

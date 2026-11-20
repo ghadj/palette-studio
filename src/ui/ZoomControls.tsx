@@ -40,6 +40,9 @@ export function ZoomControls() {
       >
         <ZoomOut size={20} strokeWidth={1.5} aria-hidden="true" />
       </button>
+      <button type="button" class="zoom-button" aria-label="Fit" onClick={zoomFit}>
+        <Maximize size={20} strokeWidth={1.5} aria-hidden="true" />
+      </button>
       <button
         type="button"
         class="zoom-button"
@@ -48,9 +51,6 @@ export function ZoomControls() {
         onClick={() => !atMax && zoomStep(1)}
       >
         <ZoomIn size={20} strokeWidth={1.5} aria-hidden="true" />
-      </button>
-      <button type="button" class="zoom-button" aria-label="Fit" onClick={zoomFit}>
-        <Maximize size={20} strokeWidth={1.5} aria-hidden="true" />
       </button>
       <span class="visually-hidden" role="status" aria-live="polite" data-testid="zoom-level">
         {zoomLabel(view)}

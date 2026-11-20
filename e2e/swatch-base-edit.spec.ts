@@ -57,8 +57,8 @@ test("with Lightness +0.1 active, the row shows and edits the base, once", async
 
   // The strip shows the typed base adjusted once: the adjusted hex differs from the base by about
   // the same lightness step as before, not by twice as much.
-  const lines = await details(page).getByTestId("swatch-after-adjustments").innerText();
-  const outHex = lines.match(/#[0-9A-F]{6}/)?.[0] ?? "";
+  const lines = await details(page).getByTestId("swatch-after-adjustments").textContent();
+  const outHex = (lines ?? "").match(/#[0-9A-F]{6}/)?.[0] ?? "";
   expect(afterEdit.toUpperCase()).toContain(outHex);
   const channel = (hex: string, at: number) =>
     Number.parseInt(hex.slice(1 + at * 2, 3 + at * 2), 16);
@@ -104,9 +104,9 @@ test("the adjusted line has its own copy icon; the field's icon copies the shown
   const read = () => page.evaluate(() => navigator.clipboard.readText());
   await details(page).getByTestId("copy-value").click();
   expect(await read()).toBe("rgb(20 56 107)");
-  const shown = (await details(page).getByTestId("swatch-after-adjustments").innerText()).match(
-    /#[0-9A-F]{6}/,
-  )?.[0];
+  const shown = (
+    (await details(page).getByTestId("swatch-after-adjustments").textContent()) ?? ""
+  ).match(/#[0-9A-F]{6}/)?.[0];
   const button = details(page).getByRole("button", { name: "Copy adjusted HEX" });
   const box = await button.boundingBox();
   expect(box?.height ?? 0).toBeGreaterThanOrEqual(32);

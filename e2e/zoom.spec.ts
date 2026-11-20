@@ -195,6 +195,10 @@ test.describe("zoom and pan (spec 6 'Image view', decision 15)", () => {
       await expect(button(page, "Eyedropper")).toBeFocused();
       await page.keyboard.press("Tab");
       await expect(button(page, "Zoom out")).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(button(page, "Fit")).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(button(page, "Zoom in")).toBeFocused();
     }
   });
 

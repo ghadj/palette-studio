@@ -13,7 +13,7 @@
  * Undo (plan D16): a slider drag is one step (begin on press, end on release); a keyboard step
  * is one step; a text entry in a number field or HEX is one step, committed on Enter or blur.
  */
-import { Pin } from "lucide-preact";
+import { Copy, Pin } from "lucide-preact";
 import { useEffect, useId, useRef, useState } from "preact/hooks";
 import { hexToOklch, oklchToHex } from "../color/convert";
 import { inGamut } from "../color/gamut";
@@ -26,6 +26,7 @@ import { RowContent, useRowOpen } from "./ChevronRow";
 import { useLayout } from "./layout";
 import { RAMP_TITLE, RampPanel } from "./RampPanel";
 import { Slider } from "./Slider";
+import { copySelected } from "./SwatchDetails";
 
 /** The axes: label, name, range, step and shown decimals (spec 3.2; plan T3). */
 const AXES = [
@@ -48,6 +49,7 @@ export function SwatchEditor() {
   const rampRegion = `${base}-ramp-region`;
   const root = useRef<HTMLDivElement>(null);
   const pending = useRef<string | null>(null);
+  const lockButton = useRef<HTMLButtonElement>(null);
   const [hexDraft, setHexDraft] = useState<string | null>(null);
 
   const id = selectedSwatchId.value;
@@ -126,22 +128,34 @@ export function SwatchEditor() {
         );
       })}
       <div class="swatch-editor__row">
-        <input
-          class="hex-field"
-          type="text"
-          aria-label="HEX"
-          autoComplete="off"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellcheck={false}
-          maxLength={7}
-          disabled={color === null}
-          aria-invalid={hexDraft !== null && parseHex(hexDraft) === null ? true : undefined}
-          value={hexDraft ?? hex}
-          onInput={(event) => setHexDraft(event.currentTarget.value)}
-          onChange={(event) => applyHex(event.currentTarget.value)}
-          onBlur={() => setHexDraft(null)}
-        />
+        <span class="copy-group">
+          <input
+            class="hex-field"
+            type="text"
+            aria-label="HEX"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellcheck={false}
+            maxLength={7}
+            disabled={color === null}
+            aria-invalid={hexDraft !== null && parseHex(hexDraft) === null ? true : undefined}
+            value={hexDraft ?? hex}
+            onInput={(event) => setHexDraft(event.currentTarget.value)}
+            onChange={(event) => applyHex(event.currentTarget.value)}
+            onBlur={() => setHexDraft(null)}
+          />
+          <button
+            type="button"
+            class="icon-pill copy-icon"
+            data-testid="copy-hex"
+            aria-label="Copy HEX"
+            disabled={color === null}
+            onClick={() => color && void copySelected(color, "hex")}
+          >
+            <Copy aria-hidden="true" size={18} strokeWidth={1.5} />
+          </button>
+        </span>
         {color && !inGamut(color) && (
           <span class="gamut-flag" data-testid="gamut-flag">
             <span class="gamut-flag__dot" aria-hidden="true" />
@@ -149,6 +163,7 @@ export function SwatchEditor() {
           </span>
         )}
         <button
+          ref={lockButton}
           type="button"
           class="pill-button"
           aria-pressed={swatch?.locked ?? false}
@@ -173,6 +188,8 @@ export function SwatchEditor() {
               if (id === null) return;
               palette.value = setPinned(palette.peek(), id, false);
               commit("Unpin");
+              // The Pinned button is gone now: focus goes to Lock (round-2 note 3).
+              lockButton.current?.focus();
             }}
           >
             <Pin aria-hidden="true" class="pin-icon" />
@@ -192,8 +209,17 @@ export function SwatchEditor() {
         </button>
       </div>
       {swatch && adjustedHex !== hex && (
-        <p class="hint" data-testid="after-adjustments">
-          After adjustments {adjustedHex}
+        <p class="hint swatch-adjusted" data-testid="after-adjustments">
+          <span>After adjustments {adjustedHex}</span>
+          <button
+            type="button"
+            class="icon-pill copy-icon"
+            data-testid="editor-copy-adjusted"
+            aria-label="Copy adjusted HEX"
+            onClick={() => shownHex && void copySelected(shownHex, "hex")}
+          >
+            <Copy aria-hidden="true" size={18} strokeWidth={1.5} />
+          </button>
         </p>
       )}
       <RowContent
