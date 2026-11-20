@@ -11,7 +11,6 @@
  */
 import { useEffect, useRef, useState } from "preact/hooks";
 import { oklchToHex } from "../color/convert";
-import { stopList } from "../gradient/css";
 import { addStop, MAX_STOPS, MIN_STOPS, newStopId, removeStop, setHint } from "../gradient/model";
 import {
   dragStop,
@@ -20,7 +19,7 @@ import {
   toStoredPosition,
 } from "../gradient/stop-drag";
 import { editStops, selectStop } from "../state/gradient";
-import { colorAt } from "../state/gradient-render";
+import { colorAt, render } from "../state/gradient-render";
 import { effectiveStops, resolvedStops } from "../state/gradient-stops";
 import { begin, end } from "../state/history";
 import { gradient, outputPalette, selectedStopId } from "../state/signals";
@@ -56,6 +55,8 @@ export function StopBar() {
   const selected = selectedStopId.value;
   const g = gradient.value;
   const swatches = outputPalette.value;
+  // The real interpolation, as the preview draws it, laid left to right (plan D27, M4-T10).
+  const { barCss } = render.value;
   const bar = useRef<HTMLFieldSetElement>(null);
   const drag = useRef<Drag | null>(null);
   const justDragged = useRef(false);
@@ -275,11 +276,7 @@ export function StopBar() {
         class="stop-bar__track"
         data-user-content=""
         // The bar always runs left to right along the stop axis, whatever the type (plan D27).
-        style={
-          stops.length > 0
-            ? { background: `linear-gradient(90deg, ${stopList(stops)})` }
-            : undefined
-        }
+        style={barCss ? { background: barCss } : undefined}
       />
       {diamonds.map(({ a, b }) => {
         const sa = stops[a];

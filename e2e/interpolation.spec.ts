@@ -4,7 +4,7 @@
  * the Stop row (T8) sets; its predicate is unit-tested in tests/gradient.
  */
 import { expect, type Page, test } from "@playwright/test";
-import { demo, isPhoneProject } from "./helpers/app";
+import { demo, hasHorizontalScroll, isPhoneProject } from "./helpers/app";
 import { sheetSettled } from "./helpers/sheet";
 
 type Info = Parameters<typeof isPhoneProject>[0];
@@ -71,7 +71,10 @@ test.describe("Interpolation row and options (M4-T9)", () => {
     await open(page, info);
     await expect(rowLabels(page)).toHaveText(["Easing"]);
     await setSpace(page, info, "oklch");
-    await expect(rowLabels(page)).toHaveText(["Hue", "Easing"]);
+    // The fixture leaves sRGB in OKLCH (green to pink by the shorter arc passes a yellow-orange
+    // too vivid for sRGB), so the bake maps colors and the Gamut row shows (plan D12, M4-T10).
+    await expect(rowLabels(page)).toHaveText(["Hue", "Easing", "Gamut"]);
+    await expect(options(page)).toContainText("Some colors fall outside sRGB.");
     await expect(page.locator("#interp-hue")).toHaveValue("shorter");
     await setSpace(page, info, "hsl");
     await expect(rowLabels(page)).toHaveText(["Hue", "Easing"]);
@@ -261,9 +264,35 @@ test.describe("Interpolation row and options (M4-T9)", () => {
       const label = await row.locator(".setting-row__label").boundingBox();
       const b = await row.boundingBox();
       if (!label || !b) throw new Error("no row");
-      expect(b.height).toBeLessThanOrEqual(64);
       expect(b.x + b.width).toBeLessThanOrEqual(320);
+      const note = row.locator(".setting-row__note");
+      const hasNote = (await note.count()) > 0 && ((await note.textContent()) ?? "").trim() !== "";
+      if (!hasNote) {
+        expect(b.height).toBeLessThanOrEqual(64);
+        continue;
+      }
+      // A row with a note (the Gamut row's "Some colors fall outside sRGB.") may wrap below 64 px
+      // tall. M2's setting-row rule still holds: the label group and the value share one line
+      // (their vertical ranges overlap, centers within 2 px), nothing overlaps and nothing clips.
+      const group = await row.locator(".setting-row__label-group").boundingBox();
+      const value = await row.locator(".setting-row__value").boundingBox();
+      if (!group || !value) throw new Error("no label group or value");
+      expect(group.y).toBeLessThan(value.y + value.height);
+      expect(value.y).toBeLessThan(group.y + group.height);
+      expect(
+        Math.abs(group.y + group.height / 2 - (value.y + value.height / 2)),
+      ).toBeLessThanOrEqual(2);
+      expect(group.x + group.width).toBeLessThanOrEqual(value.x + 1);
+      for (const part of [group, value]) {
+        expect(part.x).toBeGreaterThanOrEqual(b.x - 1);
+        expect(part.x + part.width).toBeLessThanOrEqual(b.x + b.width + 1);
+        expect(part.y).toBeGreaterThanOrEqual(b.y - 1);
+        expect(part.y + part.height).toBeLessThanOrEqual(b.y + b.height + 1);
+      }
+      const clipped = await note.evaluate((el) => el.scrollWidth > el.clientWidth + 1);
+      expect(clipped).toBe(false);
     }
+    expect(await hasHorizontalScroll(page)).toBe(false);
     for (const f of await page.getByTestId("bezier-field").all()) {
       const b = await f.boundingBox();
       expect(b?.height ?? 0).toBeGreaterThanOrEqual(44);
