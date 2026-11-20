@@ -1927,6 +1927,7 @@ fieldset {
 
 .contrast-scroll {
   overflow-x: auto;
+  overscroll-behavior: contain;
   max-width: 100%;
 }
 
