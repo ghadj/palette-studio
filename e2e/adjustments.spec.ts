@@ -49,7 +49,9 @@ test.describe("adjustments (spec 3.3)", () => {
     const phone = isPhoneProject(info);
     test.skip(phone, "the editor is under the sheet on a phone; covered by the unit tests");
     await page.goto(demo("rows=adjustments"));
-    const hex = page.locator("[data-testid=swatch-editor]:visible").getByLabel("HEX", { exact: true });
+    const hex = page
+      .locator("[data-testid=swatch-editor]:visible")
+      .getByLabel("HEX", { exact: true });
     await hex.fill("#14386F");
     await hex.press("Enter");
     await expect(page.getByTestId("pin-button")).toBeVisible();

@@ -28,6 +28,7 @@ import {
   viewSettings,
 } from "../state/signals";
 import { viewShares } from "../state/view-result";
+import { closeDescription, closeFlags } from "./closeFlags";
 import { stripCells, stripColumns } from "./stripLayout";
 import { showToast } from "./Toast";
 
@@ -304,6 +305,11 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
   // Each swatch's share of the image from the cluster map (spec 2.6), when it matches the palette.
   const map = clusterMap.value;
   const shares = map && map.shares.length === swatches.length ? map.shares : null;
+  // The close-in-value dots show wherever the strip does; the very-close ones only where the "+"
+  // tile does (the Palette tab and desktop, M3 decisions 32, 51).
+  const flags = closeFlags();
+  const flagKind =
+    flags.kind === "value" || (flags.kind === "color" && showAdd) ? flags.kind : null;
   return (
     <>
       <fieldset
@@ -328,7 +334,16 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
                 data-dragging={swatch.id === dragging ? "" : undefined}
                 data-share={shares?.[i]}
                 aria-label={`${swatchLabel(swatches, swatch.id)}, ${hex}`}
-                aria-description={swatch.locked ? "Locked" : swatch.pinned ? "Pinned" : undefined}
+                aria-description={
+                  [
+                    swatch.locked ? "Locked" : swatch.pinned ? "Pinned" : "",
+                    flagKind && flags.partners.has(i)
+                      ? closeDescription(flagKind, flags.partners.get(i) ?? [])
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(". ") || undefined
+                }
                 data-locked={swatch.locked ? "" : undefined}
                 data-pinned={swatch.pinned ? "" : undefined}
                 aria-pressed={swatch.id === selected}
@@ -361,6 +376,9 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
                   clear(hoveredSwatchId, swatch.id);
                 }}
               >
+                {flagKind && flags.partners.has(i) && (
+                  <span class="swatch__flag" data-testid="close-flag" aria-hidden="true" />
+                )}
                 {(swatch.locked || swatch.pinned) && (
                   <span class="swatch__badge" aria-hidden="true">
                     {swatch.locked ? <Lock /> : <Pin />}

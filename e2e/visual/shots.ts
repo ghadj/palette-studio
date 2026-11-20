@@ -195,7 +195,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: DESKTOP,
     mockup: { light: "03-image-views-light.png", dark: "04-image-views-dark.png" },
     frame:
-      "Middle column: the Values view, band strip, Bands and Close in value rows, the flagged pair; the bracket on the strip in column 2.",
+      "Middle column: the Values view, band strip, Bands and Close in value rows; corner dots on the flagged swatches and the legend in column 2 (D8).",
   },
   {
     name: "palette-view-phone",
@@ -210,7 +210,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: PHONE,
     mockup: { light: "11-mobile-features-light.png", dark: "12-mobile-features-dark.png" },
     frame:
-      "Left phone without the grid (M5): gray bands, the close pair bracketed on the strip, Bands and Close in value.",
+      "Left phone without the grid (M5): gray bands, corner dots and the legend for the close pair on the strip, Bands and Close in value (D8).",
   },
   {
     name: "loupe-phone",

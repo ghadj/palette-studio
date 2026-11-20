@@ -131,7 +131,7 @@ test.describe("Palette view (spec 3.8)", () => {
 });
 
 test.describe("Values view (spec 3.8)", () => {
-  test("image=values: 5 bands; the canvas has only band grays; Close in value reads '1 pair'; the strip bracket spans swatches 1 and 2", async ({
+  test("image=values: 5 bands; the canvas has only band grays; swatches 1 and 2 have a corner dot and the legend says Close in value (decisions 51, 52)", async ({
     page,
   }, info) => {
     await openView(page, "values");
@@ -144,28 +144,37 @@ test.describe("Values view (spec 3.8)", () => {
     for (const hex of colors) expect(GRAYS_5).toContain(hex);
     for (const hex of GRAYS_5.slice(1)) expect(colors).toContain(hex);
     await expect(row(page, "Bands")).toContainText("5");
-    await expect(page.locator("[data-testid=close-in-value-row]:visible")).toContainText("1 pair");
-    await expect(page.locator("[data-testid=value-pairs]:visible")).toContainText(
-      "Swatch 1 and 2, ΔL 0.004",
-    );
+    // No pair list or chips: the dots and one legend line are the indication.
+    await expect(page.getByTestId("value-pairs")).toHaveCount(0);
+    await expect(page.getByTestId("value-bracket")).toHaveCount(0);
 
-    // The bracket sits under swatches 1 and 2 and reads "Close in value" beside it.
-    const bracket = page.locator("[data-testid=value-bracket]:visible");
-    await expect(bracket).toHaveCount(1);
-    await expect(page.locator("[data-testid=strip-marks]:visible")).toContainText("Close in value");
     const swatches = strip(page).locator("[data-swatch]");
+    await expect(swatches).toHaveCount(6);
+    const flagged = await swatches.evaluateAll((els) =>
+      els.map((el) => el.querySelector("[data-testid=close-flag]") !== null),
+    );
+    expect(flagged).toEqual([true, true, false, false, false, false]);
+    // The dot is at the tile's top-left corner.
     const s1 = await swatches.nth(0).boundingBox();
-    const s2 = await swatches.nth(1).boundingBox();
-    const b = await bracket.locator("[data-bracket-line]").boundingBox();
-    if (!s1 || !s2 || !b) throw new Error("no boxes");
-    expect(Math.abs(b.x - s1.x)).toBeLessThanOrEqual(2);
-    expect(Math.abs(b.x + b.width - (s2.x + s2.width))).toBeLessThanOrEqual(2);
-    expect(b.y).toBeGreaterThanOrEqual(s1.y + s1.height - 1);
+    const dot = await swatches.nth(0).getByTestId("close-flag").boundingBox();
+    if (!s1 || !dot) throw new Error("no boxes");
+    expect(dot.x - s1.x).toBeLessThanOrEqual(8);
+    expect(dot.y - s1.y).toBeLessThanOrEqual(8);
+    await expect(swatches.nth(0)).toHaveAttribute("aria-description", /Close in value to swatch 2/);
+    // The legend sits directly under the strip, with the same dot.
+    const legend = page.locator("[data-testid=close-legend]:visible");
+    await expect(legend).toHaveText("Close in value");
+    const bar = await strip(page).boundingBox();
+    const l = await legend.boundingBox();
+    if (!bar || !l) throw new Error("no boxes");
+    expect(l.y - (bar.y + bar.height)).toBeGreaterThanOrEqual(-1);
+    expect(l.y - (bar.y + bar.height)).toBeLessThanOrEqual(24);
+    await expect(page.getByTestId("close-announce")).toHaveText("Some colors are close in value.");
     if (isPhoneProject(info)) {
-      // On phones the bracket pins with the strip (M2 decision 19).
-      await expect(
-        page.locator("[data-testid=strip-dock] [data-testid=value-bracket]"),
-      ).toHaveCount(1);
+      // On phones the legend pins with the strip (M2 decision 19).
+      await expect(page.locator("[data-testid=strip-dock] [data-testid=close-legend]")).toHaveCount(
+        1,
+      );
     }
   });
 
@@ -182,24 +191,18 @@ test.describe("Values view (spec 3.8)", () => {
     expect(colors.length).toBeGreaterThanOrEqual(2);
   });
 
-  test("the threshold slider adjusts the flagged pairs", async ({ page }) => {
+  test("the threshold slider changes which swatches are flagged", async ({ page }) => {
     await openView(page, "values");
-    const toggle = page.locator("[data-testid=close-in-value-row]:visible button");
-    await expect(toggle).toHaveAttribute("aria-expanded", "false");
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-expanded", "true");
     const field = page.locator("#view-close-in-value:visible");
     await expect(field).toHaveValue("0.03");
+    await expect(page.locator("[data-testid=close-flag]:visible")).toHaveCount(2);
     await field.fill("0.05");
     await field.press("Enter");
-    // Swatches 1 and 4 differ by about 0.046 (mockup-state.md; 0.047 at 3 decimals), so they are flagged too.
-    await expect(page.locator("[data-testid=close-in-value-row]:visible")).toContainText("pairs");
-    await expect(page.locator("[data-testid=value-pairs]:visible")).toContainText(
-      /Swatch 1 and 4, ΔL 0\.04[67]/,
-    );
+    // Swatches 1 and 4 differ by about 0.046 (mockup-state.md), so swatch 4 is flagged too.
+    await expect(page.locator("[data-testid=close-flag]:visible")).toHaveCount(3);
   });
 
-  test("6 swatches: the '+' tile is on the swatches' row, and the bracket is within 8 px of their bottoms (decision 29)", async ({
+  test("6 swatches: the '+' tile is on the swatches' row, (decision 29)", async ({
     page,
   }, info) => {
     await page.setViewportSize(
@@ -210,10 +213,7 @@ test.describe("Values view (spec 3.8)", () => {
     await expect(swatches).toHaveCount(6);
     const first = await swatches.first().boundingBox();
     const last = await swatches.nth(5).boundingBox();
-    const line = await page
-      .locator("[data-testid=value-bracket]:visible [data-bracket-line]")
-      .boundingBox();
-    if (!first || !last || !line) throw new Error("no boxes");
+    if (!first || !last) throw new Error("no boxes");
     // The phone Source tab has no "+" tile (decision 32); strip-actions covers the Palette tab.
     if (!isPhoneProject(info)) {
       const tile = await strip(page).getByTestId("add-swatch").boundingBox();
@@ -223,15 +223,12 @@ test.describe("Values view (spec 3.8)", () => {
       expect(tile.height).toBeGreaterThanOrEqual(44);
     }
     for (const box of [first, last]) expect(box.width).toBeGreaterThanOrEqual(44);
-    const gap = line.y - (first.y + first.height);
-    expect(gap).toBeGreaterThanOrEqual(-1);
-    expect(gap).toBeLessThanOrEqual(8);
   });
 
   test("phone: the Close in value row is at least 44 px tall", async ({ page }, info) => {
     test.skip(!isPhoneProject(info), "phone only");
     await openView(page, "values");
-    const box = await page.locator("[data-testid=close-in-value-row]:visible button").boundingBox();
+    const box = await page.locator("[data-testid=close-in-value-row]:visible").boundingBox();
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
   });
 });

@@ -65,7 +65,8 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
       await page.goto(demo(`tab=${tab}`));
       await expect(page.getByTestId("export-drawer")).toHaveCount(0);
       const strip = await page.locator("[data-testid=swatch-strip]:visible").boundingBox();
-      const button = page.getByRole("button", { name: "Copy HEX" });
+      // The color editor also has a "Copy HEX" icon (decision 50); this is the palette-wide button.
+      const button = page.locator(".copy-buttons").getByRole("button", { name: "Copy HEX" });
       const box = await button.boundingBox();
       expect(box?.y ?? 0).toBeGreaterThan((strip?.y ?? 0) + (strip?.height ?? 0));
       expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);

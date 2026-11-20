@@ -79,9 +79,9 @@ Each column of `03` is the SOURCE column of the Studio view in a different state
 1. The image in gray bands, no markers.
 2. View bar with Values selected.
 3. Band strip: one block per band, dark to light, with "Dark" and "Light" in muted text under its ends. It has a `--color-border` outline because its lightest band is close to the surface.
-4. Rows: Bands (value "5"), then Close in value with a warn dot and the count ("1 pair").
-5. Under the rows, each flagged pair: its two swatch chips, then muted text such as "Swatch 1 and 2, ΔL 0.004".
-6. On the swatch strip (column 2 on desktop, the strip on the phone's Source tab), the flagged pair is marked by a warn-colored bracket under the two swatches, with "Close in value" beside it in muted text (`11`).
+4. Rows: Bands (value "5"), then Close in value with its threshold slider (D8).
+5. (Drawn in the mockup, removed by D8.) Under the rows, each flagged pair: its two swatch chips, then muted text such as "Swatch 1 and 2, ΔL 0.004".
+6. On the swatch strip (column 2 on desktop, the strip on the phone's Source tab), every swatch of a flagged pair carries a small warn dot at its top-left corner, with a one-line legend under the strip: the dot and "Close in value" in muted text (D8; the mockup draws a bracket, `11`).
 
 **Transfer grid** (right)
 1. The image in the Image view, with grid lines over it and no markers. Lines are dark or light to suit the image (spec 3.8), not the theme.
@@ -137,7 +137,7 @@ A header at the top, one panel at a time, and a bottom tab bar: Source, Palette,
 1. Image well with markers.
 2. The view bar, as on desktop.
 3. The hint (Image view only).
-4. The swatch strip, with the selection outlined. It is a compact view of the palette, so the result stays visible while markers move; tapping a swatch selects its marker. Editing happens on the Palette tab. Below 1024 px it shows only the swatches: the "+" tile and the close-pair mark are on the Palette tab (M3 decision 32). The Values view's "Close in value" bracket stays here.
+4. The swatch strip, with the selection outlined. It is a compact view of the palette, so the result stays visible while markers move; tapping a swatch selects its marker. Editing happens on the Palette tab. Below 1024 px it shows only the swatches: the "+" tile and the close-pair mark are on the Palette tab (M3 decision 32). The Values view's "Close in value" dots and legend stay here (D8).
 5. Setting rows for the current view. In the Image view: Algorithm, Colors, Working space. Below 1024 px the Filters and Advanced rows are chevron rows that open bottom-sheet drawers, like the Palette tab's (M3 decision 34); Preset, Algorithm, Colors and Working space stay inline. Below 1024 px each row has `--space-2` of padding above and below, so the 44 px controls don't fill the row from divider to divider (M2 decision 21). Row labels, toggle rows, chevron-row titles and plain-text values use `--text-row-touch` (15 px), on any touch device too (decision 22).
 
 **Palette tab.** Not drawn. Use the desktop palette column stacked vertically (the swatch strip, then the editor), with the chevron rows opening bottom sheets. The strip, with the "+" tile and the close-pair mark under it, pins under the header like the Source tab's (M3 decision 33).
@@ -226,6 +226,7 @@ Visual review treats these as correct.
 
 - **D5, drawers under the strip, and the Palette tab's pinned strip.** The mockups draw sheets that rise from the bottom over the page and a Source tab with inline Filters and Advanced rows. Below 1024 px those two rows open as bottom sheets, a sheet on the Source or Palette tab stops under the pinned swatch strip so the palette stays visible, and the Palette tab's strip pins like the Source tab's (M3 decisions 33 to 35).
 - **D6, the Source tab's strip shows only swatches.** Below 1024 px the "+" tile and the close-pair mark are on the Palette tab, not the Source tab (M3 decision 32). On desktop, where the strip is in column 2, nothing changes.
+- **D8, close swatches are marked by corner dots and a legend, not brackets and pair lists.** The mockups draw a warn bracket under the two close-in-value swatches, a "1 pair" count and a list of pairs with chips (Values view items 4 to 6). In the Values view every swatch in a close-in-value pair, and in the Image view every swatch in a very-close pair, shows a small warn dot at its top-left corner, with one legend line under the strip (the dot, then "Close in value" or "Very close colors"). Pairs are not listed anywhere, and the Contrast row has no "Close pairs" list; the threshold slider stays (M3 decisions 51 and 52). Corners: top-left the dot, top-right the Remove X, bottom-left the pin or lock badge.
 - **D7, the image toolbar sits under the well.** The image well's controls never cover image content (M3 decision 42). A slim toolbar row sits directly under the well, above the view bar: Markers and Eyedropper on the left (Image view only), Zoom out, Fit and Zoom in on the right (every view). On phones it scrolls with the Source tab's content and fits at 320 px. The eyedropper hint row stays below it. Targets are `--hit` (44 px on touch).
 - Note (M3 decisions 44 and 45): each phone tab keeps its own scroll position; on desktop the swatch strip and its marks pin at the top of column 2's scroll container, extending D4's idea. Neither is a new deviation.
 - Note (M3 decisions 48 and 49): at 12 swatches the "+" tile is hidden and the limit note stays; the pin and lock badge sits at the swatch's bottom-left; below 1024 px the Swatch drawer's title bar has a "Duplicate swatch" button beside Close.

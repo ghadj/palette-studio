@@ -8,7 +8,7 @@ import { isSheetLayout, openRow } from "./helpers/rows";
 const panel = (page: Page) => page.locator("[data-testid=contrast-panel]:visible");
 const contrastUrl = (info: { project: { name: string } }) =>
   demo(info.project.name.startsWith("phone") ? "tab=palette&rows=contrast" : "rows=contrast");
-const mark = (page: Page) => page.locator("[data-testid=close-pairs-mark]:visible");
+const mark = (page: Page) => page.locator("[data-testid=close-legend]:visible");
 
 test.describe("contrast matrix (spec 3.5)", () => {
   test("demo: the Contrast row shows a 6 × 6 matrix and the diagonal reads 1.00", async ({
@@ -22,10 +22,8 @@ test.describe("contrast matrix (spec 3.5)", () => {
     for (let i = 0; i < 6; i += 1) {
       await expect(cells.nth(i * 6 + i).locator("[data-testid=contrast-ratio]")).toHaveText("1.00");
     }
-    // The mockup palette has no close pairs.
-    await expect(panel(page).getByTestId("close-pairs")).toContainText(
-      "No swatches are very close",
-    );
+    // Close pairs are marked on the strip, not listed here (M3 decision 52).
+    await expect(panel(page).getByTestId("close-pairs")).toHaveCount(0);
   });
 
   test("badges are text, not only color", async ({ page }, info) => {
@@ -112,7 +110,7 @@ test.describe("close pairs (spec 3.5)", () => {
     await expect(mark(page)).toHaveCount(0);
   });
 
-  test("a swatch edited close to another shows 'Swatches 1 and 3 are very close' on the strip and in the row", async ({
+  test("a swatch edited close to another gets corner dots on swatches 1 and 3, the legend and one live sentence (decisions 51, 52)", async ({
     page,
   }, info) => {
     const phone = isPhoneProject(info);
@@ -124,13 +122,25 @@ test.describe("close pairs (spec 3.5)", () => {
     });
     await hex.fill("#EA6B3B");
     await hex.press("Enter");
-    await expect(mark(page)).toContainText("Swatches 1 and 3 are very close");
+    await expect(mark(page)).toHaveText("Very close colors");
+    const strip = page.locator("[data-testid=swatch-strip]:visible").first();
+    const flagged = await strip
+      .locator("[data-swatch]")
+      .evaluateAll((els) => els.map((el) => el.querySelector("[data-testid=close-flag]") !== null));
+    expect(flagged).toEqual([true, false, true, false, false, false]);
+    await expect(strip.locator("[data-swatch]").first()).toHaveAttribute(
+      "aria-description",
+      /Very close to swatch 3/,
+    );
+    await expect(page.getByTestId("close-announce")).toHaveText("Some colors are very close.");
     // The demo never saves, so a reload starts from the pair-free mockup palette again.
     await page.reload();
     await expect(mark(page)).toHaveCount(0);
   });
 
-  test("the warning shows in the Contrast row's close pairs list", async ({ page }, info) => {
+  test("the Contrast row lists no pairs, even with a close pair (decision 52)", async ({
+    page,
+  }, info) => {
     const phone = isPhoneProject(info);
     await page.goto(demo(phone ? "tab=palette" : ""));
     const hex = page.locator("[data-testid=swatch-editor]:visible").getByLabel("HEX", {
@@ -139,8 +149,7 @@ test.describe("close pairs (spec 3.5)", () => {
     await hex.fill("#EA6B3B");
     await hex.press("Enter");
     await page.locator("[data-panel=palette]").getByRole("button", { name: "Contrast" }).click();
-    await expect(panel(page).getByTestId("close-pairs")).toContainText(
-      "Swatches 1 and 3 are very close",
-    );
+    await expect(panel(page)).toBeVisible();
+    await expect(panel(page).getByTestId("close-pairs")).toHaveCount(0);
   });
 });

@@ -144,7 +144,10 @@ test("switching tabs never leaves the page locked", async ({ page }) => {
 });
 
 test("touchmove outside the sheet's scroll area is cancelled (iOS)", async ({ page }, info) => {
-  test.skip(info.project.name === "phone-webkit", "WebKit has no Touch constructor");
+  test.skip(
+    info.project.name !== "chromium" && info.project.name !== "phone-chromium",
+    "Only Chromium has the Touch constructor",
+  );
   await openRow(page, "Advanced");
   await sheetSettled(page);
   const result = await page.evaluate(() => {

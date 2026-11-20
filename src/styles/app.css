@@ -1988,39 +1988,40 @@ fieldset {
 
 .close-dot {
   flex: none;
-  width: var(--space-2);
-  height: var(--space-2);
+  box-sizing: border-box;
+  width: var(--space-3);
+  height: var(--space-3);
+  border: var(--stroke-selected) solid var(--color-surface);
   border-radius: var(--radius-pill);
   background: var(--color-warn);
+  box-shadow: 0 0 0 var(--stroke) var(--color-text);
 }
 
-.close-pairs {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.close-pairs__list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.close-pairs__item,
-.close-pairs-mark {
+/* The legend under the strip: the corner dot, then what it means (M3 decisions 51, 52). */
+.close-legend {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   margin: 0;
-  color: var(--color-text);
+  padding-top: var(--space-1);
+  color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
 
-.close-pairs-mark {
-  padding-top: var(--space-1);
+/* The dot on a flagged swatch's top-left corner. UI, not user content: the surface ring and the text
+   ring keep it visible on any swatch color, in both themes. */
+.swatch__flag {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  box-sizing: border-box;
+  width: var(--space-3);
+  height: var(--space-3);
+  border: var(--stroke-selected) solid var(--color-surface);
+  border-radius: var(--radius-pill);
+  background: var(--color-warn);
+  box-shadow: 0 0 0 var(--stroke) var(--color-text);
+  pointer-events: none;
 }
 
 /* ---- end M3-T8 ---- */
@@ -2301,93 +2302,6 @@ fieldset {
   justify-content: space-between;
   color: var(--color-text-muted);
   font-size: var(--text-sm);
-}
-
-/* The Close in value row's button: a warn dot and the count; it opens the threshold slider. */
-.row-button {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--control-height);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--color-text);
-  font: inherit;
-  cursor: pointer;
-}
-
-.app--phone .row-button {
-  min-height: var(--touch-target);
-}
-
-.row-button:focus-visible {
-  outline: var(--stroke-selected) solid var(--color-accent);
-  outline-offset: var(--stroke-selected);
-}
-
-.value-pairs {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: var(--space-2) 0;
-  list-style: none;
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-}
-
-.value-pairs__item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.value-pairs__chips {
-  display: flex;
-  gap: var(--space-1);
-}
-
-.value-pairs__chip {
-  width: var(--space-6);
-  height: var(--space-6);
-  border-radius: var(--radius-input);
-}
-
-/*
- * The warn bracket under a pair flagged Close in value, with its label beside it (ui-contract
- * Values view item 6). Text names the pair too, so color isn't the only signal.
- */
-.value-bracket {
-  position: relative;
-  height: calc(var(--space-4) + var(--space-1));
-}
-
-/* The panel's gap would leave the bracket 12 px under its swatches; it sits within 8 px (decision 29). */
-.panel > .strip-marks:has(.value-bracket-lanes) {
-  margin-top: calc(var(--space-2) * -1);
-}
-
-.value-bracket__line {
-  position: absolute;
-  top: 0;
-  box-sizing: border-box;
-  height: var(--space-2);
-  border: var(--stroke-selected) solid var(--color-warn);
-  border-top: 0;
-}
-
-.value-bracket__label {
-  position: absolute;
-  top: 0;
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  line-height: var(--space-4);
-  white-space: nowrap;
-}
-
-.value-bracket:not([data-placed]) .value-bracket__label {
-  visibility: hidden;
 }
 
 /* ---- end M3-T14 ---- */

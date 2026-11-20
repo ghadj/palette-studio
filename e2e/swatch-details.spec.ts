@@ -321,8 +321,8 @@ test.describe("live regions (spec 6.3)", () => {
     const hex = details(page).getByLabel("HEX", { exact: true });
     await hex.fill("#EA6B3B");
     await hex.press("Enter");
-    await expect(live(page, "very close").first()).toBeAttached();
-    await expect(live(page, "Swatches 1 and 3 are very close").first()).toBeAttached();
+    // One general sentence, not one per pair (M3 decision 52).
+    await expect(live(page, "Some colors are very close.").first()).toBeAttached();
   });
 
   test("reaching 12 colors is announced through a live region", async ({ page }) => {

@@ -62,19 +62,23 @@ test.describe("phone Source tab: swatches only (decision 32)", () => {
     await page.goto(demo("tab=source"));
     await expect(strip(page).locator("[data-swatch]")).toHaveCount(6);
     await expect(page.getByTestId("add-swatch")).toHaveCount(0);
-    await expect(page.getByTestId("close-pairs-mark")).toHaveCount(0);
+    await expect(page.getByTestId("close-legend")).toHaveCount(0);
     await page.goto(demo("tab=palette"));
     await expect(page.getByTestId("add-swatch")).toBeVisible();
   });
 
-  test("the Values view keeps its own Close in value bracket on the Source tab", async ({
+  test("the Values view keeps its Close in value legend and dots on the Source tab", async ({
     page,
   }, info) => {
     test.skip(!isPhoneProject(info), "phone projects");
-    await page.goto(demo("tab=source&view=values"));
+    await page.goto(demo("tab=source&image=values"));
     await expect(page.getByTestId("add-swatch")).toHaveCount(0);
-    await expect(page.getByTestId("close-pairs-mark")).toHaveCount(0);
     await expect(page.getByTestId("strip-dock")).toBeVisible();
+    // Decision 51: the legend sits inside the dock with the strip, and swatches 1 and 2 have dots.
+    await expect(page.getByTestId("strip-dock").getByTestId("close-legend")).toHaveText(
+      "Close in value",
+    );
+    await expect(page.getByTestId("close-flag")).toHaveCount(2);
   });
 
   test("desktop: the Palette column keeps the add tile", async ({ page }, info) => {
