@@ -1328,25 +1328,49 @@ fieldset {
 .footer {
   --footer-gutter: var(--space-6);
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0 var(--space-4);
+  gap: var(--space-4);
   margin: 0 calc(env(safe-area-inset-right) * -1) 0 calc(env(safe-area-inset-left) * -1);
-  padding: var(--space-2) calc(var(--footer-gutter) + env(safe-area-inset-right)) var(--space-2)
+  padding: 0 calc(var(--footer-gutter) + env(safe-area-inset-right)) 0
     calc(var(--footer-gutter) + env(safe-area-inset-left));
   border-top: var(--stroke) solid var(--color-divider);
   color: var(--color-text-muted);
   font-size: var(--text-xs);
 }
 
+/* One thin row (M3 decision 54): the links' hit area (--hit) sets its height, with no padding. */
+.footer__statement {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.footer__short {
+  display: none;
+}
+
 .app--phone .footer {
   --footer-gutter: var(--space-4);
+  gap: var(--space-2);
+}
+
+.app--phone .footer__long {
+  display: none;
+}
+
+.app--phone .footer__short {
+  display: inline;
 }
 
 .footer__links {
   display: flex;
-  gap: var(--space-4);
+  flex: none;
+  gap: var(--space-2);
+  white-space: nowrap;
 }
 
 .footer a {

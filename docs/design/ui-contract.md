@@ -251,3 +251,5 @@ Earlier deviations from the previous version of the mockups (control borders, ph
 - The contents of More filters, and the Single brand and My paints scopes on phones (15)
 
 The evaluator lists every one of these a milestone touches as a manual design check.
+
+**App footer (M3 decision 54).** One thin row under a hairline divider, in muted `--text-xs`, with no vertical padding; the links' hit area sets its height: `--hit` (32 px with a pointer, 44 px on touch) from 1024 px, 44 px below it. Below 1024 px it never wraps: "Images stay in your browser" on the left (it truncates with an ellipsis if space runs out; the full sentence is its `title`), then "MIT License" and "GitHub" on the right, each a 44 px touch target. From 1024 px the left text is "Your images never leave this browser." The footer still sits above the tab bar.
