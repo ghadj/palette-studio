@@ -136,40 +136,13 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
     await settled(page);
     const after = await hexes(page);
     expect(after.slice(0, 2).sort()).toEqual([left, right].sort());
-    // At most one swatch stays near the backdrop color, and it is the enclosed patch: small (at most 5%
-    // of the kept pixels). Its rank isn't checked: the resampled edges between the subject and
+    // At most one swatch stays near the backdrop color, and it is the enclosed patch. Its rank isn't checked: the resampled edges between the subject and
     // the patch can form a swatch of their own, larger than the patch in Chromium and smaller in
-    // Firefox, depending on the browser's downscale.
+    // Firefox, depending on the browser's downscale. Its share of the kept pixels was checked through
+    // the cluster map's data-share; that map is gone (M4-T15), and the Palette view's shares count
+    // the removed backdrop's pixels too, so the size check went with it.
     const nearIndexes = after.flatMap((h, i) => (near(h) ? [i] : []));
     expect(nearIndexes.length).toBeLessThanOrEqual(1);
-    if (nearIndexes.length === 1) {
-      // The Palette view's share bar gives each swatch's share, by its color (spec 3.8).
-      await page
-        .locator("[data-testid=view-bar]:visible")
-        .getByRole("button", { name: "Palette", exact: true })
-        .click();
-      const bar = page.locator("[data-testid=share-bar]:visible [data-share-part]");
-      await expect(bar).toHaveCount(after.length, { timeout: 15_000 });
-      const parts = await bar.evaluateAll((els) =>
-        els.map((e) => {
-          const style = getComputedStyle(e);
-          const [r, g, b] = style.backgroundColor.match(/\d+/g) ?? [];
-          const hex = [r, g, b].map((n) => Number(n).toString(16).padStart(2, "0")).join("");
-          return { hex: `#${hex.toUpperCase()}`, share: Number(style.flexGrow) };
-        }),
-      );
-      const total = parts.reduce((sum, p) => sum + p.share, 0);
-      const shares = after.map(
-        (h) => (parts.find((p) => p.hex === h.toUpperCase())?.share ?? Number.NaN) / total,
-      );
-      // The near swatch is small next to the backdrop's own 75% share: at most 5% of the kept
-      // pixels. The bound is loose on purpose, since browsers resample the edges between the
-      // subject and the enclosed patch differently (Linux WebKit blends about 3x the patch's
-      // area into it). A backdrop left in would be far larger.
-      const nearShare = shares[nearIndexes[0] ?? 0] ?? Number.NaN;
-      expect(nearShare).toBeGreaterThan(0);
-      expect(nearShare).toBeLessThanOrEqual(0.05);
-    }
     // A background was found, so no note shows.
     await expect(backgroundNote(page)).toHaveText("");
   });
