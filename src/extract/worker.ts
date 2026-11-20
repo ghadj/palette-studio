@@ -1,8 +1,10 @@
 /**
  * The image worker (spec 7.4): makes the working master on an OffscreenCanvas and keeps it, sends
  * back a display copy, and runs extraction on the analysis copy (histogram, quantizer,
- * post-processing). Bitmaps and buffers are transferred, not copied.
+ * post-processing) and the cluster map (spec 2.6). Bitmaps and buffers are transferred, not copied.
  */
+
+import type { Oklab } from "../color/convert";
 import {
   type AnyCanvas,
   analysisSize,
@@ -12,8 +14,9 @@ import {
   resample,
 } from "../image/tiers";
 import type { ExtractionSettings } from "../types";
+import { assignPixels, overlayPixels } from "./cluster-map";
 import type { FromWorker, PixelBuffer, ToWorker } from "./messages";
-import { extractPalette } from "./pipeline";
+import { type AnalysisImage, keepPixels, runExtraction } from "./pipeline";
 
 interface WorkerScope {
   postMessage(message: FromWorker, transfer?: Transferable[]): void;
@@ -24,7 +27,7 @@ const scope = self as unknown as WorkerScope;
 const create = (width: number, height: number): AnyCanvas => new OffscreenCanvas(width, height);
 
 let master: AnyCanvas | null = null;
-let analysis: { key: string; pixels: Uint8ClampedArray } | null = null;
+let analysis: { key: string; image: AnalysisImage } | null = null;
 
 function canDraw(): boolean {
   try {
@@ -62,24 +65,66 @@ async function prepare(jobId: number, bitmap: ImageBitmap): Promise<void> {
 }
 
 /** The analysis copy at the sample size (spec 2.4), cached until the size or resampling changes. */
-function analysisPixels(settings: ExtractionSettings): Uint8ClampedArray {
+function analysisImage(settings: ExtractionSettings): AnalysisImage {
   if (!master) throw new Error("No image");
   const key = `${master.width}x${master.height}|${settings.sampleSize}|${settings.resampling}`;
   if (analysis?.key !== key) {
     const size = analysisSize(master.width, master.height, settings.sampleSize);
     const canvas = resample(master, size, settings.resampling, create);
-    analysis = { key, pixels: readPixels(canvas).data };
+    const read = readPixels(canvas);
+    analysis = { key, image: { width: read.width, height: read.height, data: read.data } };
     canvas.width = 0;
     canvas.height = 0;
   }
-  return analysis.pixels;
+  return analysis.image;
+}
+
+/** The pixels the main thread sent (fallback), or the master's analysis copy. */
+function pixelsOrAnalysis(settings: ExtractionSettings, pixels: PixelBuffer | null): AnalysisImage {
+  return pixels
+    ? { width: pixels.width, height: pixels.height, data: new Uint8ClampedArray(pixels.data) }
+    : analysisImage(settings);
 }
 
 function extract(jobId: number, settings: ExtractionSettings, pixels: PixelBuffer | null): void {
   const start = performance.now();
-  const rgba = pixels ? new Uint8ClampedArray(pixels.data) : analysisPixels(settings);
-  const colors = extractPalette(rgba, settings);
-  scope.postMessage({ type: "extracted", jobId, colors, ms: performance.now() - start });
+  const image = pixelsOrAnalysis(settings, pixels);
+  const keep = keepPixels(image, settings);
+  const result = runExtraction(image, settings, keep);
+  const { colors } = result;
+  const map = assignPixels(
+    image,
+    keep.mask,
+    colors.map((c) => c.lab),
+    settings.workingSpace,
+  );
+  scope.postMessage({ type: "extracted", jobId, ...result, map, ms: performance.now() - start }, [
+    map.labels.buffer,
+  ]);
+}
+
+/** Rebuilds the cluster map for a palette, without extracting (spec 2.6). */
+function assign(
+  jobId: number,
+  colors: Oklab[],
+  settings: ExtractionSettings,
+  pixels: PixelBuffer | null,
+): void {
+  const image = pixelsOrAnalysis(settings, pixels);
+  const map = assignPixels(image, keepPixels(image, settings).mask, colors, settings.workingSpace);
+  scope.postMessage({ type: "assigned", jobId, map }, [map.labels.buffer]);
+}
+
+/** The overlay pixels of one swatch's cluster map (spec 2.6, decision 13b). */
+function overlay(
+  jobId: number,
+  width: number,
+  height: number,
+  labels: ArrayBuffer,
+  index: number,
+): void {
+  const data = overlayPixels(new Uint8Array(labels), index).buffer as ArrayBuffer;
+  scope.postMessage({ type: "overlaid", jobId, width, height, data }, [data]);
 }
 
 scope.addEventListener("message", (event) => {
@@ -96,6 +141,12 @@ scope.addEventListener("message", (event) => {
         return;
       case "extract":
         extract(message.jobId, message.settings, message.pixels);
+        return;
+      case "assign":
+        assign(message.jobId, message.colors, message.settings, message.pixels);
+        return;
+      case "overlay":
+        overlay(message.jobId, message.width, message.height, message.labels, message.index);
         return;
     }
   } catch (error) {

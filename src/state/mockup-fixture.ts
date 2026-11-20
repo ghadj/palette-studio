@@ -20,5 +20,14 @@ export const MOCKUP_SWATCHES: ReadonlyArray<{ hex: string; point: ImagePoint }> 
   { hex: "#5039B0", point: { x: 0.102, y: 0.185 } },
 ];
 
+/**
+ * Each swatch's population, in swatch order: the Palette-view area shares of mockup-state.md
+ * (swatch 2 83.2%, swatch 1 14.7%, swatches 3 to 6 0.5% each), normalized to sum 1 (M2 decision
+ * 14a). They are fixed, so screenshots don't depend on the cluster map.
+ */
+const RAW_POPULATIONS = [0.147, 0.832, 0.005, 0.005, 0.005, 0.005] as const;
+const RAW_TOTAL = RAW_POPULATIONS.reduce((a, b) => a + b, 0);
+export const MOCKUP_POPULATIONS: readonly number[] = RAW_POPULATIONS.map((p) => p / RAW_TOTAL);
+
 /** Swatch 3 is selected (zero-based index 2). */
 export const MOCKUP_SELECTED_INDEX = 2;

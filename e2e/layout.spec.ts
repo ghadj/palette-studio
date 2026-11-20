@@ -67,7 +67,7 @@ test.describe("responsive shell (spec 6.1)", () => {
     test.skip(isPhoneProject(info), "desktop viewport");
     await page.setViewportSize({ width: 1280, height: 680 });
     await page.goto("./");
-    await page.locator("details.chevron-row summary").click();
+    await page.locator('details.chevron-row summary:has-text("Advanced")').click();
     const columns = page.locator(".columns");
     const sizes = await columns.evaluate((el) => ({
       scroll: el.scrollHeight,

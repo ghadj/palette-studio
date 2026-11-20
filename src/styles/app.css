@@ -401,6 +401,7 @@ fieldset {
 
 /* Image well (ui-contract column 1 item 1). Markers, callouts and selection stay off the image (spec 6.1). */
 .image-well {
+  position: relative;
   overflow: hidden;
   border: var(--stroke) solid var(--color-border);
   border-radius: var(--radius-card);
@@ -411,7 +412,8 @@ fieldset {
   display: block;
   width: 100%;
   height: auto;
-  touch-action: none;
+  /* The well decides what touch does (decision 15h); the image and its layer follow it. */
+  touch-action: inherit;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
@@ -420,6 +422,85 @@ fieldset {
 .image-well[data-busy] .image-well__image {
   opacity: 0.6;
   transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+/*
+ * Zoom and pan (M2 decision 15): the image layer scales about its top-left corner. At Fit a
+ * one-finger swipe scrolls the page and only a pinch reaches the well; once zoomed the well takes
+ * every touch, so one finger pans the image (decision 15h, spec 6.1 "Gestures"). No callout or text
+ * selection on the image (spec 6.1 "Callouts").
+ */
+.image-well--image {
+  touch-action: pan-x pan-y;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.image-well--image[data-zoomed] {
+  touch-action: none;
+  cursor: grab;
+}
+
+.image-well--image[data-zoomed]:active {
+  cursor: grabbing;
+}
+
+.image-well__layer {
+  position: relative;
+  transform-origin: 0 0;
+  touch-action: inherit;
+}
+
+/*
+ * The cluster-map overlay (spec 2.6, M2 decision 13b): user content over the image, in the same
+ * layer so it follows zoom and pan. The map is at analysis size, so it scales without smoothing.
+ * While a new palette is extracted, the old map is dimmed like the strip (spec 6.3).
+ */
+.image-well__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.image-well__overlay[data-busy] {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+/* Zoom out, Zoom in and Fit in the well's bottom-right corner (decision 15e). */
+.zoom-controls {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  display: flex;
+  background: var(--color-surface);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  cursor: default;
+  touch-action: manipulation;
+}
+
+.zoom-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+}
+
+.zoom-button[aria-disabled="true"] {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.zoom-button:focus-visible {
+  outline-offset: calc(var(--stroke-selected) * -1);
 }
 
 /* Drop zone (spec 6.3 "First visit, no image"). */
@@ -573,6 +654,58 @@ fieldset {
   gap: var(--space-1);
 }
 
+/*
+ * Below 1024 px the Source tab's strip pins just under the header while the setting rows scroll
+ * (M2 decision 19; ui-contract D4). The container is opaque. On a phone it spans the panel gutters so
+ * nothing shows beside it; on a tablet it stays within the row column. Its padding gives the swatches
+ * room under the header and is offset by negative margins, so the unpinned layout is unchanged.
+ * Pinned, a divider separates it from the rows.
+ */
+.strip-dock {
+  position: sticky;
+  top: calc(var(--header-height) + env(safe-area-inset-top));
+  z-index: 5;
+  margin: calc(-1 * var(--space-2)) 0;
+  padding: var(--space-2) 0;
+  background: var(--color-surface);
+}
+
+/*
+ * Where the shell fills the screen (up to its 640 px maximum), the container also covers the gutters.
+ * Media queries can't read variables: keep 640px equal to .shell--phone's max-width,
+ * calc(var(--space-8) * 20).
+ */
+@media (max-width: 640px) {
+  .strip-dock {
+    margin-inline: calc(-1 * var(--space-4));
+    padding-inline: var(--space-4);
+  }
+}
+
+/*
+ * Focus and scrollIntoView keep controls clear of the pinned header, the strip and the fixed tab
+ * bar (spec 8 v1 acceptance 10; WCAG 2.2 SC 2.4.11). SourcePanel sets --strip-dock-height.
+ */
+@media (max-width: 1023.98px) {
+  html {
+    scroll-padding-top: calc(
+      var(--header-height) +
+      env(safe-area-inset-top) +
+      var(--strip-dock-height, 0px) +
+      var(--space-2)
+    );
+    scroll-padding-bottom: calc(
+      var(--tabbar-height) +
+      env(safe-area-inset-bottom) +
+      var(--space-2)
+    );
+  }
+}
+
+.strip-dock[data-stuck] {
+  box-shadow: 0 var(--stroke) 0 var(--color-border);
+}
+
 .swatch {
   height: calc(var(--space-4) * 5);
   border-radius: var(--radius-swatch);
@@ -602,10 +735,15 @@ fieldset {
 }
 
 .setting-row {
+  --setting-label-min: calc(var(--space-8) * 3);
+  --slider-min: calc(var(--space-8) * 2);
+  --slider-natural: calc(var(--space-8) * 4);
+  --number-width: calc(var(--space-8) * 2);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-1) var(--space-4);
   min-height: var(--touch-target);
   border-bottom: var(--stroke) solid var(--color-divider);
 }
@@ -623,6 +761,17 @@ fieldset {
   cursor: default;
 }
 
+/*
+ * Label and value share one line (M2 decision 23). The label, or label group with its note, has a
+ * minimum width and flexes, so its text wraps first; the slider shrinks next; fields, selects and
+ * toggles keep their natural width. Only if the minimums still don't fit does the value wrap below.
+ */
+.setting-row > .setting-row__label,
+.setting-row__label-group {
+  flex: 1 1 var(--setting-label-min);
+  min-width: var(--setting-label-min);
+}
+
 .setting-row__label-group {
   display: flex;
   flex-direction: column;
@@ -634,22 +783,61 @@ fieldset {
   font-size: var(--text-xs);
 }
 
+/* A value with a slider shrinks from its natural width to its minimum before the row wraps. */
+.setting-row__value:has(.slider-group) {
+  flex: 1 1 calc(var(--slider-min) + var(--space-2) + var(--number-width));
+  min-width: 0;
+  max-width: calc(var(--slider-natural) + var(--space-2) + var(--number-width));
+}
+
+/* A select with long options shrinks, ellipsized, before the row wraps. */
+.setting-row__value:has(.select) {
+  flex: 1 1 calc(var(--space-8) * 3);
+  min-width: var(--hit);
+  max-width: max-content;
+}
+
+/* The value keeps its width and wraps under the label and note when they don't fit together. */
 .setting-row__value {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
-  min-width: 0;
+  margin-left: auto;
+}
+
+/* Phone and tablet: 44 px controls get space above and below (M2 decision 21). */
+@media (max-width: 1023.98px) {
+  .setting-row {
+    padding: var(--space-2) 0;
+  }
+}
+
+/*
+ * A row whose control doesn't apply (M1 decision 14: disabled, not hidden) is clearly dimmed
+ * (M2 decision 20): the muted label and the value, with the controls' own disabled styles, drop to
+ * reduced emphasis. The "Used by" note keeps its style so it stays readable. tokens.css has no
+ * disabled color, so the emphasis comes from opacity.
+ */
+.setting-row[data-disabled] .setting-row__label,
+.setting-row[data-disabled] .setting-row__value {
+  opacity: 0.5;
 }
 
 /* Select styled as a setting value: text color, right aligned, chevron after it. */
 .select {
   position: relative;
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
 }
 
 .select__control {
   appearance: none;
+  flex: 1 1 auto;
+  min-width: var(--hit);
+  text-overflow: ellipsis;
   min-height: var(--hit);
   padding: 0 calc(var(--space-4) + var(--space-1)) 0 var(--space-2);
   border: 0;
@@ -670,14 +858,17 @@ fieldset {
 }
 
 .slider-group {
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
   gap: var(--space-2);
 }
 
 /* Number field (spec 6.1: inputmode decimal, 16 px on touch so iOS doesn't zoom). */
 .number-field {
-  width: calc(var(--space-8) * 2);
+  flex: 0 0 auto;
+  width: var(--number-width, calc(var(--space-8) * 2));
   min-height: var(--hit);
   padding: 0 var(--space-2);
   border: var(--stroke) solid var(--color-border-control);
@@ -709,8 +900,9 @@ fieldset {
 /* Slider (ui-contract Components "Slider"): divider-colored track, round accent thumb. */
 .slider {
   appearance: none;
-  width: calc(var(--space-8) * 4);
-  min-width: var(--hit);
+  flex: 1 1 auto;
+  width: var(--slider-natural, calc(var(--space-8) * 4));
+  min-width: var(--slider-min, var(--hit));
   min-height: var(--hit);
   margin: 0;
   background: transparent;
@@ -748,9 +940,25 @@ fieldset {
   background: var(--color-accent);
 }
 
+/* A setting that doesn't apply to the algorithm (M1 decision 14): muted thumb, no pointer. */
+.slider:disabled {
+  cursor: default;
+}
+
+.slider:disabled::-webkit-slider-thumb {
+  background: var(--color-text-muted);
+}
+
+.slider:disabled::-moz-range-thumb {
+  background: var(--color-text-muted);
+}
+
 @media (max-width: 1023.98px), (pointer: coarse) {
+  .setting-row {
+    --slider-natural: calc(var(--space-8) * 3);
+  }
   .slider {
-    width: calc(var(--space-8) * 3);
+    width: var(--slider-natural, calc(var(--space-8) * 3));
   }
   .slider::-webkit-slider-thumb {
     width: var(--space-6);
@@ -763,6 +971,59 @@ fieldset {
   }
 }
 
+/* Toggle (ui-contract Components "Toggle"): pill track with the control border, round thumb. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  border-radius: var(--radius-pill);
+}
+
+.toggle__track {
+  display: inline-flex;
+  align-items: center;
+  width: calc(var(--space-8) + var(--space-2));
+  height: var(--space-6);
+  padding: 0 calc((var(--space-6) - 2 * var(--stroke) - var(--space-4)) / 2);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.toggle__thumb {
+  width: var(--space-4);
+  height: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-border-control);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.toggle[aria-checked="true"] .toggle__track {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.toggle[aria-checked="true"] .toggle__thumb {
+  background: var(--color-surface);
+  transform: translateX(var(--space-4));
+}
+
+.toggle:disabled {
+  cursor: default;
+}
+
+.toggle:disabled .toggle__track {
+  border-color: var(--color-divider);
+  background: transparent;
+}
+
+.toggle:disabled .toggle__thumb {
+  background: var(--color-divider);
+}
+
 /* Chevron row (ui-contract Components): label left, chevron right, divider below. */
 .chevron-row__summary {
   display: flex;
@@ -773,6 +1034,24 @@ fieldset {
   color: var(--color-text);
   list-style: none;
   cursor: pointer;
+}
+
+@media (max-width: 1023.98px) {
+  .chevron-row__summary {
+    min-height: calc(var(--touch-target) + 2 * var(--space-2));
+    padding: var(--space-2) 0;
+  }
+}
+
+/*
+ * Touch (M2 decision 22): labels, toggle rows, chevron titles and plain-text values step up to
+ * 15 px beside the 16 px fields. Notes and hints keep their own sizes.
+ */
+@media (max-width: 1023.98px), (pointer: coarse) {
+  .setting-row,
+  .chevron-row__summary {
+    font-size: var(--text-row-touch);
+  }
 }
 
 .chevron-row__summary::-webkit-details-marker {

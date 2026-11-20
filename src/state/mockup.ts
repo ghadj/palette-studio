@@ -1,7 +1,8 @@
 /**
  * The mockup state, ?demo=mockup (docs/design/mockup-state.md). It never reads or writes autosave,
  * the project library or any browser storage (spec 5.5), so nothing here imports storage code.
- * M1 reads the `view`, `tab` and `theme` parameters; the others are ignored until their milestone.
+ * M1 reads the `view`, `tab` and `theme` parameters, and M2 `rows`; the others are ignored until
+ * their milestone.
  */
 import { hexToOklab } from "../color/convert";
 import { createSwatch } from "../palette/model";
@@ -9,15 +10,22 @@ import type { Project, Tab, View } from "../types";
 import { SCHEMA_VERSION, SPEC_DEFAULT_SETTINGS } from "./defaults";
 import {
   MOCKUP_IMAGE,
+  MOCKUP_POPULATIONS,
   MOCKUP_PROJECT_NAME,
   MOCKUP_SELECTED_INDEX,
   MOCKUP_SWATCHES,
 } from "./mockup-fixture";
 
+/** Chevron rows the `rows` parameter can open (M2 decision 14b). */
+export type MockupRow = "filters" | "advanced";
+const ROWS: readonly MockupRow[] = ["filters", "advanced"];
+
 export interface MockupParams {
   view: View;
   tab: Tab;
   theme: "light" | "dark" | null;
+  /** Chevron rows open at load, from `rows=filters`, `rows=advanced` or both (comma-separated). */
+  rows: MockupRow[];
 }
 
 export interface MockupState {
@@ -26,6 +34,7 @@ export interface MockupState {
   selectedSwatchId: string | null;
   activeView: View;
   activeTab: Tab;
+  openRows: MockupRow[];
 }
 
 const VIEWS: readonly View[] = ["studio", "materials"];
@@ -44,11 +53,12 @@ export function parseMockupParams(search: string): MockupParams | null {
     view: pick(params.get("view"), VIEWS, "studio"),
     tab: pick(params.get("tab"), TABS, "source"),
     theme: theme === "light" || theme === "dark" ? theme : null,
+    rows: ROWS.filter((r) => (params.get("rows") ?? "").split(",").includes(r)),
   };
 }
 
 export function buildMockupState(
-  params: MockupParams | null = { view: "studio", tab: "source", theme: null },
+  params: MockupParams | null = { view: "studio", tab: "source", theme: null, rows: [] },
 ): MockupState {
   const palette = MOCKUP_SWATCHES.map(({ hex, point }, i) =>
     createSwatch(hexToOklab(hex), {
@@ -57,8 +67,7 @@ export function buildMockupState(
       locked: false,
       sampleRadius: "auto",
       point: { ...point },
-      // mockup-state.md gives no extraction shares for the fixture; equal shares keep the sum at 1.
-      population: 1 / MOCKUP_SWATCHES.length,
+      population: MOCKUP_POPULATIONS[i] ?? 0,
     }),
   );
   return {
@@ -77,5 +86,23 @@ export function buildMockupState(
     selectedSwatchId: palette[MOCKUP_SELECTED_INDEX]?.id ?? null,
     activeView: params?.view ?? "studio",
     activeTab: params?.tab ?? "source",
+    openRows: [...(params?.rows ?? [])],
   };
+}
+
+/** `zoom=<2|4|8>` opens the image at that zoom, centered (M2 decision 15g); anything else is Fit. */
+export function parseMockupZoom(search: string): 1 | 2 | 4 | 8 {
+  const zoom = new URLSearchParams(search).get("zoom");
+  return zoom === "2" ? 2 : zoom === "4" ? 4 : zoom === "8" ? 8 : 1;
+}
+
+/**
+ * `cluster=<1 to 6>` shows that swatch's cluster map, as hovering or focusing it does (spec 2.6,
+ * decision 14b). Returns the swatch's palette index, or null for no map.
+ */
+export function parseMockupCluster(search: string): number | null {
+  const n = ["1", "2", "3", "4", "5", "6"].indexOf(
+    new URLSearchParams(search).get("cluster") ?? "",
+  );
+  return n < 0 ? null : n;
 }

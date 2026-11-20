@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { fixture } from "./helpers/files";
+import { grayscalePlusRed } from "./helpers/grayscale-plus-red";
 import { M1_SCREENS, THEMES } from "./helpers/screens";
 import { checkTokens, describeFailures } from "./helpers/tokens";
 
@@ -78,12 +80,51 @@ test.describe("token conformance @tokens", () => {
       for (const viewport of [
         { width: 1280, height: 800 },
         { width: 390, height: 844 },
+        { width: 320, height: 568 },
       ]) {
         await page.emulateMedia({ colorScheme: theme });
         await page.setViewportSize(viewport);
         await page.goto("./");
-        await page.locator("details.chevron-row:visible summary").click();
+        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
         await expect(page.locator("#setting-seed:visible")).toBeVisible();
+        // The M2-T7 rows, with the Keep one outlier toggle off, then on (ui-contract "Toggle").
+        await expect(page.locator("#setting-sort:visible")).toBeVisible();
+        const toggle = page.locator("#setting-outlier:visible");
+        for (const state of ["false", "true"]) {
+          if ((await toggle.getAttribute("aria-checked")) !== state) await toggle.click();
+          await expect(toggle).toHaveAttribute("aria-checked", state);
+          await page.waitForFunction(() =>
+            document.getAnimations().every((a) => a.playState !== "running"),
+          );
+          const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
+          expect(
+            failures,
+            `${theme} ${viewport.width} toggle ${state}\n${describeFailures(failures)}`,
+          ).toEqual([]);
+        }
+      }
+    }
+  });
+
+  test("Advanced rows disabled under Swatch roles use tokens, with 44 px targets on phones", async ({
+    page,
+  }) => {
+    // M2-T7: disabled number fields, sliders and the disabled toggle, each with its note.
+    for (const theme of THEMES) {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 320, height: 568 },
+      ]) {
+        await page.emulateMedia({ colorScheme: theme });
+        await page.setViewportSize(viewport);
+        await page.goto("./");
+        await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
+        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
+        await expect(page.locator("#setting-outlier:visible")).toBeDisabled();
+        await expect(page.locator("#setting-merge:visible")).toBeDisabled();
+        await expect(page.locator("#setting-outlier-note:visible")).toHaveText(
+          "Not used by swatch roles",
+        );
         const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
         expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
       }
@@ -140,8 +181,56 @@ test.describe("token conformance @tokens", () => {
         await page.setViewportSize(viewport);
         await page.goto("./");
         await page.locator("#setting-algorithm:visible").selectOption({ label: "Median cut" });
-        await page.locator("details.chevron-row:visible summary").click();
+        await page.locator('details.chevron-row:visible summary:has-text("Advanced")').click();
         await expect(page.locator("#setting-seed:visible")).toBeDisabled();
+        const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
+        expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
+      }
+    }
+  });
+
+  test("Swatch roles with Colors disabled and the empty-roles note use tokens, with 44 px targets on phones", async ({
+    page,
+  }) => {
+    // M2 decisions 10b and 10c.
+    for (const theme of THEMES) {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.emulateMedia({ colorScheme: theme });
+        await page.setViewportSize(viewport);
+        await page.goto("./");
+        await page.getByTestId("file-input").setInputFiles(grayscalePlusRed());
+        await page.locator("#setting-algorithm:visible").selectOption({ label: "Swatch roles" });
+        await expect(page.locator("#setting-colors:visible")).toBeDisabled();
+        await expect(page.locator("[data-testid=empty-roles]:visible")).toBeVisible();
+        await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
+        const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
+        expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
+      }
+    }
+  });
+
+  test("Ignore background on Auto with its 'None found' note uses tokens, with 44 px targets on phones", async ({
+    page,
+  }) => {
+    // M2 decisions 4 and 18: twelve-colors.png has a busy border.
+    for (const theme of THEMES) {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.emulateMedia({ colorScheme: theme });
+        await page.setViewportSize(viewport);
+        await page.goto("./");
+        await page.getByTestId("file-input").setInputFiles(fixture("twelve-colors.png"));
+        await page.locator("[data-testid=filters-row]:visible summary").click();
+        await page.locator("#setting-ignore-background:visible").selectOption({ label: "Auto" });
+        await expect(
+          page.locator("[data-testid=filters-row]:visible #setting-ignore-background-note"),
+        ).toHaveText("None found");
+        await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
         const failures = await checkTokens(page, { touchTargets: viewport.width <= 600 });
         expect(failures, `${theme} ${viewport.width}\n${describeFailures(failures)}`).toEqual([]);
       }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hexToOklab } from "../../src/color/convert";
-import { buildHistogram } from "../../src/extract/histogram";
+import { buildHistogram, weightByVividness } from "../../src/extract/histogram";
 import { pixels } from "./helpers";
 
 describe("weighted histogram (spec 2.2, 7.6)", () => {
@@ -75,5 +75,114 @@ describe("weighted histogram (spec 2.2, 7.6)", () => {
     );
     expect(h.size).toBe(1);
     expect(h.means[0]).toBeCloseTo((0x80 + 3 * 0x83) / 4 / 255, 12);
+  });
+});
+
+describe("histogram mask, weights and bin indices (M2-T2)", () => {
+  it("an all-zero mask gives no bins", () => {
+    const data = pixels([
+      ["#E8693A", 5],
+      ["#14386B", 5],
+    ]);
+    const h = buildHistogram(data, { mask: new Uint8Array(10) });
+    expect(h.size).toBe(0);
+    expect(h.total).toBe(0);
+    expect(h.bins).toHaveLength(0);
+    // A mask with some pixels kept counts only those.
+    const half = new Uint8Array(10);
+    half.fill(1, 0, 5);
+    const kept = buildHistogram(data, { mask: half });
+    expect(kept.size).toBe(1);
+    expect(kept.total).toBe(5);
+  });
+
+  it("weights 2:1 make a 50/50 image count 2:1", () => {
+    const data = pixels([
+      ["#E8693A", 10],
+      ["#14386B", 10],
+    ]);
+    const weights = new Float32Array(20);
+    weights.fill(2, 0, 10);
+    weights.fill(1, 10, 20);
+    const h = buildHistogram(data, { weights });
+    expect(h.size).toBe(2);
+    expect(h.total).toBe(30);
+    const orange = hexToOklab("#E8693A");
+    const i = Math.abs((h.means[0] ?? 0) - orange.l) < 1e-9 ? 0 : 1;
+    expect(h.counts[i]).toBe(20);
+    expect(h.counts[1 - i]).toBe(10);
+    // Means are weighted too, but each bin here holds one color, so they stay exact.
+    expect(h.means[i * 3]).toBeCloseTo(orange.l, 12);
+  });
+
+  it("bin index of #E8693A at 5 bits is (29 << 10) | (13 << 5) | 7", () => {
+    const h = buildHistogram(pixels([["#E8693A", 3]]), { bits: 5 });
+    expect(h.bits).toBe(5);
+    expect(Array.from(h.bins)).toEqual([(29 << 10) | (13 << 5) | 7]);
+    // Entries are in ascending bin order.
+    const many = buildHistogram(
+      pixels([
+        ["#FFFFFF", 1],
+        ["#000000", 1],
+        ["#E8693A", 1],
+      ]),
+    );
+    expect(Array.from(many.bins)).toEqual([0, (29 << 10) | (13 << 5) | 7, 32767]);
+  });
+});
+
+describe("vividness bin weights (M2 decision 6)", () => {
+  const weightOf = (h: ReturnType<typeof buildHistogram>, hex: string) => {
+    const ref = hexToOklab(hex);
+    for (let i = 0; i < h.size; i += 1) {
+      if (Math.abs((h.means[i * 3] ?? 0) - ref.l) < 1e-9) return h.counts[i] ?? 0;
+    }
+    return 0;
+  };
+  const data = pixels([
+    ["#808080", 5],
+    ["#FF0000", 5],
+    ["#B07060", 5],
+  ]);
+
+  it("vividness 1 gives a #808080 bin weight 0.05 (the floor, decision 6b) and a #FF0000 bin its full count", () => {
+    const h = weightByVividness(buildHistogram(data), 1, "oklab");
+    expect(weightOf(h, "#808080")).toBeCloseTo(5 * 0.05, 12);
+    expect(weightOf(h, "#FF0000")).toBe(5);
+    // A mid-chroma color is weighted by C / 0.2.
+    const mid = hexToOklab("#B07060");
+    const c = Math.hypot(mid.a, mid.b);
+    expect(c).toBeLessThan(0.2);
+    expect(c / 0.2).toBeGreaterThan(0.05);
+    expect(weightOf(h, "#B07060")).toBeCloseTo((5 * c) / 0.2, 12);
+    expect(h.total).toBeCloseTo(5 * 0.05 + 5 + (5 * c) / 0.2, 12);
+  });
+
+  it("the weight never falls below 0.05 of the count, whatever the vividness (decision 6b)", () => {
+    const h = buildHistogram(data);
+    for (const v of [0.25, 0.5, 0.95, 0.99, 1]) {
+      const w = weightByVividness(h, v, "oklab");
+      expect(w.size, String(v)).toBe(3);
+      expect(weightOf(w, "#808080"), String(v)).toBeCloseTo(5 * Math.max(0.05, 1 - v), 12);
+    }
+  });
+
+  it("vividness 0 leaves the histogram as it is; 0.5 halves a gray", () => {
+    const h = buildHistogram(data);
+    expect(weightByVividness(h, 0, "oklab")).toBe(h);
+    expect(weightOf(weightByVividness(h, 0.5, "oklab"), "#808080")).toBe(2.5);
+  });
+
+  it("uses OKLab chroma whatever the working space", () => {
+    for (const space of ["cielab", "linear-srgb", "srgb"] as const) {
+      const h = weightByVividness(buildHistogram(data, { space }), 1, space);
+      expect(h.size, space).toBe(3);
+      const counts = Array.from(h.counts).sort((a, b) => a - b);
+      const mid = hexToOklab("#B07060");
+      // The gray gets the 0.05 floor (decision 6b).
+      expect(counts[0], space).toBeCloseTo(5 * 0.05, 12);
+      expect(counts[1], space).toBeCloseTo((5 * Math.hypot(mid.a, mid.b)) / 0.2, 6);
+      expect(counts[2], space).toBe(5);
+    }
   });
 });

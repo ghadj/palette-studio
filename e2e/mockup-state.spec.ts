@@ -26,6 +26,23 @@ test.describe("mockup state (mockup-state.md)", () => {
     }
   });
 
+  test("Algorithm shows Balanced, enabled", async ({ page }) => {
+    await page.goto(demo());
+    const select = page.locator("#setting-algorithm:visible");
+    await expect(select).toHaveValue("balanced");
+    await expect(select).toBeEnabled();
+    await expect(select.locator("option:checked")).toHaveText("Balanced");
+    await expect(select.locator("option:checked")).toBeEnabled();
+  });
+
+  test("Preset reads Balanced", async ({ page }) => {
+    await page.goto(demo());
+    const select = page.locator("#setting-preset:visible");
+    await expect(select).toHaveValue("balanced");
+    await expect(select).toBeEnabled();
+    await expect(select.locator("option:checked")).toHaveText("Balanced");
+  });
+
   test("swatch 3 has the selected outline", async ({ page }) => {
     await page.goto(demo());
     for (const theme of ["light", "dark"] as const) {
@@ -59,7 +76,25 @@ test.describe("mockup state (mockup-state.md)", () => {
     await expect(column.getByTestId("selection-label")).toHaveText("Swatch 3");
     await column.locator("[data-swatch]").nth(4).click();
     await expect(column.locator("[data-swatch]").nth(4)).toHaveAttribute("aria-pressed", "true");
+    // Off the strip, so the label names the selection rather than the hovered map (M2-T14).
+    await page.mouse.move(0, 0);
     await expect(column.getByTestId("selection-label")).toHaveText("Swatch 5");
+  });
+
+  test("rows=advanced opens the Advanced row with its rows, and nothing else changes", async ({
+    page,
+  }) => {
+    await page.goto(demo("rows=advanced"));
+    const advanced = page.locator("details.chevron-row:visible").filter({ hasText: "Advanced" });
+    await expect(advanced).toHaveAttribute("open", "");
+    for (const id of ["#setting-seed", "#setting-iterations", "#setting-merge", "#setting-sort"]) {
+      await expect(page.locator(`${id}:visible`)).toBeVisible();
+    }
+    await expect(page.locator("[data-swatch]:visible")).toHaveCount(6);
+    await page.goto(demo());
+    await expect(
+      page.locator("details.chevron-row:visible").filter({ hasText: "Advanced" }),
+    ).not.toHaveAttribute("open", "");
   });
 
   test("title ends with (demo)", async ({ page }) => {
@@ -106,6 +141,7 @@ test.describe("mockup state (mockup-state.md)", () => {
       "tab=palette&theme=dark",
       "tab=gradient&theme=light",
       "view=materials",
+      "rows=advanced",
     ]) {
       await page.goto(demo(query));
       await expect(page.locator("#app-root")).toBeVisible();
@@ -116,6 +152,67 @@ test.describe("mockup state (mockup-state.md)", () => {
       await page.getByRole("menuitemradio", { name: "Dark" }).click();
       await page.reload();
     }
+    expect(await page.evaluate(() => (window as unknown as { __calls: string[] }).__calls)).toEqual(
+      [],
+    );
+  });
+
+  test("demo map shares: swatch 2 83.2%, swatch 1 14.7%, swatches 3 to 6 0.5% each (±0.3 pp, mockup-state.md)", async ({
+    page,
+  }, info) => {
+    // tab=palette shows the strip on phones too; desktop shows it in the Palette column.
+    await page.goto(demo("tab=palette"));
+    const swatches = page
+      .locator("[data-testid=swatch-strip]:visible")
+      .first()
+      .locator("[data-swatch]");
+    await expect(swatches).toHaveCount(6);
+    // The worker builds the map from mockup-scene.png after load.
+    await expect(swatches.first()).toHaveAttribute("data-share", /\d/, { timeout: 15_000 });
+    const shares = await swatches.evaluateAll((els) =>
+      els.map((el) => Number(el.getAttribute("data-share"))),
+    );
+    const expected = [14.7, 83.2, 0.5, 0.5, 0.5, 0.5];
+    for (const [i, share] of shares.entries()) {
+      expect(Math.abs(share * 100 - (expected[i] ?? 0)), `swatch ${i + 1}`).toBeLessThanOrEqual(
+        0.3,
+      );
+    }
+    expect(Math.abs(shares.reduce((a, b) => a + b, 0) - 1)).toBeLessThan(1e-9);
+    // The fixture image is still shown as-is: demo mode loads no image of its own. The phone
+    // Palette tab has no image well, so this is checked on the Source tab.
+    if (isPhoneProject(info)) await page.goto(demo());
+    const well = page.locator("[data-testid=image-well]:visible").first();
+    await expect(well.locator("img")).toHaveAttribute("src", /samples\/mockup-scene\.png$/);
+    await expect(well.locator("canvas")).toHaveCount(0);
+  });
+
+  test("still no localStorage or IndexedDB access once the demo map is built", async ({ page }) => {
+    await page.addInitScript(() => {
+      const calls: string[] = [];
+      (window as unknown as { __calls: string[] }).__calls = calls;
+      for (const name of ["getItem", "setItem", "removeItem", "clear", "key"] as const) {
+        const original = Storage.prototype[name] as (...args: unknown[]) => unknown;
+        Object.defineProperty(Storage.prototype, name, {
+          configurable: true,
+          value(this: Storage, ...args: unknown[]) {
+            calls.push(`storage.${name}`);
+            return original.apply(this, args);
+          },
+        });
+      }
+      const open = indexedDB.open.bind(indexedDB);
+      indexedDB.open = (...args: Parameters<IDBFactory["open"]>) => {
+        calls.push("indexedDB.open");
+        return open(...args);
+      };
+    });
+    await page.goto(demo("tab=palette"));
+    const swatch = page.locator("[data-testid=swatch-strip]:visible [data-swatch]").first();
+    await expect(swatch).toHaveAttribute("data-share", /\d/, { timeout: 15_000 });
+    // No extraction ran: the strip never went busy, and the palette is still the fixture's.
+    await expect(page.locator("[data-testid=swatch-strip][data-busy]")).toHaveCount(0);
+    await expect(swatch).toHaveAttribute("aria-label", "Swatch 1, #E8693A");
     expect(await page.evaluate(() => (window as unknown as { __calls: string[] }).__calls)).toEqual(
       [],
     );
@@ -140,7 +237,28 @@ test.describe("mockup state (mockup-state.md)", () => {
         userSelect: s.userSelect || s.getPropertyValue("-webkit-user-select"),
       };
     });
-    expect(style.touchAction).toBe("none");
+    // M2 decision 15h: at Fit a one-finger swipe on the image scrolls the page, so the image
+    // allows panning and only a pinch reaches it; zoom.spec.ts checks `none` once zoomed.
+    expect(style.touchAction).toBe("pan-x pan-y");
     expect(style.userSelect).toBe("none");
+  });
+
+  test("zoom=2 opens at 200%", async ({ page }) => {
+    await page.goto(demo("zoom=2"));
+    const well = page.locator("[data-testid=image-well]:visible").first();
+    await expect(well.getByTestId("zoom-level")).toHaveText("200%");
+    await expect(well).toHaveAttribute("data-scale", "2");
+    // Centered: the image's center sits at the well's center.
+    const image = well.locator("img");
+    await expect.poll(() => image.evaluate((el) => (el as HTMLImageElement).complete)).toBe(true);
+    const [w, i] = [await well.boundingBox(), await image.boundingBox()];
+    if (!w || !i) throw new Error("no boxes");
+    expect(i.width).toBeCloseTo((w.width - 2) * 2, 0);
+    expect(i.x + i.width / 2).toBeCloseTo(w.x + w.width / 2, 0);
+    expect(i.y + i.height / 2).toBeCloseTo(w.y + w.height / 2, 0);
+    await page.goto(demo("zoom=4"));
+    await expect(well.getByTestId("zoom-level")).toHaveText("400%");
+    await page.goto(demo("zoom=8"));
+    await expect(well.getByTestId("zoom-level")).toHaveText("800%");
   });
 });

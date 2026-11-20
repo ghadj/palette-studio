@@ -2,7 +2,7 @@ import type { ExtractionSettings } from "../types";
 
 export const SCHEMA_VERSION = 1;
 
-/** The defaults in the spec 2.4 table. */
+/** The defaults in the spec 2.4 table, with the M2 decision 3 thresholds (L 0.2 and 0.95). */
 export const SPEC_DEFAULT_SETTINGS: Readonly<ExtractionSettings> = Object.freeze({
   algorithm: "balanced",
   colors: 6,
@@ -10,7 +10,15 @@ export const SPEC_DEFAULT_SETTINGS: Readonly<ExtractionSettings> = Object.freeze
   sampleSize: 256,
   resampling: "smooth",
   alphaCutoff: 128,
+  ignoreDark: Object.freeze({ on: false, threshold: 0.2 }),
+  ignoreLight: Object.freeze({ on: false, threshold: 0.95 }),
+  ignoreBackground: "off",
+  minChroma: 0,
+  vividness: 0,
   mergeThreshold: 0.03,
+  distanceMetric: "ok",
+  spatialWeighting: "uniform",
+  keepOutlier: false,
   histogramBits: 5,
   iterations: 25,
   restarts: 3,
@@ -19,13 +27,10 @@ export const SPEC_DEFAULT_SETTINGS: Readonly<ExtractionSettings> = Object.freeze
 });
 
 /**
- * The defaults the app starts with in M1. k-means++ stands in for Balanced until M2 builds it,
- * and the sample size is 256 on phones too (M1 decision 5, departing from spec 6.1's 128 px).
+ * The defaults the app starts with: the spec 2.4 defaults, so Balanced is the default algorithm
+ * (M2-T4). The sample size is 256 on phones too (M1 decision 5, departing from spec 6.1's 128 px).
  */
-export const DEFAULT_SETTINGS: Readonly<ExtractionSettings> = Object.freeze({
-  ...SPEC_DEFAULT_SETTINGS,
-  algorithm: "kmeans",
-});
+export const DEFAULT_SETTINGS: Readonly<ExtractionSettings> = SPEC_DEFAULT_SETTINGS;
 
 export const MIN_COLORS = 2;
 /**

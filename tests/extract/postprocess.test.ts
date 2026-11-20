@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { hexToOklab, labToRgb, oklabToHex, rgbToOklab } from "../../src/color/convert";
+import { deltaE } from "../../src/color/delta-e";
 import { postprocess } from "../../src/extract/postprocess";
 
 const c = (l: number, a: number, b: number, population: number) => ({
@@ -49,5 +51,145 @@ describe("post-processing (spec 2.1 step 7, 2.4, 7.6)", () => {
     });
     expect(out).toHaveLength(1);
     expect(out[0]?.lab.l).toBeCloseTo((0.5 + 0.515 + 0.535) / 3, 12);
+  });
+});
+
+describe("distance metric in post-processing (spec 2.3, 2.4; decision 7)", () => {
+  const fromLab = (l: number, a: number, b: number, population: number) => ({
+    lab: rgbToOklab(labToRgb({ l, a, b })),
+    population,
+  });
+
+  it("metric 'ok' behaves exactly as M1", () => {
+    const inputs = [
+      [c(0.5, 0, 0, 0.3), c(0.52, 0, 0, 0.1), c(0.9, 0.1, 0, 0.6)],
+      [c(0.5, 0, 0, 1), c(0.515, 0, 0, 1), c(0.535, 0, 0, 1)],
+      [c(0.1, 0, 0, 1), c(0.11, 0, 0, 2), c(0.5, 0.1, 0, 3), c(0.9, 0, 0.1, 4)],
+      [c(0.5, 0, 0, 0.5), c(0.54, 0, 0, 0.5)],
+    ];
+    for (const colors of inputs) {
+      for (const mergeThreshold of [0, 0.03, 0.15]) {
+        expect(postprocess(colors, { mergeThreshold, metric: "ok" })).toEqual(
+          postprocess(colors, { mergeThreshold }),
+        );
+      }
+    }
+    // Pinned M1 result for the first input.
+    const out = postprocess(inputs[0] ?? [], { mergeThreshold: 0.03, metric: "ok" });
+    expect(out.map((x) => x.population)).toEqual([0.6, 0.4]);
+    expect(out[1]?.lab.l).toBeCloseTo((0.5 * 0.3 + 0.52 * 0.1) / 0.4, 12);
+  });
+
+  it("metric 'ciede2000' with threshold 3.0 merges a pair at ΔE00 2.5 and keeps a pair at 3.5", () => {
+    // At a mean CIELAB L of 50, S_L is 1, so a pure lightness step of d gives ΔE00 = d.
+    const near = [fromLab(48.75, 0, 0, 0.5), fromLab(51.25, 0, 0, 0.5)] as const;
+    const far = [fromLab(48.25, 0, 0, 0.5), fromLab(51.75, 0, 0, 0.5)] as const;
+    expect(deltaE("ciede2000", near[0].lab, near[1].lab)).toBeCloseTo(2.5, 6);
+    expect(deltaE("ciede2000", far[0].lab, far[1].lab)).toBeCloseTo(3.5, 6);
+    expect(postprocess(near, { mergeThreshold: 3, metric: "ciede2000" })).toHaveLength(1);
+    expect(postprocess(far, { mergeThreshold: 3, metric: "ciede2000" })).toHaveLength(2);
+    // Read as ΔE OK, a threshold of 3.0 would merge everything; the metric decides the units.
+    expect(postprocess(far, { mergeThreshold: 3, metric: "ok" })).toHaveLength(1);
+  });
+});
+
+describe("population vs. vividness ranking (spec 2.4; M2 decision 5c)", () => {
+  const gray = { lab: hexToOklab("#808080"), population: 0.6 };
+  const red = { lab: hexToOklab("#FF0000"), population: 0.1 };
+
+  it("vividness 0 ranks a 60% #808080 ahead of a 10% #FF0000", () => {
+    const out = postprocess([red, gray], { mergeThreshold: 0.03, vividness: 0 });
+    expect(out.map((x) => oklabToHex(x.lab))).toEqual(["#808080", "#FF0000"]);
+    // Populations are normalized before scoring.
+    expect(out.map((x) => x.population)).toEqual([0.6 / 0.7, 0.1 / 0.7]);
+  });
+
+  it("vividness 1 ranks #FF0000 (C 0.258) first", () => {
+    expect(Math.hypot(red.lab.a, red.lab.b)).toBeCloseTo(0.258, 3);
+    const out = postprocess([gray, red], { mergeThreshold: 0.03, vividness: 1 });
+    expect(out.map((x) => oklabToHex(x.lab))).toEqual(["#FF0000", "#808080"]);
+    // Ranking doesn't change the populations.
+    expect(out.map((x) => x.population)).toEqual([0.1 / 0.7, 0.6 / 0.7]);
+  });
+
+  it("at vividness 0.5 the score is the mean of the population share and min(1, C / 0.2)", () => {
+    // Gray: 0.5 × 0.857 = 0.43; red: 0.5 × 0.143 + 0.5 × 1 = 0.57, so red leads.
+    const out = postprocess([gray, red], { mergeThreshold: 0.03, vividness: 0.5 });
+    expect(oklabToHex(out[0]?.lab ?? gray.lab)).toBe("#FF0000");
+  });
+});
+
+describe("sort (spec 2.4 Sort; M2 decision 16)", () => {
+  // The six mockup hexes in fixture order, with populations that give a distinct population order.
+  const MOCKUP = ["#E8693A", "#1DB07A", "#14386B", "#D4527F", "#1E8A2E", "#5039B0"];
+  const colors = MOCKUP.map((hex, i) => ({ lab: hexToOklab(hex), population: (i + 1) / 21 }));
+  const run = (sort: "population" | "lightness" | "chroma" | "hue" | "extracted") =>
+    postprocess(colors, { mergeThreshold: 0.03, sort });
+  const hexesOf = (out: ReturnType<typeof postprocess>) => out.map((x) => oklabToHex(x.lab));
+  const chroma = (x: { lab: { a: number; b: number } }) => Math.hypot(x.lab.a, x.lab.b);
+  const hue = (x: { lab: { a: number; b: number } }) =>
+    ((Math.atan2(x.lab.b, x.lab.a) * 180) / Math.PI + 360) % 360;
+
+  it("the six mockup hexes sorted by lightness give #14386B, #5039B0, #1E8A2E, #D4527F, #E8693A, #1DB07A (L 0.345 to 0.672)", () => {
+    const out = run("lightness");
+    expect(hexesOf(out)).toEqual([
+      "#14386B",
+      "#5039B0",
+      "#1E8A2E",
+      "#D4527F",
+      "#E8693A",
+      "#1DB07A",
+    ]);
+    expect(out[0]?.lab.l).toBeCloseTo(0.345, 3);
+    expect(out[5]?.lab.l).toBeCloseTo(0.672, 3);
+  });
+
+  it("chroma sorts high to low", () => {
+    const out = run("chroma");
+    const c = out.map(chroma);
+    for (let i = 1; i < c.length; i += 1) expect(c[i]).toBeLessThanOrEqual(c[i - 1] ?? 0);
+    expect(new Set(hexesOf(out))).toEqual(new Set(MOCKUP));
+    expect(hexesOf(out)).not.toEqual(hexesOf(run("population")));
+  });
+
+  it("hue sort is ascending from 0°", () => {
+    const out = run("hue");
+    const h = out.map(hue);
+    for (let i = 1; i < h.length; i += 1) expect(h[i]).toBeGreaterThanOrEqual(h[i - 1] ?? 0);
+    // Pink #D4527F (about 1°) comes before orange #E8693A (about 42°); the violet #5039B0 is last.
+    expect(hexesOf(out)[0]).toBe("#D4527F");
+    expect(hexesOf(out).at(-1)).toBe("#5039B0");
+    // Grays have no hue and count as 0°, as OKLCH does in src/color/convert.ts.
+    const withGray = postprocess([...colors, { lab: hexToOklab("#808080"), population: 0.5 }], {
+      mergeThreshold: 0.03,
+      sort: "hue",
+    });
+    expect(oklabToHex(withGray[0]?.lab ?? { l: 0, a: 0, b: 0 })).toBe("#808080");
+  });
+
+  it("as extracted keeps the algorithm order", () => {
+    expect(hexesOf(run("extracted"))).toEqual(MOCKUP);
+    // Even when population or vividness would reorder them.
+    const out = postprocess(colors, { mergeThreshold: 0.03, sort: "extracted", vividness: 1 });
+    expect(hexesOf(out)).toEqual(MOCKUP);
+    // A merge keeps the earlier color's place.
+    const merged = postprocess([c(0.9, 0, 0, 0.1), c(0.5, 0, 0, 0.3), c(0.51, 0, 0, 0.6)], {
+      mergeThreshold: 0.03,
+      sort: "extracted",
+    });
+    expect(merged).toHaveLength(2);
+    expect(merged[0]?.lab.l).toBe(0.9);
+    expect(merged[0]?.population).toBeCloseTo(0.1, 12);
+    expect(merged[1]?.population).toBeCloseTo(0.9, 12);
+  });
+
+  it("population is the default and ranks by the vividness score", () => {
+    expect(hexesOf(run("population"))).toEqual([...MOCKUP].reverse());
+    expect(postprocess(colors, { mergeThreshold: 0.03 })).toEqual(run("population"));
+    // Every sort keeps the populations normalized.
+    for (const sort of ["lightness", "chroma", "hue", "extracted"] as const) {
+      const total = run(sort).reduce((n, x) => n + x.population, 0);
+      expect(Math.abs(total - 1)).toBeLessThan(1e-9);
+    }
   });
 });

@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const base = process.env.BASE_PATH ?? "/palette-studio/";
-const port = 4173;
+// E2E_PORT lets two checkouts run their suites side by side (Playwright reuses a running server).
+const port = Number(process.env.E2E_PORT ?? 4173);
 const baseURL = `http://localhost:${port}${base}`;
 
 // Functional tests live in e2e/*.spec.ts; e2e/visual holds the screenshot projects.
@@ -42,7 +43,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run build && npm run preview",
+    command: `npm run build && npm run preview -- --port ${port} --strictPort`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

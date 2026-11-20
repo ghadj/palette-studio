@@ -24,6 +24,13 @@ export const M1_SCREENS: readonly Screen[] = [
     viewport: DESKTOP,
     device: "desktop",
   },
+  // M2-T7: the Advanced row open, with every Advanced setting.
+  {
+    name: "advanced-desktop",
+    path: "./?demo=mockup&rows=advanced",
+    viewport: DESKTOP,
+    device: "desktop",
+  },
   { name: "studio-tablet", path: "./?demo=mockup&view=studio", viewport: TABLET, device: "tablet" },
   { name: "source-phone", path: "./?demo=mockup&tab=source", viewport: PHONE, device: "phone" },
   { name: "palette-phone", path: "./?demo=mockup&tab=palette", viewport: PHONE, device: "phone" },
@@ -38,6 +45,31 @@ export const M1_SCREENS: readonly Screen[] = [
   { name: "empty-desktop", path: "./", viewport: DESKTOP, device: "desktop" },
   { name: "empty-tablet", path: "./", viewport: TABLET, device: "tablet" },
   { name: "empty-phone", path: "./", viewport: PHONE, device: "phone" },
+  // M2: the image at 200%, centered, with the zoom controls (decision 15g).
+  { name: "zoom-desktop", path: "./?demo=mockup&zoom=2", viewport: DESKTOP, device: "desktop" },
+  { name: "zoom-phone", path: "./?demo=mockup&zoom=2", viewport: PHONE, device: "phone" },
+  // M2-T8: the Filters row open (mockup-state `rows=filters`).
+  {
+    name: "pixel-filters-desktop",
+    path: "./?demo=mockup&rows=filters",
+    viewport: DESKTOP,
+    device: "desktop",
+  },
+  {
+    name: "pixel-filters-phone",
+    path: "./?demo=mockup&rows=filters",
+    viewport: PHONE,
+    device: "phone",
+  },
+  // M2-T14: swatch 3's cluster map over the image (mockup-state `cluster=3`). The Palette tab
+  // with the Cluster map toggle is palette-phone above.
+  {
+    name: "cluster-map-desktop",
+    path: "./?demo=mockup&cluster=3",
+    viewport: DESKTOP,
+    device: "desktop",
+  },
+  { name: "cluster-map-phone", path: "./?demo=mockup&cluster=3", viewport: PHONE, device: "phone" },
 ];
 
 export const THEMES = ["light", "dark"] as const;

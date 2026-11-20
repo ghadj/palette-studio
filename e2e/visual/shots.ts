@@ -27,6 +27,16 @@ export const M1_SHOTS: readonly Shot[] = [
     frame: "Whole frame. M1 has no markers, hint, editor, chevron rows or gradient controls.",
   },
   {
+    // M2-T7. Taller than the other desktop shots, so the open Advanced rows fit in column 1
+    // without scrolling it.
+    name: "advanced-desktop",
+    path: "./?demo=mockup&rows=advanced",
+    viewport: { width: 1280, height: 1280 },
+    mockup: null,
+    frame:
+      "Not drawn. Column 1 item 4 with the Advanced chevron row open: Sample size, Resampling, Seed, Iterations, Restarts, Histogram bits, Merge threshold, Distance metric, Population vs. vividness, Keep one outlier (Toggle) and Sort.",
+  },
+  {
     name: "source-phone",
     path: "./?demo=mockup&tab=source",
     viewport: PHONE,
@@ -67,6 +77,55 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: PHONE,
     mockup: null,
     frame: "First visit, no image (spec 6.3).",
+  },
+  // M2 (decision 15g): zoom is not drawn; the controls go to design review.
+  {
+    name: "zoom-desktop",
+    path: "./?demo=mockup&zoom=2",
+    viewport: DESKTOP,
+    mockup: null,
+    frame:
+      "M2 decision 15: the image at 200%, centered; Zoom out, Zoom in and Fit in the well's bottom-right corner (not drawn).",
+  },
+  {
+    name: "zoom-phone",
+    path: "./?demo=mockup&zoom=2",
+    viewport: PHONE,
+    mockup: null,
+    frame: "M2 decision 15: the image at 200%, centered; zoom controls at 44 px (not drawn).",
+  },
+  // M2-T8: the Filters row is not drawn; it goes to design review (M2 plan, Screens affected).
+  {
+    name: "pixel-filters-desktop",
+    path: "./?demo=mockup&rows=filters",
+    viewport: DESKTOP,
+    mockup: null,
+    frame: "M2 decision 2b: the Filters chevron row after Working space, open.",
+  },
+  {
+    name: "pixel-filters-phone",
+    path: "./?demo=mockup&rows=filters",
+    // Tall enough to show the Filters rows below the pinned strip.
+    viewport: { width: PHONE.width, height: 1100 },
+    mockup: null,
+    frame: "M2 decision 2b: the Filters chevron row on the Source tab, open.",
+  },
+  // M2-T14: the cluster overlay and the share label are not drawn; they go to design review.
+  {
+    name: "cluster-map-desktop",
+    path: "./?demo=mockup&cluster=3",
+    viewport: DESKTOP,
+    mockup: null,
+    frame:
+      "M2 decision 13: swatch 3's cluster map over the image (other pixels dimmed toward mid-gray, about 70%) and 'Swatch 3 · 0.5% of the image' in the selection label (not drawn).",
+  },
+  {
+    name: "cluster-map-phone",
+    path: "./?demo=mockup&cluster=3",
+    viewport: PHONE,
+    mockup: null,
+    frame:
+      "M2 decision 13: the Source tab with swatch 3's cluster map over the image (not drawn). The Cluster map toggle is in palette-phone.",
   },
 ];
 

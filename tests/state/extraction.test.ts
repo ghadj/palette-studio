@@ -4,18 +4,28 @@ const extract = vi.fn();
 vi.mock("../../src/extract/client", () => ({ imageClient: () => ({ extract }) }));
 
 const { extractNewImage, extractNow } = await import("../../src/state/extraction");
-const { extracting, imageMessage, palette, selectedSwatchId } = await import(
-  "../../src/state/signals"
-);
+const {
+  backgroundNotFound,
+  clusterMap,
+  emptyRoles,
+  extracting,
+  imageMessage,
+  palette,
+  selectedSwatchId,
+  settings,
+} = await import("../../src/state/signals");
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const color = (l: number, population: number) => ({ lab: { l, a: 0, b: 0 }, population });
+const result = (...colors: Array<ReturnType<typeof color>>) => ({ colors, reason: null });
 
 describe("live extraction state (spec 6.3, 7.4)", () => {
   beforeEach(() => {
     extract.mockReset();
     imageMessage.value = null;
     palette.value = [];
+    emptyRoles.value = [];
+    settings.value = { ...settings.peek(), algorithm: "balanced" };
   });
 
   it("an extraction error is shown, and cleared when a later extraction succeeds", async () => {
@@ -27,7 +37,7 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
     expect(imageMessage.value?.kind).toBe("error");
     expect(imageMessage.value?.text).toMatch(/couldn't be extracted/);
 
-    extract.mockResolvedValueOnce([color(0.4, 0.6), color(0.8, 0.4)]);
+    extract.mockResolvedValueOnce(result(color(0.4, 0.6), color(0.8, 0.4)));
     extractNow();
     await flush();
     expect(palette.value).toHaveLength(2);
@@ -46,7 +56,7 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
   });
 
   it("if a new image's extraction fails, the previous image's palette is cleared and the error stays (L9)", async () => {
-    extract.mockResolvedValueOnce([color(0.4, 0.6), color(0.8, 0.4)]);
+    extract.mockResolvedValueOnce(result(color(0.4, 0.6), color(0.8, 0.4)));
     extractNewImage();
     await flush();
     expect(palette.value).toHaveLength(2);
@@ -63,7 +73,7 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
   });
 
   it("a failed re-extraction of the same image keeps its palette, no longer dimmed", async () => {
-    extract.mockResolvedValueOnce([color(0.4, 0.6), color(0.8, 0.4)]);
+    extract.mockResolvedValueOnce(result(color(0.4, 0.6), color(0.8, 0.4)));
     extractNewImage();
     await flush();
     const current = palette.value;
@@ -81,10 +91,124 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
       { kind: "error" as const, text: "TXT files can't be loaded." },
     ]) {
       imageMessage.value = message;
-      extract.mockResolvedValueOnce([color(0.5, 1)]);
+      extract.mockResolvedValueOnce(result(color(0.5, 1)));
       extractNow();
       await flush();
       expect(imageMessage.value).toEqual(message);
     }
+  });
+
+  it("swatch roles name their swatches and list the empty roles; another algorithm clears them (M2 decision 10b)", async () => {
+    settings.value = { ...settings.peek(), algorithm: "swatch-roles" };
+    extract.mockResolvedValueOnce({
+      colors: [
+        { ...color(0.6, 0.7), name: "Muted" },
+        { ...color(0.3, 0.3), name: "Dark muted" },
+      ],
+      reason: null,
+    });
+    extractNow();
+    // Changing the algorithm while the job runs doesn't change what the result describes.
+    settings.value = { ...settings.peek(), algorithm: "kmeans" };
+    await flush();
+    expect(palette.value.map((s) => s.name)).toEqual(["Muted", "Dark muted"]);
+    expect(emptyRoles.value).toEqual(["Vibrant", "Dark vibrant", "Light vibrant", "Light muted"]);
+
+    extract.mockResolvedValueOnce(result(color(0.5, 1)));
+    extractNow();
+    await flush();
+    expect(palette.value.map((s) => s.name)).toEqual([""]);
+    expect(emptyRoles.value).toEqual([]);
+  });
+
+  it("swatch roles with every role empty lists all six", async () => {
+    settings.value = { ...settings.peek(), algorithm: "swatch-roles" };
+    extract.mockResolvedValueOnce(result());
+    extractNow();
+    await flush();
+    expect(emptyRoles.value).toHaveLength(6);
+  });
+
+  it("a cleared palette clears the empty-roles note", async () => {
+    settings.value = { ...settings.peek(), algorithm: "swatch-roles" };
+    extract.mockResolvedValueOnce({ colors: [{ ...color(0.5, 1), name: "Muted" }], reason: null });
+    extractNewImage();
+    await flush();
+    expect(emptyRoles.value).toHaveLength(5);
+    extract.mockRejectedValueOnce(new Error("boom"));
+    extractNewImage();
+    await flush();
+    expect(palette.value).toEqual([]);
+    expect(emptyRoles.value).toEqual([]);
+  });
+
+  it("when every pixel is filtered out, the strip empties and the message says to loosen a filter; a later palette clears it (M2 decision 18)", async () => {
+    extract.mockResolvedValueOnce(result(color(0.4, 0.6), color(0.8, 0.4)));
+    extractNewImage();
+    await flush();
+    selectedSwatchId.value = palette.value[0]?.id ?? null;
+
+    extract.mockResolvedValueOnce({ colors: [], reason: "all-filtered" });
+    extractNow();
+    await flush();
+    expect(palette.value).toEqual([]);
+    expect(selectedSwatchId.value).toBeNull();
+    expect(imageMessage.value).toEqual({
+      kind: "note",
+      text: "Every pixel is filtered out. Loosen a filter.",
+      fromExtraction: true,
+    });
+
+    extract.mockResolvedValueOnce(result(color(0.5, 1)));
+    extractNow();
+    await flush();
+    expect(palette.value).toHaveLength(1);
+    expect(imageMessage.value).toBeNull();
+  });
+
+  it("with swatch roles, an all-filtered result shows only the filter message, not six empty roles", async () => {
+    settings.value = { ...settings.peek(), algorithm: "swatch-roles" };
+    extract.mockResolvedValueOnce({ colors: [], reason: "all-filtered" });
+    extractNow();
+    await flush();
+    expect(emptyRoles.value).toEqual([]);
+    expect(imageMessage.value?.text).toBe("Every pixel is filtered out. Loosen a filter.");
+  });
+
+  it("Ignore background on Auto with no background found sets backgroundNotFound; a found one or Off clears it (M2 decisions 4, 18)", async () => {
+    extract.mockResolvedValueOnce({ ...result(color(0.5, 1)), background: "none" });
+    extractNow();
+    await flush();
+    expect(backgroundNotFound.value).toBe(true);
+
+    extract.mockResolvedValueOnce({ ...result(color(0.5, 1)), background: "found" });
+    extractNow();
+    await flush();
+    expect(backgroundNotFound.value).toBe(false);
+
+    extract.mockResolvedValueOnce({ ...result(color(0.5, 1)), background: "none" });
+    extractNow();
+    await flush();
+    expect(backgroundNotFound.value).toBe(true);
+    extract.mockResolvedValueOnce(result(color(0.5, 1)));
+    extractNow();
+    await flush();
+    expect(backgroundNotFound.value).toBe(false);
+  });
+
+  it("the cluster map is stored with the palette it came with, and cleared with it (spec 2.6)", async () => {
+    const map = { width: 2, height: 1, labels: Uint8Array.from([0, 1]), shares: [0.5, 0.5] };
+    extract.mockResolvedValueOnce({ ...result(color(0.4, 0.5), color(0.8, 0.5)), map });
+    extractNewImage();
+    await flush();
+    expect(palette.value).toHaveLength(2);
+    expect(clusterMap.value).toBe(map);
+
+    // A new image's failed extraction clears the palette and its map together.
+    extract.mockRejectedValueOnce(new Error("boom"));
+    extractNewImage();
+    await flush();
+    expect(palette.value).toEqual([]);
+    expect(clusterMap.value).toBeNull();
   });
 });

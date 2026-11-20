@@ -15,12 +15,16 @@ A fixed demo state that reproduces the mockups' content, so screenshots of the r
 | `library` | `open`, `menu`, `undo` | Opens the library drawer or Projects sheet; `menu` also opens the current project's ⋯ menu; `undo` shows the toast after deleting "Old test" | `07`, `11` |
 | `brands` | comma-separated brand names, such as `Brand A,Brand C` | Sets the brand filter on the Materials view | `13` |
 | `filters` | `all`, `medium` | Phone only: opens the Filters sheet in the All brands or By medium scope | `13` |
+| `cluster` | `1` to `6` | Shows that swatch's cluster map over the image, as hovering or focusing the swatch does (spec 2.6, M2 decisions 13 and 14b) | not drawn |
+| `zoom` | `2`, `4`, `8` | Opens the image at that zoom, centered on the image (M2 decision 15g). Zoom is view state, so nothing stores it | not drawn |
+| `rows` | `filters`, `advanced`, or both comma-separated | Opens the Filters or Advanced chevron row under the image (M2) | not drawn |
 | `theme` | `light`, `dark` | Overrides the theme for this page load only | all |
 
 Rules:
 - It works in production builds too, since it reads only files bundled with the app. It's not linked from the UI.
 - It never reads or writes autosave and never touches IndexedDB or localStorage, so it can't overwrite a user's work or library (spec 5.3, 5.5, 6.2). Its library is an in-memory fixture (below).
 - It loads its state directly, without running extraction. Screenshots then don't change when extraction algorithms change. The image views are computed from the fixture image as usual (spec 3.8), so the values below are real assertions.
+- The cluster map (spec 2.6) is computed too: the worker prepares `mockup-scene.png` and assigns its pixels to the six swatches, without extracting. The image well still shows the fixture image. Its shares match the Palette view's area shares below.
 - The clock is fixed at 17 November 2026, 12:00 local time, so relative labels such as "Edited yesterday" don't change between runs.
 - An "Example data" banner is not shown, so screenshots match. The tab title gets a "(demo)" suffix instead.
 
@@ -49,6 +53,8 @@ Rules:
 | 4 | `#D4527F` | 0.380, 0.796 | 0.622 |
 | 5 | `#1E8A2E` | 0.889, 0.778 | 0.555 |
 | 6 | `#5039B0` | 0.102, 0.185 | 0.445 |
+
+**Populations** (M2 decision 14a): the Palette view's area shares below, 0.832 for swatch 2, 0.147 for swatch 1 and 0.005 for each of swatches 3 to 6, normalized to sum 1 (each divided by 0.999). They are stored with the fixture, not computed, so they don't change with the algorithms.
 
 Swatch 3 is selected, so its marker and swatch show as selected.
 

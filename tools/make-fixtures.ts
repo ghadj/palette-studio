@@ -7,6 +7,15 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { chromium } from "@playwright/test";
+import {
+  GRAYSCALE_RED,
+  SINGLE_COLOR,
+  STUDIO_BACKDROP,
+  studioBackdropColor,
+  TWELVE_COLORS,
+  TWO_COLOR,
+  WHITE_BACKGROUND,
+} from "./fixture-colors";
 import { encodePng, hexBytes } from "./png";
 
 const dir = resolve(process.cwd(), "tests/fixtures");
@@ -19,22 +28,7 @@ function solid(width: number, height: number, fill: (x: number, y: number) => nu
   return out;
 }
 
-export const TWO_COLOR = { major: "#1DB07A", minor: "#5039B0" };
-export const SINGLE_COLOR = "#14386B";
-export const TWELVE_COLORS = [
-  "#E6194B",
-  "#3CB44B",
-  "#FFE119",
-  "#4363D8",
-  "#F58231",
-  "#911EB4",
-  "#46F0F0",
-  "#F032E6",
-  "#BCF60C",
-  "#008080",
-  "#9A6324",
-  "#000075",
-];
+export { SINGLE_COLOR, TWELVE_COLORS, TWO_COLOR };
 
 /** EXIF APP1 segment holding only Orientation (0x0112) = value. Little-endian TIFF. */
 function exifOrientation(value: number): Buffer {
@@ -92,6 +86,56 @@ async function main() {
       120,
       20,
       solid(120, 20, (x) => [...(twelve[Math.floor(x / 10)] ?? [0, 0, 0]), 255]),
+    ),
+  );
+
+  // 100 × 100: a centered #E8693A disk covering about 20% of the pixels on white (M2-T8).
+  const [white, disk] = [hexBytes(WHITE_BACKGROUND.background), hexBytes(WHITE_BACKGROUND.disk)];
+  const radius = Math.sqrt(2000 / Math.PI);
+  writeFileSync(
+    resolve(dir, "white-background.png"),
+    encodePng(
+      100,
+      100,
+      solid(100, 100, (x, y) => [
+        ...(Math.hypot(x + 0.5 - 50, y + 0.5 - 50) < radius ? disk : white),
+        255,
+      ]),
+    ),
+  );
+
+  // 240 × 60: a gray ramp from black to white across, with a red band over rows 24 to 35 (20%).
+  // The same image as e2e/helpers/grayscale-plus-red.ts builds in memory (M2-T6).
+  const red = hexBytes(GRAYSCALE_RED);
+  writeFileSync(
+    resolve(dir, "grayscale-plus-red.png"),
+    encodePng(
+      240,
+      60,
+      solid(240, 60, (x, y) => {
+        const v = Math.round((x * 255) / 239);
+        return [...(y >= 24 && y < 36 ? red : [v, v, v]), 255];
+      }),
+    ),
+  );
+
+  // 400 × 300: a #ECEAE6 backdrop with a centered two-color subject and a backdrop-colored patch
+  // enclosed in it (M2-T9, decision 4).
+  const studioCache = new Map<string, number[]>();
+  writeFileSync(
+    resolve(dir, "studio-backdrop.png"),
+    encodePng(
+      STUDIO_BACKDROP.width,
+      STUDIO_BACKDROP.height,
+      solid(STUDIO_BACKDROP.width, STUDIO_BACKDROP.height, (x, y) => {
+        const hex = studioBackdropColor(x, y);
+        let rgb = studioCache.get(hex);
+        if (!rgb) {
+          rgb = [...hexBytes(hex)];
+          studioCache.set(hex, rgb);
+        }
+        return [...rgb, 255];
+      }),
     ),
   );
 
