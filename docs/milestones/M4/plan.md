@@ -448,7 +448,8 @@ Rules that hold for every task:
   - "custom: deleting swatch 4 leaves a fixed #D4527F, with Relink disabled ('Swatch removed')"
   - "phone: fields are 16 px with inputmode=decimal; values use periods under de-DE; the sheet sits below the dock"
 - Done when: tests pass.
-- [ ] Done
+- [x] Done
+  - Note: the actions live in `src/state/stop-edit.ts` (unit-tested in `tests/state/stop-edit.test.ts`). A stop that never had a swatch (`from` null) shows no unlink icon. With no stop selected the row says to select one. "Handle aria-disabled" is T7's and the Rebuild icon is T11's, so those parts are covered by the unit test (a locked stop survives `applyTechnique`) rather than e2e.
 
 ### M4-T9: Interpolation row and the Interpolation options row
 - Files:

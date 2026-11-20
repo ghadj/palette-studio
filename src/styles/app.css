@@ -2805,7 +2805,61 @@ fieldset {
 /* ---- end M4-T7 ---- */
 
 /* ---- M4-T8 stop row (StopDetails.tsx) ---- */
-/* M4-T8 styles go here. */
+/* The Color row's value: the HEX field with the copy and unlink icons beside it. */
+.stop-details .stop-hex-field {
+  width: calc(var(--space-8) * 3);
+  text-align: left;
+}
+
+.stop-relink {
+  min-width: var(--hit);
+  min-height: var(--hit);
+}
+
+/* The swatch chips link the stop to a swatch: 44 px fills with an accent border when linked. */
+.stop-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.stop-chip {
+  flex: 0 0 auto;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+}
+
+.stop-chip[aria-checked="true"] {
+  border: var(--stroke-selected) solid var(--color-accent);
+}
+
+/* The position field and its unit button. */
+.stop-position {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.stop-unit {
+  min-width: var(--hit);
+  color: var(--color-text);
+}
+
+.stop-remove {
+  min-width: var(--hit);
+  min-height: var(--hit);
+}
+
+.stop-remove[aria-disabled="true"],
+.stop-relink[aria-disabled="true"] {
+  color: var(--color-text-muted);
+  cursor: default;
+}
 /* ---- end M4-T8 ---- */
 
 /* ---- M4-T9 interpolation row and options (InterpolationRow.tsx, InterpolationOptions.tsx) ---- */
