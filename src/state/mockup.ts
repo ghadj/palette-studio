@@ -5,19 +5,23 @@
  * `rows`, `image` and `loupe` (plan D20); the others are ignored until their milestone.
  */
 import { hexToOklab, hexToOklch } from "../color/convert";
+import { buildStops } from "../gradient/sources";
 import { createSwatch } from "../palette/model";
 import type { ImageViewMode, Project, Tab, View } from "../types";
 import {
   DEFAULT_ADJUSTMENTS,
+  DEFAULT_GRADIENT,
   DEFAULT_VIEW_SETTINGS,
   SCHEMA_VERSION,
   SPEC_DEFAULT_SETTINGS,
 } from "./defaults";
 import {
+  MOCKUP_GRADIENT_PICKS,
   MOCKUP_IMAGE,
   MOCKUP_POPULATIONS,
   MOCKUP_PROJECT_NAME,
   MOCKUP_SELECTED_INDEX,
+  MOCKUP_SELECTED_STOP_POSITION,
   MOCKUP_SWATCHES,
 } from "./mockup-fixture";
 
@@ -56,6 +60,8 @@ export interface MockupState {
   name: string;
   project: Project;
   selectedSwatchId: string | null;
+  /** The 50% stop of the fixture gradient (mockup-state.md "Gradient"). */
+  selectedStopId: string | null;
   activeView: View;
   activeTab: Tab;
   openRows: MockupRow[];
@@ -97,6 +103,22 @@ export function buildMockupState(
       extracted: { color: hexToOklch(hex), point: { ...point } },
     }),
   );
+  // Linear 90°, OKLab, Smooth path over swatches 2, 4 and 6; live, so its stops aren't stored.
+  const gradient = {
+    ...DEFAULT_GRADIENT,
+    technique: {
+      ...DEFAULT_GRADIENT.technique,
+      kind: "smooth-path" as const,
+      colors: {
+        mode: "picked" as const,
+        count: DEFAULT_GRADIENT.technique.colors.count,
+        ids: MOCKUP_GRADIENT_PICKS.flatMap((i) => palette[i]?.id ?? []),
+      },
+    },
+  };
+  const selectedStop = buildStops(gradient.technique, palette).find(
+    (s) => s.position === MOCKUP_SELECTED_STOP_POSITION,
+  );
   return {
     name: MOCKUP_PROJECT_NAME,
     project: {
@@ -111,8 +133,10 @@ export function buildMockupState(
       adjustments: { ...DEFAULT_ADJUSTMENTS },
       image: { ...MOCKUP_IMAGE },
       view: { ...DEFAULT_VIEW_SETTINGS },
+      gradient,
     },
     selectedSwatchId: palette[MOCKUP_SELECTED_INDEX]?.id ?? null,
+    selectedStopId: selectedStop?.id ?? null,
     activeView: params?.view ?? "studio",
     activeTab: params?.tab ?? "source",
     openRows: [...(params?.rows ?? [])],

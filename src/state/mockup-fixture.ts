@@ -31,3 +31,11 @@ export const MOCKUP_POPULATIONS: readonly number[] = RAW_POPULATIONS.map((p) => 
 
 /** Swatch 3 is selected (zero-based index 2). */
 export const MOCKUP_SELECTED_INDEX = 2;
+
+/**
+ * The fixture gradient's swatches (mockup-state.md "Gradient"): Smooth path over swatches 2, 4 and
+ * 6, as zero-based palette indexes. Its stops are the technique's output, not stored.
+ */
+export const MOCKUP_GRADIENT_PICKS: readonly number[] = [1, 3, 5];
+/** The 50% stop is selected. */
+export const MOCKUP_SELECTED_STOP_POSITION = 0.5;

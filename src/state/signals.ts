@@ -10,8 +10,11 @@ import type {
   Adjustments,
   ExtractionSettings,
   EyedropperMode,
+  Gradient,
+  GradientPreviewSettings,
   ImageMeta,
   Project,
+  Surround,
   Swatch,
   Tab,
   View,
@@ -20,6 +23,8 @@ import type {
 import {
   clampColors,
   DEFAULT_ADJUSTMENTS,
+  DEFAULT_GRADIENT,
+  DEFAULT_GRADIENT_PREVIEW,
   DEFAULT_SETTINGS,
   DEFAULT_VIEW_SETTINGS,
   SCHEMA_VERSION,
@@ -41,6 +46,9 @@ export const outputPalette = computed(() =>
 export const imageMeta = signal<ImageMeta | null>(null);
 /** View settings (7.5, 3.8): part of the project, but never in undo history (3.6). */
 export const viewSettings = signal<ViewSettings>({ ...DEFAULT_VIEW_SETTINGS });
+
+/** The gradient (7.5): in undo history (3.6). Read stops through `effectiveStops`, not `stops`. */
+export const gradient = signal<Gradient>({ ...DEFAULT_GRADIENT });
 
 /** The project's name; it belongs to the library entry (5.5) and is shown in the header. */
 export const projectName = signal<string>("Untitled");
@@ -103,6 +111,13 @@ export const activeView = signal<View>("studio");
  */
 export const imageView = signal<ImageView>(fitView());
 
+/** The selected gradient stop (plan T1): view state, never in undo (3.6). */
+export const selectedStopId = signal<string | null>(null);
+/** Gradient preview options (4.4, plan D22): view state, not saved, never in undo. */
+export const gradientPreview = signal<GradientPreviewSettings>({ ...DEFAULT_GRADIENT_PREVIEW });
+/** The preview's surround (6.2, plan D23): an app setting like the theme, not in undo. */
+export const surround = signal<Surround>("theme");
+
 /** The swatch whose card or marker is hovered, linking the two (3.7). */
 export const hoveredSwatchId = signal<string | null>(null);
 /** The show/hide toggle for all markers (3.7). */
@@ -134,6 +149,8 @@ export function loadProject(project: Project, name: string): void {
     adjustments.value = project.adjustments;
     imageMeta.value = project.image;
     viewSettings.value = project.view;
+    gradient.value = project.gradient;
+    selectedStopId.value = null;
     projectName.value = name;
     selectedSwatchId.value = null;
     activeTab.value = "source";

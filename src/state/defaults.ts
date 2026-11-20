@@ -1,4 +1,11 @@
-import type { Adjustments, ExtractionSettings, ViewSettings } from "../types";
+import type {
+  Adjustments,
+  ExtractionSettings,
+  Gradient,
+  GradientPreviewSettings,
+  Technique,
+  ViewSettings,
+} from "../types";
 
 /** Stays 1 until project files exist (M5). */
 export const SCHEMA_VERSION = 1;
@@ -69,3 +76,52 @@ export function clampColors(value: number): number {
   if (!Number.isFinite(value)) return SPEC_DEFAULT_SETTINGS.colors;
   return Math.min(MAX_COLORS, Math.max(MIN_COLORS, Math.round(value)));
 }
+
+/** Smooth path over all colors, with the parameters each technique starts with (plan D14 to D18). */
+export const DEFAULT_TECHNIQUE: Readonly<Technique> = Object.freeze({
+  kind: "smooth-path",
+  colors: Object.freeze({ mode: "all", count: 4, ids: [] as string[] }),
+  sortBy: "lightness",
+  seed: 1,
+  minDeltaE: 0.1,
+  minContrast: 1,
+  derive: Object.freeze({ from: null, kind: "analogous" }),
+  sample: Object.freeze({
+    mode: "line",
+    count: 5,
+    line: Object.freeze({ a: { x: 0.05, y: 0.05 }, b: { x: 0.95, y: 0.95 } }),
+    colors: [],
+  }),
+} as Technique);
+
+/** The gradient a new palette starts with (plan D2, D21): live, Smooth path over all colors. */
+export const DEFAULT_GRADIENT: Readonly<Gradient> = Object.freeze({
+  type: "linear",
+  geometry: Object.freeze({
+    angle: 90,
+    shape: "ellipse",
+    size: "farthest-corner",
+    center: { x: 0.5, y: 0.5 },
+    from: 0,
+    reverse: false,
+    mirror: false,
+  }),
+  space: "oklab",
+  hue: "shorter",
+  premultiplied: true,
+  // The CSS "ease" curve, so Custom starts somewhere useful.
+  easing: Object.freeze({ kind: "linear", bezier: [0.25, 0.1, 0.25, 1] }) as Gradient["easing"],
+  gamut: "chroma",
+  technique: DEFAULT_TECHNIQUE as Technique,
+  custom: false,
+  stops: [] as Gradient["stops"],
+} as Gradient);
+
+/** Free aspect, no compare, no text check, normal vision (plan D22). */
+export const DEFAULT_GRADIENT_PREVIEW: Readonly<GradientPreviewSettings> = Object.freeze({
+  aspect: "free",
+  customSize: Object.freeze({ w: 1200, h: 600 }),
+  compare: null,
+  overlay: Object.freeze({ on: false, color: "white" }),
+  cvd: "normal",
+});

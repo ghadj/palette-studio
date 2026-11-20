@@ -158,7 +158,7 @@ Rules that hold for every task:
   - Tests pass.
   - The UI is unchanged: column 3 still shows its hint.
   - Lint, typecheck, unit tests and build pass.
-- [ ] Done
+- [x] Done. Notes: `effectiveStops` and `resolvedStops` live in `src/state/gradient-stops.ts` (re-exported from `gradient.ts`) so `history.ts` can read them without an import cycle. `removeSwatch` and re-extraction call `detachRemoved` whatever the mode: in live mode it only touches kept locked stops and the Colors picks. Generated stop ids are stable (`stop-<swatch id>`), so a selection survives a rebuild.
 
 ### M4-T2: Scaffolding for parallel work (shells, dock, registries, docs)
 - Files:

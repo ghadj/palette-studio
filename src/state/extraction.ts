@@ -10,9 +10,11 @@ import { type Extraction, imageClient } from "../extract/client";
 import type { ClusterMap } from "../extract/cluster-map";
 import type { ExtractedColor } from "../extract/postprocess";
 import { missingRoles } from "../extract/swatches";
+import { detachRemoved } from "../gradient/model";
 import { createSwatch, swatchOklab } from "../palette/model";
 import { mergeKept } from "../palette/reextract";
 import type { Algorithm, ExtractionSettings, ImagePoint, Swatch } from "../types";
+import { resetGradientForNewImage } from "./gradient";
 import * as history from "./history";
 import { createJobScheduler, DEBOUNCE_MS, PROGRESS_DELAY_MS } from "./jobs";
 import { onImageLoaded } from "./load-image";
@@ -24,8 +26,10 @@ import {
   displayImage,
   emptyRoles,
   extracting,
+  gradient,
   imageLoading,
   imageMessage,
+  outputPalette,
   palette,
   progressVisible,
   selectedSwatchId,
@@ -104,7 +108,12 @@ function applyColors(
       next.map((s) => s.id),
     );
   extractedMaps.set(next, shownMap);
+  // A stop of a replaced swatch keeps that swatch's last output color (spec 4.3, plan D20).
+  const kept = new Set(next.map((s) => s.id));
+  const replaced = previous.filter((s) => !kept.has(s.id)).map((s) => s.id);
+  const last = new Map(outputPalette.peek().map((s) => [s.id, s.color]));
   batch(() => {
+    if (replaced.length > 0) gradient.value = detachRemoved(gradient.peek(), replaced, last);
     palette.value = next;
     // The cluster map is stored with the palette it was made for (spec 2.6).
     clusterMap.value = shownMap;
@@ -225,6 +234,8 @@ export function extractNow(): void {
 /** Extracts for a newly loaded image. */
 export function extractNewImage(): void {
   imageVersion += 1;
+  // A Custom gradient goes back to its technique for the new image (plan D20).
+  resetGradientForNewImage();
   // Undo can't put the old image's palette over the new one (decision 3b).
   history.clear();
   scheduler.runNow();

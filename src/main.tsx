@@ -26,6 +26,7 @@ import {
   initialLoupe,
   initialOpenRows,
   loadProject,
+  selectedStopId,
   selectedSwatchId,
   viewSettings,
 } from "./state/signals";
@@ -48,6 +49,7 @@ if (mockup) {
     loadProject(state.project, state.name);
     imageSrc.value = `${import.meta.env.BASE_URL}${MOCKUP_IMAGE_PATH}`;
     selectedSwatchId.value = state.selectedSwatchId;
+    selectedStopId.value = state.selectedStopId;
     activeTab.value = state.activeTab;
     activeView.value = state.activeView;
     imageView.value = centered(parseMockupZoom(window.location.search), { width: 1, height: 1 });

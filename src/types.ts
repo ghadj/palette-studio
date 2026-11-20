@@ -1,7 +1,8 @@
 /**
- * Shared types (spec 7.5). Gradients and export preferences arrive in later milestones.
+ * Shared types (spec 7.5). Export preferences arrive in later milestones.
  */
 import type { Oklch } from "./color/convert";
+import type { CvdType } from "./color/cvd";
 import type { DistanceMetric } from "./color/delta-e";
 
 export type { Oklab, Oklch } from "./color/convert";
@@ -175,6 +176,152 @@ export interface ImageMeta {
   height: number;
 }
 
+/** Gradient types built in M4 (spec 4.1); mesh, stepped and repeating arrive in M6. */
+export type GradientType = "linear" | "radial" | "conic";
+
+/** The interpolation spaces of spec 4.3, by their CSS names. */
+export type InterpolationSpace =
+  | "srgb"
+  | "srgb-linear"
+  | "display-p3"
+  | "lab"
+  | "oklab"
+  | "lch"
+  | "oklch"
+  | "hsl"
+  | "hwb"
+  | "xyz";
+
+/** How the hue travels between two stops in a polar space (spec 4.3; CSS hue-interpolation-method). */
+export type HueMethod = "shorter" | "longer" | "increasing" | "decreasing";
+
+export type EasingKind =
+  | "linear"
+  | "ease-in"
+  | "ease-out"
+  | "ease-in-out"
+  | "smoothstep"
+  | "cubic-bezier";
+
+/** One easing for the whole gradient (plan D7). Bezier x1 and x2 lie within 0 to 1. */
+export interface Easing {
+  kind: EasingKind;
+  /** The control points x1, y1, x2, y2, used by "cubic-bezier". */
+  bezier: [number, number, number, number];
+}
+
+/** What to do with interpolated colors outside sRGB (plan D12). */
+export type GamutHandling = "chroma" | "clamp";
+
+/**
+ * A stop's color (spec 4.3): linked to a swatch by id, so palette edits and adjustments flow in
+ * (`derive` offsets it, plan D17), or a fixed value. `from` is the swatch a value stop was
+ * detached from, which Relink goes back to (plan D30).
+ */
+export type StopColor =
+  | { kind: "swatch"; id: string; derive?: { hueShift: number; lightness?: number } }
+  | { kind: "value"; color: Oklch; from: string | null };
+
+/** A gradient stop (spec 4.3, 7.5). */
+export interface GradientStop {
+  id: string;
+  /** 0 to 1 along the stop axis. */
+  position: number;
+  color: StopColor;
+  /** 0 to 1. */
+  alpha: number;
+  /** Midpoint within the segment to the next stop, 0 to 1; 0.5 is none (plan D5). */
+  hint: number;
+  /** A locked stop can't be moved or removed and survives a rebuild (plan D6). */
+  locked: boolean;
+}
+
+/** Geometry for every type (spec 4.3); each type reads the fields it needs (plan D21). */
+export interface Geometry {
+  /** Linear angle in degrees, 0 at the top and clockwise, as in CSS. */
+  angle: number;
+  shape: "circle" | "ellipse";
+  size: "closest-side" | "closest-corner" | "farthest-side" | "farthest-corner";
+  /** Radial and conic center, 0 to 1. */
+  center: ImagePoint;
+  /** Conic start angle in degrees. */
+  from: number;
+  reverse: boolean;
+  mirror: boolean;
+}
+
+export type TechniqueKind =
+  | "palette-order"
+  | "sorted"
+  | "smooth-path"
+  | "image-sample"
+  | "derived"
+  | "random"
+  | "population";
+
+export type SortBy = "lightness" | "hue" | "chroma";
+
+/**
+ * How stops are made from the palette (spec 4.2): one flat record, so switching techniques keeps
+ * each one's parameters (plan T1).
+ */
+export interface Technique {
+  kind: TechniqueKind;
+  /** Which swatches the palette-based techniques use (plan Q1b). */
+  colors: { mode: "all" | "distinct" | "picked"; count: number; ids: string[] };
+  sortBy: SortBy;
+  seed: number;
+  /** Constrained random: minimum neighbor ΔE OK (plan D15). */
+  minDeltaE: number;
+  /** Constrained random: minimum neighbor WCAG contrast; 1 is off. */
+  minContrast: number;
+  derive: {
+    from: string | null;
+    kind: "analogous" | "complementary" | "monochrome" | "warm-cool";
+  };
+  sample: {
+    mode: "line" | "horizontal" | "vertical" | "radial" | "markers-x" | "markers-y";
+    count: number;
+    line: { a: ImagePoint; b: ImagePoint };
+    /** The sampled colors, kept so the stops don't depend on the image being re-read. */
+    colors: Oklch[];
+  };
+}
+
+/** Spec 7.5 "Gradient". One per project (plan D1). */
+export interface Gradient {
+  type: GradientType;
+  geometry: Geometry;
+  space: InterpolationSpace;
+  hue: HueMethod;
+  premultiplied: boolean;
+  easing: Easing;
+  gamut: GamutHandling;
+  technique: Technique;
+  /**
+   * False while the stops follow the technique (plan Q1a); true once a stop was edited by hand,
+   * when `stops` is the list. While false, `stops` holds only the locked stops a rebuild keeps.
+   */
+  custom: boolean;
+  stops: GradientStop[];
+}
+
+export type PreviewAspect = "free" | "1:1" | "16:9" | "9:16" | "4:3" | "banner" | "custom";
+
+/** Gradient preview options (spec 4.4): view state, not saved and not in undo (plan D22). */
+export interface GradientPreviewSettings {
+  aspect: PreviewAspect;
+  /** Pixels, 16 to 8192 per side, for the Custom aspect. */
+  customSize: { w: number; h: number };
+  /** A second space to show beside the main one, or null. */
+  compare: InterpolationSpace | null;
+  overlay: { on: boolean; color: "white" | "black" | string };
+  cvd: "normal" | CvdType;
+}
+
+/** The preview's surround (spec 6.2, plan D23): an app setting, not part of the project. */
+export type Surround = "theme" | "mid-gray" | "white" | "black";
+
 /**
  * Spec 7.5. `palette` holds the base swatches; the adjusted palette is computed from them and
  * `adjustments`. The project's name belongs to its library entry (7.5, 5.5).
@@ -186,6 +333,7 @@ export interface Project {
   adjustments: Adjustments;
   image: ImageMeta | null;
   view: ViewSettings;
+  gradient: Gradient;
 }
 
 /** Phone tabs (spec 6.1) and, on tablets, the panel beside the Source column. */

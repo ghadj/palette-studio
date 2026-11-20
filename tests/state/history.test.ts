@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { hexToOklab } from "../../src/color/convert";
 import { fitView } from "../../src/image/viewport";
 import { createSwatch } from "../../src/palette/model";
-import { DEFAULT_ADJUSTMENTS, DEFAULT_SETTINGS } from "../../src/state/defaults";
+import {
+  DEFAULT_ADJUSTMENTS,
+  DEFAULT_GRADIENT,
+  DEFAULT_GRADIENT_PREVIEW,
+  DEFAULT_SETTINGS,
+} from "../../src/state/defaults";
+import { effectiveStops } from "../../src/state/gradient";
 import {
   begin,
   canRedo,
@@ -20,11 +26,15 @@ import {
   activeTab,
   adjustments,
   compareBefore,
+  gradient,
+  gradientPreview,
   imageView,
   markersVisible,
   palette,
+  selectedStopId,
   selectedSwatchId,
   settings,
+  surround,
   updateSwatch,
   viewSettings,
 } from "../../src/state/signals";
@@ -37,6 +47,10 @@ describe("history (spec 3.6; plan Q3a, D16)", () => {
     palette.value = swatches("#E8693A", "#1DB07A", "#14386B");
     adjustments.value = { ...DEFAULT_ADJUSTMENTS };
     settings.value = { ...DEFAULT_SETTINGS };
+    gradient.value = { ...DEFAULT_GRADIENT };
+    selectedStopId.value = null;
+    gradientPreview.value = { ...DEFAULT_GRADIENT_PREVIEW };
+    surround.value = "theme";
     clear();
   });
 
@@ -189,5 +203,48 @@ describe("history (spec 3.6; plan Q3a, D16)", () => {
     expect(canRedo.value).toBe(false);
     expect(undoLabel.value).toBeNull();
     expect(redoLabel.value).toBeNull();
+  });
+
+  it("undo restores the gradient (M4 plan T1)", () => {
+    gradient.value = { ...gradient.value, type: "conic" };
+    commit("Gradient type");
+    expect(undoLabel.value).toBe("Gradient type");
+    undo();
+    expect(gradient.value.type).toBe("linear");
+    redo();
+    expect(gradient.value.type).toBe("conic");
+  });
+
+  it("undo leaves selectedStopId, gradientPreview and surround unchanged", () => {
+    gradient.value = { ...gradient.value, type: "radial" };
+    commit("Gradient type");
+    const stopId = effectiveStops.value[1]?.id ?? "";
+    expect(stopId).not.toBe("");
+    selectedStopId.value = stopId;
+    const preview = { ...DEFAULT_GRADIENT_PREVIEW, aspect: "16:9" as const };
+    gradientPreview.value = preview;
+    surround.value = "black";
+    undo();
+    expect(selectedStopId.value).toBe(stopId);
+    expect(gradientPreview.value).toBe(preview);
+    expect(surround.value).toBe("black");
+    redo();
+    expect(selectedStopId.value).toBe(stopId);
+  });
+
+  it("a selected stop that the restored gradient lacks falls back to the stop at the same position", () => {
+    gradient.value = {
+      ...gradient.value,
+      technique: { ...gradient.value.technique, kind: "palette-order" },
+    };
+    commit("Technique");
+    const ids = palette.value.map((s) => s.id);
+    palette.value = palette.value.filter((s) => s.id !== ids[1]);
+    commit("Delete");
+    undo();
+    // Redo removes swatch 2's stop; the stop that takes its place (index 1) is selected instead.
+    selectedStopId.value = `stop-${ids[1]}`;
+    redo();
+    expect(selectedStopId.value).toBe(`stop-${ids[2]}`);
   });
 });
