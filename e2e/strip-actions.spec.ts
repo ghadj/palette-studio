@@ -142,14 +142,26 @@ test.describe("strip reorder (spec 3.2; D10)", () => {
     const before = await order(page);
     const at = await center(swatches(page).nth(1));
     const cdp = await page.context().newCDPSession(page);
-    await cdp.send("Input.synthesizeScrollGesture", {
-      x: at.x,
-      y: at.y,
-      yDistance: -300,
-      speed: 2000,
-      gestureSourceType: "touch",
-    });
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    // The page's start-up (the demo image, the worker) can swallow a gesture sent right after the
+    // load on a slow runner, so wait for it to go quiet and send the swipe again until the page
+    // has moved. A strip that held the swipe back would still never scroll.
+    await page.waitForLoadState("networkidle");
+    await expect
+      .poll(
+        async () => {
+          await cdp.send("Input.synthesizeScrollGesture", {
+            x: at.x,
+            y: at.y,
+            yDistance: -300,
+            speed: 2000,
+            gestureSourceType: "touch",
+          });
+          await page.waitForTimeout(150);
+          return page.evaluate(() => window.scrollY);
+        },
+        { intervals: [100], timeout: 15_000 },
+      )
+      .toBeGreaterThan(0);
     expect(await order(page)).toEqual(before);
   });
 
@@ -190,7 +202,12 @@ test.describe('the "+" tile (decisions 4a, 40; D12)', () => {
   test("one press adds a 7th swatch that is distinct from all six, has a marker, is selected and manual; Undo removes it", async ({
     page,
   }, info) => {
-    await page.goto(demo("tab=palette"));
+    // The demo's image is prepared in the background; "+" falls back to a hue-rotated color, with
+    // no marker, until its master is ready (decision 40). The image is on the Source tab below
+    // 1024 px, so wait for it there, then go to the Palette tab.
+    await page.goto(demo());
+    await expect(page.locator("[data-master-thread]")).toHaveCount(1);
+    await showTab(page, "Palette");
     const before = await order(page);
     // A single button: no menu, no prompt.
     await expect(addTile(page)).toHaveAccessibleName("Add color");

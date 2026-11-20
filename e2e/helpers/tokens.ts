@@ -150,7 +150,14 @@ export async function checkTokens(page: Page, options: CheckOptions): Promise<Fa
           }
         }
         // Touch targets apply to every control, including swatches in user content.
-        if (touchTargets && isControl(el) && (box.width < minTouch || box.height < minTouch)) {
+        // A box measured through a transform can come out a hair under its CSS size (43.99999 for
+        // 44, seen in Linux WebKit under the sheet's slide-in), so allow rounding noise only.
+        const noise = 0.05;
+        if (
+          touchTargets &&
+          isControl(el) &&
+          (box.width < minTouch - noise || box.height < minTouch - noise)
+        ) {
           failures.push({
             kind: "touch-target",
             selector: selectorPath(el),
