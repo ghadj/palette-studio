@@ -48,8 +48,6 @@ A failure names the element (a selector path) and the value that isn't a token. 
 | empty-phone | `/` (fresh context, not the mockup state) | 390 × 844 | contract text (not drawn): spec 6.3 "First visit, no image" |
 | zoom-desktop | `?demo=mockup&zoom=2` | 1280 × 800 | contract text (not drawn): the image at 200%, centered, with the zoom controls (M2 decision 15) |
 | zoom-phone | `?demo=mockup&zoom=2` | 390 × 844 | contract text (not drawn): as zoom-desktop, controls at 44 px (M2 decision 15) |
-| cluster-map-desktop | `?demo=mockup&cluster=3` | 1280 × 800 | contract text (not drawn): swatch 3's cluster map over the image, other pixels dimmed toward mid-gray, and "Swatch 3 · 0.5% of the image" in the selection label (M2 decision 13) |
-| cluster-map-phone | `?demo=mockup&cluster=3` | 390 × 844 | contract text (not drawn): as cluster-map-desktop, on the Source tab (M2 decision 13). The Cluster map toggle is in the Swatch sheet: swatch-sheet-phone (13d) |
 | pixel-filters-desktop | `?demo=mockup&rows=filters` | 1280 × 800 | contract text (not drawn): the Filters chevron row open after Working space (M2 decision 2b) |
 | pixel-filters-phone | `?demo=mockup&rows=filters` | 390 × 844 | contract text (not drawn): as pixel-filters-desktop, on the Source tab (M2 decision 2b) |
 | swatch-desktop | `?demo=mockup&rows=swatch` | 1280 × 1280 | contract text (not drawn): the Swatch chevron row open in place in column 2 (M3 decision 5a) |
@@ -60,7 +58,7 @@ A failure names the element (a selector path) and the value that isn't a token. 
 | loupe-desktop | `?demo=mockup&loupe=3` | 1280 × 800 | `01`, `02` for the markers; the loupe over marker 3 is not drawn (spec 3.7) |
 | values-phone | `?demo=mockup&image=values` | 390 × 844 | `11`, `12` (left phone, without the grid) |
 | loupe-phone | `?demo=mockup&loupe=3` | 390 × 844 | `09`, `10` (left phone) for the markers; the loupe above marker 3 is not drawn |
-| swatch-sheet-phone | `?demo=mockup&tab=palette&rows=swatch` | 390 × 844 | contract text (not drawn): the Swatch sheet, with the Cluster map toggle (M2 decision 13d) |
+| swatch-sheet-phone | `?demo=mockup&tab=palette&rows=swatch` | 390 × 844 | contract text (not drawn): the Swatch sheet (M2 decision 13d; the Cluster map toggle was removed, D13) |
 | adjustments-sheet-phone | `?demo=mockup&tab=palette&rows=adjustments` | 390 × 844 | contract text (not drawn): the Adjustments sheet |
 | ramp-sheet-phone | `?demo=mockup&tab=palette&rows=ramp` | 390 × 844 | contract text (not drawn): the Ramp sheet |
 | contrast-sheet-phone | `?demo=mockup&tab=palette&rows=contrast` | 390 × 844 | contract text (not drawn): the Contrast sheet |
@@ -98,7 +96,7 @@ Work through the `ui-contract.md` section for that screen, region by region:
 - Hierarchy matches: strong versus muted text, which item carries the accent.
 - Selected states sit where the mockup state puts them.
 - Dark mode keeps the same content colors (spec 6.2): the image, swatches, gradients, paint chips and grid lines don't change with the theme.
-- Intended deviations D1 to D11 are applied, not flagged.
+- Intended deviations D1 to D13 are applied, not flagged.
 
 Report each difference with:
 - the shot

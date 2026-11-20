@@ -23,13 +23,11 @@ import type {
   SampleStat,
   ViewSettings,
 } from "../types";
-import type { ClusterMap } from "./cluster-map";
 import type { DrawnViewMode, FromWorker, PixelBuffer, ToWorker } from "./messages";
 import type { ExtractionResult } from "./pipeline";
 
-/** An extraction's result with the cluster map for its colors (spec 2.6). */
+/** An extraction's result, with the marker points when the worker sends them. */
 export interface Extraction extends ExtractionResult {
-  map: ClusterMap;
   /** One marker point per color (spec 3.7), once M3-T10 sends them. */
   points?: ImagePoint[];
 }
@@ -290,10 +288,7 @@ export class ImageClient {
     return this.mainMaster;
   }
 
-  /**
-   * Runs extraction on the current image's analysis copy (spec 2.1, 2.4), with the cluster map
-   * for the colors it finds (spec 2.6).
-   */
+  /** Runs extraction on the current image's analysis copy (spec 2.1, 2.4). */
   async extract(settings: ExtractionSettings): Promise<Extraction> {
     const pixels = await this.analysisPixels(settings);
     const jobId = this.nextJob++;
@@ -302,43 +297,12 @@ export class ImageClient {
       pixels ? [pixels.data] : [],
     );
     if (reply.type === "extracted") {
-      const { colors, reason, map, background, points } = reply;
-      const extraction: Extraction = { colors, reason, map };
+      const { colors, reason, background, points } = reply;
+      const extraction: Extraction = { colors, reason };
       if (background) extraction.background = background;
       if (points) extraction.points = points;
       return extraction;
     }
-    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
-  }
-
-  /**
-   * Rebuilds the cluster map of the current image for a palette (OKLab, in palette order),
-   * without extracting (spec 2.6). The settings give the filters and the working space.
-   */
-  async assign(colors: readonly Oklab[], settings: ExtractionSettings): Promise<ClusterMap> {
-    const pixels = await this.analysisPixels(settings);
-    const jobId = this.nextJob++;
-    const reply = await this.request(
-      { type: "assign", jobId, colors: [...colors], settings, pixels },
-      pixels ? [pixels.data] : [],
-    );
-    if (reply.type === "assigned") return reply.map;
-    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
-  }
-
-  /**
-   * The RGBA overlay pixels for one swatch of a cluster map (spec 2.6, decision 13b), built in the
-   * worker from a copy of the labels, so the map itself stays usable here. No master is needed.
-   */
-  async overlay(map: ClusterMap, index: number): Promise<Uint8ClampedArray<ArrayBuffer>> {
-    await this.connect();
-    const labels = map.labels.slice().buffer as ArrayBuffer;
-    const jobId = this.nextJob++;
-    const reply = await this.request(
-      { type: "overlay", jobId, width: map.width, height: map.height, labels, index },
-      [labels],
-    );
-    if (reply.type === "overlaid") return new Uint8ClampedArray(reply.data);
     throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
   }
 

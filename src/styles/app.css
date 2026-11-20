@@ -484,55 +484,6 @@ fieldset {
   touch-action: inherit;
 }
 
-/*
- * The cluster-map overlay (spec 2.6, M2 decision 13b): user content over the image, in the same
- * layer so it follows zoom and pan. The map is at display resolution (at most 1024 px), so it scales smoothly (M3 decision 36).
- * While a new palette is extracted, the old map is dimmed like the strip (spec 6.3).
- */
-.image-well__overlay {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-/*
- * A short glow-in when the map appears (M3 decision 61): the overlay fades in with a light glow
- * that settles to the plain overlay. Only opacity and a filter on the canvas change, never its
- * colors. The duration is two slow steps, 0 ms under reduced motion (spec 6.4), and the media query
- * below drops the animation outright.
- */
-.image-well__overlay:not([data-settling]) {
-  animation: overlay-glow-in calc(var(--duration-slow) * 2) var(--ease-out);
-}
-
-@keyframes overlay-glow-in {
-  from {
-    opacity: 0;
-    filter: drop-shadow(0 0 var(--space-3) var(--marker-ring-outer));
-  }
-  40% {
-    opacity: 1;
-    filter: drop-shadow(0 0 var(--space-2) var(--marker-ring-outer));
-  }
-  to {
-    opacity: 1;
-    filter: drop-shadow(0 0 0 transparent);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .image-well__overlay:not([data-settling]) {
-    animation: none;
-  }
-}
-
-.image-well__overlay[data-busy] {
-  opacity: 0.6;
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-
 /* The toolbar row under the image well (decision 42): Markers and Eyedropper on the left, Zoom out,
    Fit and Zoom in on the right. Nothing in it covers the image. */
 .image-toolbar {
@@ -2378,7 +2329,7 @@ fieldset {
 /* ---- M3-T14 Palette and Values views (ViewLayer.tsx, *ViewRows.tsx, StripMarks.tsx) ---- */
 /*
  * The image view layer: user content over the image in the zoomed layer (spec 3.8, 6.2), the same
- * in both themes. While a new view is computed the old one dims, like the cluster overlay.
+ * in both themes. While a new view is computed the old one dims, like the strip.
  */
 .image-well__view {
   position: absolute;
@@ -2512,7 +2463,7 @@ fieldset {
 
 /* ---- end M3-T16 ---- */
 
-/* The Cluster map row follows other rows, whose divider already closes them. */
+/* Rows in the Swatch row follow other rows, whose divider already closes them. */
 .swatch-details .setting-rows {
   border-top: none;
 }

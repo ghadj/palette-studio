@@ -1,8 +1,7 @@
 /**
  * The swatch strip (ui-contract column 2 item 1): the swatches in one row, the selection outlined.
  * With more than 6 swatches it breaks into two even rows when one row would make them smaller than
- * 44 px (decision 13). Swatches are user content and are never themed (spec 6.2). Hovering a
- * swatch with a fine pointer, or focusing it from the keyboard, shows its cluster map (spec 2.6).
+ * 44 px (decision 13). Swatches are user content and are never themed (spec 6.2).
  *
  * Swatch and marker are linked both ways (spec 3.7): pointing at a swatch (mouse or pen) or
  * focusing it from the keyboard sets `hoveredSwatchId`, and the swatch it names carries
@@ -12,11 +11,9 @@ import { Lock, Pin, Plus, X } from "lucide-preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { canAdd, FULL_MESSAGE, moveSwatch, swatchHex, swatchLabel } from "../palette/model";
 import { addColor, adding } from "../state/add-color";
-import { clusterFocus, clusterHover, shareText, shownCluster } from "../state/cluster";
 import { commit } from "../state/history";
 import { removeSwatch } from "../state/remove-swatch";
 import {
-  clusterMap,
   emptyRoles,
   extracting,
   hoveredSwatchId,
@@ -25,18 +22,12 @@ import {
   palette,
   selectedSwatchId,
   selectSwatch,
-  viewSettings,
 } from "../state/signals";
-import { viewShares } from "../state/view-result";
 import { closeDescription, closeFlags } from "./closeFlags";
 import { stripCells, stripColumns } from "./stripLayout";
 import { showToast } from "./Toast";
 
-/** Only a fine pointer hovers (spec 6.1 "No hover"); touch uses the Cluster map toggle. */
-const hovers = (event: PointerEvent): boolean =>
-  event.pointerType === "mouse" && window.matchMedia("(pointer: fine)").matches;
-
-/** Keyboard focus only: a click that focuses a swatch doesn't leave its map showing. */
+/** Keyboard focus only: a click that focuses a swatch doesn't leave its marker linked. */
 const keyboardFocus = (el: Element): boolean => {
   try {
     return el.matches(":focus-visible");
@@ -48,7 +39,7 @@ const keyboardFocus = (el: Element): boolean => {
 /** Touch has no hover (spec 6.1): a tap selects instead. */
 const points = (event: PointerEvent): boolean => event.pointerType !== "touch";
 
-const clear = (target: typeof clusterHover, id: string): void => {
+const clear = (target: typeof hoveredSwatchId, id: string): void => {
   if (target.peek() === id) target.value = null;
 };
 
@@ -67,7 +58,6 @@ interface Press {
   active: boolean;
   timer: number;
   before: typeof palette.value;
-  map: typeof clusterMap.value;
   moved: boolean;
 }
 
@@ -148,8 +138,6 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
     const next = moveSwatch(list, from, to);
     if (next === list) return false;
     palette.value = next;
-    // The cluster map labels pixels by palette index, so it no longer matches (spec 2.6).
-    clusterMap.value = null;
     return true;
   };
 
@@ -172,7 +160,6 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
     if (!p) return;
     if (p.moved) {
       palette.value = p.before;
-      clusterMap.value = p.map;
     }
     endPress();
   };
@@ -248,7 +235,6 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
       active: false,
       timer: 0,
       before: palette.peek(),
-      map: clusterMap.peek(),
       moved: false,
     };
     if (touchLike) {
@@ -302,9 +288,6 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
       strip.current?.querySelector<HTMLElement>(`[data-swatch-id="${id}"]`)?.focus(),
     );
   };
-  // Each swatch's share of the image from the cluster map (spec 2.6), when it matches the palette.
-  const map = clusterMap.value;
-  const shares = map && map.shares.length === swatches.length ? map.shares : null;
   // The close-in-value dots show wherever the strip does; the very-close ones only where the "+"
   // tile does (the Palette tab and desktop, M3 decisions 32, 51).
   const flags = closeFlags();
@@ -332,7 +315,6 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
                 data-swatch-id={swatch.id}
                 data-origin={swatch.origin}
                 data-dragging={swatch.id === dragging ? "" : undefined}
-                data-share={shares?.[i]}
                 aria-label={`${swatchLabel(swatches, swatch.id)}, ${hex}`}
                 aria-description={
                   [
@@ -359,20 +341,16 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
                 onKeyDown={(e) => onSwatchKey(e, swatch.id)}
                 onPointerEnter={(e) => {
                   if (press.current?.active) return;
-                  if (hovers(e)) clusterHover.value = swatch.id;
                   if (points(e)) hoveredSwatchId.value = swatch.id;
                 }}
                 onPointerLeave={() => {
-                  clear(clusterHover, swatch.id);
                   clear(hoveredSwatchId, swatch.id);
                 }}
                 onFocus={(e) => {
                   if (!keyboardFocus(e.currentTarget)) return;
-                  clusterFocus.value = swatch.id;
                   hoveredSwatchId.value = swatch.id;
                 }}
                 onBlur={() => {
-                  clear(clusterFocus, swatch.id);
                   clear(hoveredSwatchId, swatch.id);
                 }}
               >
@@ -429,26 +407,13 @@ export function SwatchStrip({ showAdd = true }: { showAdd?: boolean } = {}) {
   );
 }
 
-/**
- * A muted label naming the selection, such as "Swatch 3" (ui-contract column 2 item 2). While a
- * cluster map shows, it names that swatch with its share: "Swatch 3 · 0.5% of the image" (spec 2.6,
- * M2 decision 13c).
- */
+/** A muted label naming the selection, such as "Swatch 3" (ui-contract column 2 item 2). */
 export function SelectionLabel() {
-  const shown = shownCluster.value;
-  const label = swatchLabel(outputPalette.value, shown?.id ?? selectedSwatchId.value);
+  const label = swatchLabel(outputPalette.value, selectedSwatchId.value);
   if (!label) return null;
-  // In the Palette view the label gives the selected swatch's share (spec 3.8; M3-T14).
-  const view = viewShares.value;
-  const index = outputPalette.value.findIndex((s) => s.id === selectedSwatchId.value);
-  const viewShare =
-    viewSettings.value.mode === "palette" && view?.mode === "palette" ? view.shares[index] : null;
-  const share = shown ? shown.share : viewShare;
   return (
     <p class="selection-label" data-testid="selection-label">
-      {share === null || share === undefined
-        ? label
-        : `${label} · ${shareText(share)} of the image`}
+      {label}
     </p>
   );
 }

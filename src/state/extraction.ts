@@ -7,7 +7,6 @@
 import { batch, effect } from "@preact/signals";
 import { type Oklab, oklabToOklch } from "../color/convert";
 import { type Extraction, imageClient } from "../extract/client";
-import type { ClusterMap } from "../extract/cluster-map";
 import type { ExtractedColor } from "../extract/postprocess";
 import { missingRoles } from "../extract/swatches";
 import { detachRemoved } from "../gradient/model";
@@ -22,7 +21,6 @@ import { imageAvailable } from "./resample";
 import { settingsChangeLabel } from "./setting-labels";
 import {
   backgroundNotFound,
-  clusterMap,
   displayImage,
   emptyRoles,
   extracting,
@@ -43,42 +41,9 @@ const updateProgress = () => {
   progressVisible.value = extractionProgress || loadingProgress;
 };
 
-/** The cluster map each extracted palette came with, so undo and redo bring it back (spec 2.6). */
-const extractedMaps = new WeakMap<Swatch[], ClusterMap | null>();
-/** The swatch ids a cluster map labels, in order: the palette it was made for (spec 2.6). */
-const mapOwners = new WeakMap<ClusterMap, readonly string[]>();
-
-/** Shows a map made for this palette, and lets undo and redo bring it back (the demo's map). */
-export function adoptClusterMap(list: Swatch[], map: ClusterMap): void {
-  mapOwners.set(
-    map,
-    list.map((s) => s.id),
-  );
-  extractedMaps.set(list, map);
-  clusterMap.value = map;
-}
-
-/**
- * Whether the map still labels this palette: the same swatches in the same order, each still its
- * extracted color. An edit, a marker drag, a Replace pick, a reorder, an add or a delete breaks it.
- */
-export function mapFits(map: ClusterMap, list: readonly Swatch[]): boolean {
-  const ids = mapOwners.get(map);
-  if (!ids || ids.length !== list.length) return false;
-  return list.every(
-    (s, i) =>
-      s.id === ids[i] &&
-      s.extracted !== null &&
-      s.extracted.color.l === s.color.l &&
-      s.extracted.color.c === s.color.c &&
-      s.extracted.color.h === s.color.h,
-  );
-}
-
 function applyColors(
   colors: ExtractedColor[],
   algorithm: Algorithm | undefined,
-  map: ClusterMap | null,
   points: readonly ImagePoint[] | undefined,
   keepLocked: boolean,
 ): void {
@@ -100,14 +65,6 @@ function applyColors(
   // Locked swatches survive a re-extraction of the same image, keeping id, point and origin; the
   // others get fresh points (spec 3.6, 3.7; decisions 2a to 2c).
   const next = keepLocked ? mergeKept(previous, fresh, settings.peek().distanceMetric) : fresh;
-  // The map labels the extracted colors, so it no longer matches once a locked swatch is mixed in.
-  const shownMap = next.every((s) => fresh.includes(s)) ? map : null;
-  if (shownMap)
-    mapOwners.set(
-      shownMap,
-      next.map((s) => s.id),
-    );
-  extractedMaps.set(next, shownMap);
   // A stop of a replaced swatch keeps that swatch's last output color (spec 4.3, plan D20).
   const kept = new Set(next.map((s) => s.id));
   const replaced = previous.filter((s) => !kept.has(s.id)).map((s) => s.id);
@@ -115,8 +72,6 @@ function applyColors(
   batch(() => {
     if (replaced.length > 0) gradient.value = detachRemoved(gradient.peek(), replaced, last);
     palette.value = next;
-    // The cluster map is stored with the palette it was made for (spec 2.6).
-    clusterMap.value = shownMap;
     // Empty roles are left out of the strip and named in a note (M2 decision 10b).
     emptyRoles.value =
       algorithm === "swatch-roles" ? missingRoles(colors.map((c) => c.name ?? "")) : [];
@@ -177,7 +132,7 @@ const scheduler = createJobScheduler<Extraction>({
     jobSettings.set(jobId, current);
     return imageClient().extract(current);
   },
-  apply: ({ colors, reason, map, background, points }, jobId) => {
+  apply: ({ colors, reason, background, points }, jobId) => {
     const forImage = jobVersions.get(jobId) ?? imageVersion;
     // A locked swatch's point belongs to its image: a new image keeps none of them.
     const sameImage = forImage === paletteVersion;
@@ -187,7 +142,7 @@ const scheduler = createJobScheduler<Extraction>({
     jobVersions.clear();
     jobAlgorithms.clear();
     jobSettings.clear();
-    applyColors(colors, algorithm, map, points, sameImage);
+    applyColors(colors, algorithm, points, sameImage);
     backgroundNotFound.value = background === "none";
     if (reason === "all-filtered") {
       // No pixel was left to fill any role, so only the filter message shows.
@@ -213,7 +168,6 @@ const scheduler = createJobScheduler<Extraction>({
     batch(() => {
       if (forImage !== paletteVersion) {
         palette.value = [];
-        clusterMap.value = null;
         emptyRoles.value = [];
         selectedSwatchId.value = null;
       }
@@ -306,17 +260,6 @@ export function startLiveExtraction(): void {
   history.onRestore(() => {
     scheduler.cancel();
     clearTimeout(settingsCommit);
-  });
-  // A restored extracted palette gets its own cluster map back, not the one on screen. Any other
-  // palette keeps the map only while it still fits it (spec 2.6): an edit, a drag, a Replace pick or
-  // a reorder makes it stale.
-  effect(() => {
-    const list = palette.value;
-    const shown = clusterMap.peek();
-    let map = shown;
-    if (history.isRestoring() && extractedMaps.has(list)) map = extractedMaps.get(list) ?? null;
-    if (map && !mapFits(map, list)) map = null;
-    if (map !== shown) clusterMap.value = map;
   });
   let first = true;
   effect(() => {

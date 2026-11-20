@@ -64,15 +64,6 @@ export const M1_SCREENS: readonly Screen[] = [
     viewport: PHONE,
     device: "phone",
   },
-  // M2-T14: swatch 3's cluster map over the image (mockup-state `cluster=3`). The Palette tab
-  // with the Cluster map toggle is swatch-sheet-phone below (13d).
-  {
-    name: "cluster-map-desktop",
-    path: "./?demo=mockup&cluster=3",
-    viewport: DESKTOP,
-    device: "desktop",
-  },
-  { name: "cluster-map-phone", path: "./?demo=mockup&cluster=3", viewport: PHONE, device: "phone" },
   // M3 (plan "Screens affected"), registered by M3-T2 so token and axe tests cover each screen
   // from the start. The tasks that build them fill them in; no task edits this list.
   // Desktop: each Palette-column row open in place (`rows=`), the loupe, and the image views.

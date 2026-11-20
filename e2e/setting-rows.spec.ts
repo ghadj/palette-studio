@@ -77,7 +77,6 @@ for (const width of [820, 390, 320] as const) {
       "Suggested",
       "Sample radius (px)",
       "Sample statistic",
-      "Cluster map",
     ]);
     for (const r of rows) {
       if (!r.value) continue;

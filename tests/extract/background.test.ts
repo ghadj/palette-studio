@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { hexToOklab } from "../../src/color/convert";
 import { deltaEOK } from "../../src/color/delta-e";
+import { assignPixels, FILTERED } from "../../src/extract/assign";
 import { bandWidth, detectBackground } from "../../src/extract/background";
-import { assignPixels, FILTERED } from "../../src/extract/cluster-map";
 import { keepPixels, runExtraction } from "../../src/extract/pipeline";
 import { DEFAULT_SETTINGS } from "../../src/state/defaults";
 import type { ExtractionSettings } from "../../src/types";
@@ -54,7 +54,7 @@ describe("ignore background (spec 2.4; M2 decision 4)", () => {
     expect(runExtraction(img, settings({ ignoreBackground: "auto" })).background).toBe("found");
   });
 
-  it("the cluster map shares extraction's keep mask, so removed background is unlabeled (spec 2.6)", () => {
+  it("the pixel assignment shares extraction's keep mask, so removed background is unlabeled", () => {
     const img = studio();
     const s = settings({ ignoreBackground: "auto" });
     const keep = keepPixels(img, s);
@@ -73,8 +73,6 @@ describe("ignore background (spec 2.4; M2 decision 4)", () => {
       if (map.labels[p] !== FILTERED) labeled += 1;
     }
     expect(labeled).toBe(keep.kept);
-    // The share is the plain pixel share of the kept pixels, without spatial weights.
-    expect(map.shares.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10);
   });
 
   it("the enclosed #ECEAE6 patch is kept", () => {

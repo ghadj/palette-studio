@@ -5,7 +5,7 @@ import { sheetSettled } from "./helpers/sheet";
 /**
  * M3-T2 scaffolding: chevron rows in the Palette column expand in place on desktop and open bottom
  * sheets below 1024 px (spec 6.1, 6.6 rule 2; ui-contract Components "Chevron row", "Bottom
- * sheet"). The phone Cluster map toggle lives in the Swatch sheet (M2 decision 13d).
+ * sheet").
  */
 
 const row = (page: Page, name: string) =>
@@ -181,21 +181,6 @@ test.describe("chevron rows and bottom sheets (M3-T2)", () => {
       () => document.getAnimations().filter((a) => a.playState === "running").length,
     );
     expect(running).toBe(0);
-  });
-
-  test("the phone Cluster map toggle is in the Swatch sheet, not on the Palette tab (13d)", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(demo("tab=palette"));
-    await expect(row(page, "Swatch")).toBeVisible();
-    await expect(page.locator("#cluster-map-toggle")).toHaveCount(0);
-    await row(page, "Swatch").click();
-    const toggle = sheet(page).getByRole("switch", { name: "Cluster map" });
-    await expect(toggle).toBeVisible();
-    await expect(toggle).toHaveAttribute("aria-checked", "false");
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-checked", "true");
   });
 
   test("hovering or keyboard-focusing a swatch links it (data-linked)", async ({ page }, info) => {

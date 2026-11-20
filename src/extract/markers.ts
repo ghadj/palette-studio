@@ -1,6 +1,6 @@
 /**
  * Marker placement (spec 3.7, plan M3-T10): where each swatch's color lives in the image. For each
- * swatch, the cluster map's pixels of that swatch form a mask; a box blur of about 3% of the
+ * swatch, the assigned pixels of that swatch form a mask; a box blur of about 3% of the
  * shorter side gives each pixel a density, and the marker goes on the swatch's pixel with the
  * highest density. The blur sums integer counts with a summed-area table, so equal densities are
  * exactly equal and ties are decided by rule, not by rounding:
@@ -16,7 +16,7 @@
 import type { Oklab } from "../color/convert";
 import { rgb8ToWorking } from "../color/working-space";
 import type { ImagePoint } from "../types";
-import { FILTERED } from "./cluster-map";
+import { FILTERED } from "./assign";
 import type { AnalysisImage } from "./pipeline";
 
 /** The blur's radius in analysis pixels: 3% of the shorter side, rounded, at least 1 px. */
@@ -74,7 +74,7 @@ function closestPixel(labels: Uint8Array, analysis: AnalysisImage, color: Oklab)
 }
 
 /**
- * One normalized point per color: where its swatch's pixels are densest in the cluster map's
+ * One normalized point per color: where its swatch's pixels are densest in the assignment's
  * per-pixel `labels` (palette index per analysis pixel, FILTERED for filtered pixels). `analysis`
  * is the image the labels were made from, `width` × `height` RGBA.
  */
@@ -87,7 +87,7 @@ export function placeMarkers(
 ): ImagePoint[] {
   const count = width * height;
   if (labels.length !== count || analysis.width !== width || analysis.height !== height) {
-    throw new Error("The cluster map and the analysis copy differ in size");
+    throw new Error("The pixel assignment and the analysis copy differ in size");
   }
   const pixelsOf = new Int32Array(colors.length);
   for (const label of labels)

@@ -1,7 +1,7 @@
 /**
  * The mockup state, ?demo=mockup (docs/design/mockup-state.md). It never reads or writes autosave,
  * the project library or any browser storage (spec 5.5), so nothing here imports storage code.
- * M1 reads the `view`, `tab` and `theme` parameters, M2 `rows`, `zoom` and `cluster`, and M3 more
+ * M1 reads the `view`, `tab` and `theme` parameters, M2 `rows` and `zoom`, and M3 more
  * `rows`, `image` and `loupe` (plan D20); the others are ignored until their milestone.
  */
 import { hexToOklab, hexToOklch } from "../color/convert";
@@ -280,17 +280,6 @@ export function buildMockupState(
 export function parseMockupZoom(search: string): 1 | 2 | 4 | 8 {
   const zoom = new URLSearchParams(search).get("zoom");
   return zoom === "2" ? 2 : zoom === "4" ? 4 : zoom === "8" ? 8 : 1;
-}
-
-/**
- * `cluster=<1 to 6>` shows that swatch's cluster map, as hovering or focusing it does (spec 2.6,
- * decision 14b). Returns the swatch's palette index, or null for no map.
- */
-export function parseMockupCluster(search: string): number | null {
-  const n = ["1", "2", "3", "4", "5", "6"].indexOf(
-    new URLSearchParams(search).get("cluster") ?? "",
-  );
-  return n < 0 ? null : n;
 }
 
 const IMAGE_VIEWS: readonly ImageViewMode[] = ["image", "palette", "values"];

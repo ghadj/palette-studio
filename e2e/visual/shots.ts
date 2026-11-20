@@ -115,23 +115,6 @@ export const M1_SHOTS: readonly Shot[] = [
     mockup: null,
     frame: "M2 decision 2b: the Filters chevron row on the Source tab, open.",
   },
-  // M2-T14: the cluster overlay and the share label are not drawn; they go to design review.
-  {
-    name: "cluster-map-desktop",
-    path: "./?demo=mockup&cluster=3",
-    viewport: DESKTOP,
-    mockup: null,
-    frame:
-      "M2 decision 13: swatch 3's cluster map over the image (other pixels dimmed toward mid-gray, about 70%) and 'Swatch 3 · 0.5% of the image' in the selection label (not drawn).",
-  },
-  {
-    name: "cluster-map-phone",
-    path: "./?demo=mockup&cluster=3",
-    viewport: PHONE,
-    mockup: null,
-    frame:
-      "M2 decision 13: the Source tab with swatch 3's cluster map over the image (not drawn). The Cluster map toggle is in swatch-sheet-phone (13d).",
-  },
   // M3 (plan "Screens affected"), registered by M3-T2. Until a shot's task lands it shows that
   // task's stub ("Coming in a later version"). The desktop row shots are taller, so the open row
   // fits in column 2 without scrolling it, as advanced-desktop does for column 1.
@@ -141,7 +124,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: TALL_DESKTOP,
     mockup: null,
     frame:
-      "Not drawn (M3 decision 5a). Column 2 with the Swatch chevron row open in place: formats, Name with its suggestion, Copy, Duplicate, Delete, Reset to extracted, Sample radius, Mean or Median, Cluster map.",
+      "Not drawn (M3 decision 5a). Column 2 with the Swatch chevron row open in place: formats, Name with its suggestion, Copy, Duplicate, Delete, Reset to extracted, Sample radius, Mean or Median.",
   },
   {
     name: "adjustments-desktop",
@@ -227,7 +210,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: PHONE,
     mockup: null,
     frame:
-      "Not drawn (contract 'Not drawn': bottom sheets for the swatch editor). The Swatch sheet over the Palette tab, with the Cluster map toggle (M2 decision 13d).",
+      "Not drawn (contract 'Not drawn': bottom sheets for the swatch editor). The Swatch sheet over the Palette tab.",
   },
   {
     name: "adjustments-sheet-phone",

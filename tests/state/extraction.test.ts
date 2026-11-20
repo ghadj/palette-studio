@@ -10,7 +10,6 @@ const history = await import("../../src/state/history");
 const { DEBOUNCE_MS } = await import("../../src/state/jobs");
 const {
   backgroundNotFound,
-  clusterMap,
   displayImage,
   emptyRoles,
   extracting,
@@ -201,20 +200,15 @@ describe("live extraction state (spec 6.3, 7.4)", () => {
     expect(backgroundNotFound.value).toBe(false);
   });
 
-  it("the cluster map is stored with the palette it came with, and cleared with it (spec 2.6)", async () => {
-    const map = { width: 2, height: 1, labels: Uint8Array.from([0, 1]), shares: [0.5, 0.5] };
-    extract.mockResolvedValueOnce({ ...result(color(0.4, 0.5), color(0.8, 0.5)), map });
+  it("a new image's failed extraction clears the palette", async () => {
+    extract.mockResolvedValueOnce(result(color(0.4, 0.5), color(0.8, 0.5)));
     extractNewImage();
     await flush();
     expect(palette.value).toHaveLength(2);
-    expect(clusterMap.value).toBe(map);
-
-    // A new image's failed extraction clears the palette and its map together.
     extract.mockRejectedValueOnce(new Error("boom"));
     extractNewImage();
     await flush();
     expect(palette.value).toEqual([]);
-    expect(clusterMap.value).toBeNull();
   });
 });
 
@@ -298,22 +292,6 @@ describe("extraction and history (spec 3.6; plan Q3a, Q3b)", () => {
     history.redo();
     expect(palette.value).toBe(committed);
     expect(settings.value.colors).toBe(8);
-  });
-
-  it("undo and redo bring back each palette's own cluster map (spec 2.6)", async () => {
-    const mapA = { width: 2, height: 1, labels: Uint8Array.from([0, 1]), shares: [0.5, 0.5] };
-    const mapB = { width: 2, height: 1, labels: Uint8Array.from([1, 0]), shares: [0.4, 0.6] };
-    extract.mockResolvedValueOnce({ ...result(color(0.4, 0.5), color(0.8, 0.5)), map: mapA });
-    settings.value = { ...settings.peek(), seed: 5 };
-    await settle();
-    extract.mockResolvedValueOnce({ ...result(color(0.3, 0.4), color(0.7, 0.6)), map: mapB });
-    settings.value = { ...settings.peek(), seed: 6 };
-    await settle();
-    expect(clusterMap.value).toBe(mapB);
-    history.undo();
-    expect(clusterMap.value).toBe(mapA);
-    history.redo();
-    expect(clusterMap.value).toBe(mapB);
   });
 
   it("a new image clears history", async () => {

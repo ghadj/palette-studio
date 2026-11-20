@@ -166,6 +166,6 @@ describe("image view cache (spec 3.8, plan M3-T11)", () => {
     await client.view(PALETTE);
     await client.view(VALUES);
     await client.view(PALETTE);
-    expect(received.filter((m) => m.type === "extract" || m.type === "assign")).toEqual([]);
+    expect(received.filter((m) => m.type === "extract")).toEqual([]);
   });
 });

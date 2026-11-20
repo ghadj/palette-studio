@@ -1,10 +1,10 @@
 /**
  * Marker placement at extraction (spec 3.7, plan M3-T10): each swatch's marker goes on the densest
- * patch of its cluster-map pixels, after a box blur of about 3% of the shorter side.
+ * patch of its assigned pixels, after a box blur of about 3% of the shorter side.
  */
 import { describe, expect, it } from "vitest";
 import { hexToOklab } from "../../src/color/convert";
-import { assignPixels, FILTERED } from "../../src/extract/cluster-map";
+import { assignPixels, FILTERED } from "../../src/extract/assign";
 import { blurRadius, placeMarkers } from "../../src/extract/markers";
 import { keepPixels } from "../../src/extract/pipeline";
 import { analysisSize } from "../../src/image/tiers";

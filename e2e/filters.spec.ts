@@ -143,8 +143,24 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
     const nearIndexes = after.flatMap((h, i) => (near(h) ? [i] : []));
     expect(nearIndexes.length).toBeLessThanOrEqual(1);
     if (nearIndexes.length === 1) {
-      const shares = await strip(page).evaluateAll((els) =>
-        els.map((e) => Number(e.getAttribute("data-share"))),
+      // The Palette view's share bar gives each swatch's share, by its color (spec 3.8).
+      await page
+        .locator("[data-testid=view-bar]:visible")
+        .getByRole("button", { name: "Palette", exact: true })
+        .click();
+      const bar = page.locator("[data-testid=share-bar]:visible [data-share-part]");
+      await expect(bar).toHaveCount(after.length, { timeout: 15_000 });
+      const parts = await bar.evaluateAll((els) =>
+        els.map((e) => {
+          const style = getComputedStyle(e);
+          const [r, g, b] = style.backgroundColor.match(/\d+/g) ?? [];
+          const hex = [r, g, b].map((n) => Number(n).toString(16).padStart(2, "0")).join("");
+          return { hex: `#${hex.toUpperCase()}`, share: Number(style.flexGrow) };
+        }),
+      );
+      const total = parts.reduce((sum, p) => sum + p.share, 0);
+      const shares = after.map(
+        (h) => (parts.find((p) => p.hex === h.toUpperCase())?.share ?? Number.NaN) / total,
       );
       // The near swatch is small next to the backdrop's own 75% share: at most 5% of the kept
       // pixels. The bound is loose on purpose, since browsers resample the edges between the

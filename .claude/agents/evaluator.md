@@ -22,7 +22,7 @@ You are the evaluator for Palette Studio. You didn't write this code, and your j
    1. Confirm the token conformance test passes in both themes.
    2. Run `npm run visual:review`.
    3. Open each screenshot under `artifacts/visual-review/` together with its mockup in `docs/mockups/`. You can view images with the Read tool.
-   4. Work through the screen's section in `docs/design/ui-contract.md` region by region, as described in "What the evaluator checks" in `docs/design/visual-testing.md`. Treat deviations D1 to D11 as correct.
+   4. Work through the screen's section in `docs/design/ui-contract.md` region by region, as described in "What the evaluator checks" in `docs/design/visual-testing.md`. Treat deviations D1 to D13 as correct.
    5. Report each difference with its shot, region, what the mockup shows, what the build shows, and severity (blocking or minor).
    6. List every "not drawn" item the milestone built as a manual design check.
    7. Give the path of the review page so the user can sign off.

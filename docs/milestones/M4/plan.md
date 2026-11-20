@@ -647,6 +647,14 @@ Shrunk by decision 68: the Preview row, text check, lowest contrast and vision w
   - `npm run visual:review` writes every shot.
 - [ ] Done
 
+### M4-T15: Remove the cluster map (user request; decision 69)
+- Departs from spec 2.6 (the cluster map) and spec 6.1 ("No hover"'s Cluster map toggle).
+- Removed: the hover and focus highlight (`ClusterOverlay`, the glow; M3 decisions 61, 64), the Cluster map toggle, the share in the selection label, the `clusterMap` signal with its stale logic and undo restore, the worker's `assign` and `overlay` requests and the map in the `extracted` reply, the display-resolution map (decision 36), `cluster=` and its screens and shots, `data-share`, and their tests.
+- Kept: the pixel assignment that places markers (`src/extract/assign.ts`, was `cluster-map.ts`; M3-T10, T12), the demo's master preparation (now `src/state/mockup-master.ts`, for the image views), and the Palette view's share bar and legend (M3-T14).
+- Orphaned baselines (to remove through the baselines workflow): `cluster-map-{desktop,phone}-{light,dark}.png`. `swatch-*` baselines lose the Cluster map row and need regenerating.
+- Done when: lint, typecheck, unit tests, build and the full e2e suite pass.
+- [x] Done
+
 ## Screens affected (UI work only)
 
 | Screen | ui-contract regions | New or changed screenshots | Mockup-state additions | Not-drawn items needing design review |
@@ -940,3 +948,4 @@ Notes on spec conflicts, as the plan resolves them:
    - **Gradient count.** Spec 7.5 has one `gradient`, while 5.3, 5.5 and 6.5 say "gradients". The plan keeps one per project (D1).
    - **Repeat length** (4.3) belongs to repeating gradients, which are M6.
    - **Feature budget (spec 6.6 rule 5)** is no longer at issue: Q4 B keeps the inline rows to the two drawn ones.
+- **Decision 69 (user, 2026-11-20): the cluster map is removed (task T15; departs from spec 2.6).** "Cluster map and highlighting on hover is already indirectly accessible through Palette view on source image... remove cluster map option and highlighting on hover completely, it just overcomplicates stuff." Removed: the hover and focus highlight over the image, the Cluster map toggle, the "x% of the image" share in the selection label (it is "Swatch N" again), the `cluster=` demo parameter and everything behind them. The Palette view's share bar and legend stay. Not an M5 task.
