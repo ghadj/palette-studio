@@ -16,7 +16,6 @@ import { outputPalette } from "../state/signals";
 import { AdjustmentsPanel } from "./AdjustmentsPanel";
 import { ChevronRow } from "./ChevronRow";
 import { ContrastPanel } from "./ContrastPanel";
-import { CopyButtons } from "./CopyButtons";
 import { CvdPanel } from "./CvdPanel";
 import { DuplicateButton } from "./DuplicateButton";
 import { StripDock } from "./StripDock";
@@ -31,7 +30,7 @@ export function PalettePanel({ variant }: { variant: "desktop" | "phone" }) {
       {variant === "desktop" && <h2 class="section-label">Palette</h2>}
       {/* The strip and its marks pin: under the header below 1024 px (M3 decision 33), at the top
           of the column from 1024 px (M3 decision 45). */}
-      {!empty ? <StripDock host="palette" /> : <SwatchStrip />}
+      {!empty ? <StripDock host="palette" exportButton={variant === "phone"} /> : <SwatchStrip />}
       <SelectionLabel />
       <EmptyRolesNote />
       {!empty && <SwatchEditor />}
@@ -51,7 +50,6 @@ export function PalettePanel({ variant }: { variant: "desktop" | "phone" }) {
           </ChevronRow>
         </div>
       )}
-      {variant === "phone" && !empty && <CopyButtons />}
       {empty && <p class="hint">Load an image to extract a palette.</p>}
     </div>
   );

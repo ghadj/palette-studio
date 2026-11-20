@@ -49,28 +49,25 @@ test.describe("copy HEX and CSS variables (spec 5.1, 6.3; M1 decision 7)", () =>
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(CSS);
   });
 
-  test("on phones the buttons sit under the swatch strip on the Source and Palette tabs", async ({
+  test("on phones the Source tab has no palette copy buttons and the Palette tab's Export button opens them in a drawer", async ({
     page,
     context,
   }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    // Phones and medium screens share the tabbed layout (decision 4 as revised).
-    for (const [width, height, tab] of [
-      [390, 844, "source"],
-      [390, 844, "palette"],
-      [820, 1180, "source"],
-      [820, 1180, "palette"],
+    // Phones and medium screens share the tabbed layout (decision 4 as revised); M3 decision 53.
+    for (const [width, height] of [
+      [390, 844],
+      [820, 1180],
     ] as const) {
       await page.setViewportSize({ width, height });
-      await page.goto(demo(`tab=${tab}`));
+      await page.goto(demo("tab=source"));
       await expect(page.getByTestId("export-drawer")).toHaveCount(0);
-      const strip = await page.locator("[data-testid=swatch-strip]:visible").boundingBox();
-      // The color editor also has a "Copy swatch HEX" icon (decision 50); this is the palette-wide button.
-      const button = page.locator(".copy-buttons").getByRole("button", { name: "Copy HEX" });
-      const box = await button.boundingBox();
-      expect(box?.y ?? 0).toBeGreaterThan((strip?.y ?? 0) + (strip?.height ?? 0));
-      expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
-      await button.click();
+      await expect(page.getByRole("button", { name: "Copy HEX", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Copy CSS", exact: true })).toHaveCount(0);
+      await page.goto(demo("tab=palette"));
+      await page.getByRole("button", { name: "Export palette" }).click();
+      const sheet = page.getByTestId("sheet-export");
+      await sheet.getByRole("button", { name: "Copy HEX", exact: true }).click();
       await expect(region(page)).toHaveText("Copied HEX");
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(HEX);
     }

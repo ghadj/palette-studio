@@ -49,7 +49,8 @@ test.describe("accessibility @a11y", () => {
     for (const theme of THEMES) {
       await page.emulateMedia({ colorScheme: theme });
       await page.setViewportSize({ width: 390, height: 844 });
-      await page.goto("./?demo=mockup");
+      await page.goto("./?demo=mockup&tab=palette");
+      await page.getByRole("button", { name: "Export palette" }).click();
       await page.getByRole("button", { name: "Copy HEX" }).click();
       await expect(page.getByRole("button", { name: "Dismiss" })).toBeVisible();
       await settled(page);

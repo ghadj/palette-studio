@@ -6,7 +6,6 @@
  */
 import { outputPalette, progressVisible, viewSettings } from "../state/signals";
 import type { ImageViewMode } from "../types";
-import { CopyButtons } from "./CopyButtons";
 import { comingSoon } from "./comingSoon";
 import { EyedropperHint } from "./EyedropperLayer";
 import { ImageToolbar } from "./ImageToolbar";
@@ -88,7 +87,6 @@ export function SourcePanel({ variant }: { variant: "desktop" | "phone" }) {
       <EyedropperHint />
       {variant !== "desktop" && outputPalette.value.length > 0 && <StripDock host="source" />}
       {variant !== "desktop" && <EmptyRolesNote />}
-      {variant === "phone" && outputPalette.value.length > 0 && <CopyButtons />}
       <ViewRows />
     </div>
   );
