@@ -61,6 +61,17 @@ test.describe("markers on the image (spec 3.7)", () => {
     await expect(marker(page, 3)).toHaveAttribute("aria-label", "Swatch 3 marker, 77%, 17%");
   });
 
+  test("no number is drawn beside a marker (decision 60); the name still carries it", async ({
+    page,
+  }) => {
+    await page.goto(demo());
+    await expect(page.locator("[data-marker]")).toHaveCount(6);
+    for (let n = 1; n <= 6; n += 1) {
+      expect((await marker(page, n).textContent())?.trim(), `marker ${n} text`).toBe("");
+    }
+    await expect(page.locator(".marker__label")).toHaveCount(0);
+  });
+
   test("hovering marker 2 sets data-linked on swatch 2, and the reverse", async ({
     page,
   }, info) => {

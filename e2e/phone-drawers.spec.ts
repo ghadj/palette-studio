@@ -4,6 +4,7 @@
  * 33. the Palette tab's strip is pinned under the header like the Source tab's
  * 34. the Source tab's Filters and Advanced rows open as bottom-sheet drawers
  * 35. an open drawer stops below the pinned strip, so the palette stays visible above it
+ * 59. with a space-2 gap between the strip and the drawer; the scrim covers the gap
  */
 import { expect, type Page, test } from "@playwright/test";
 import { demo, hasHorizontalScroll, isPhoneProject } from "./helpers/app";
@@ -20,12 +21,25 @@ async function expectBelowDock(page: Page, label: string) {
   const scrim = await sheet(page).getByTestId("sheet-scrim").boundingBox();
   const viewport = page.viewportSize();
   if (!d || !panel || !scrim || !viewport) throw new Error("no boxes");
-  expect(panel.y, `${label}: sheet top at or below the strip`).toBeGreaterThanOrEqual(
-    d.y + d.height - 0.5,
+  // Decision 59: the drawer starts one space-2 (8 px) below the dock's bottom border, and the
+  // scrim, which starts at the dock's bottom, covers the gap.
+  const gap = await page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.style.height = "var(--space-2)";
+    document.body.append(probe);
+    const h = probe.getBoundingClientRect().height;
+    probe.remove();
+    return h;
+  });
+  expect(gap).toBeGreaterThan(0);
+  expect(panel.y, `${label}: sheet top a gap below the strip`).toBeGreaterThanOrEqual(
+    d.y + d.height + gap - 1,
   );
-  expect(scrim.y, `${label}: the scrim starts under the strip`).toBeGreaterThanOrEqual(
-    d.y + d.height - 0.5,
-  );
+  expect(
+    Math.abs(scrim.y - (d.y + d.height)),
+    `${label}: the scrim starts at the strip`,
+  ).toBeLessThanOrEqual(1);
+  expect(scrim.y, `${label}: the scrim covers the gap`).toBeLessThan(panel.y - gap + 1);
   expect(panel.y + panel.height, `${label}: sheet inside the viewport`).toBeLessThanOrEqual(
     viewport.height + 0.5,
   );
@@ -170,5 +184,10 @@ test.describe("phone drawers (decisions 34, 35)", () => {
     await page.evaluate(() => window.scrollTo(0, 120));
     await page.getByRole("button", { name: "Filters", exact: true }).click();
     await expectBelowDock(page, "320 Filters");
+    // A tall drawer starts exactly one space-2 below the strip's bottom border (decision 59).
+    const d = await dock(page).boundingBox();
+    const panel = await sheet(page).locator(".bottom-sheet__panel").boundingBox();
+    if (!d || !panel) throw new Error("no boxes");
+    expect(Math.abs(panel.y - (d.y + d.height + 8))).toBeLessThanOrEqual(1);
   });
 });

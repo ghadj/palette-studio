@@ -1,7 +1,8 @@
 /**
  * Where a bottom sheet starts when the page has a pinned swatch strip (M3 decision 35). The sheet's
  * dialog takes its top edge from `--sheet-top`, which this sets to the strip dock's bottom edge, so
- * the strip stays visible above the scrim and the panel is sized to the space under it.
+ * the strip stays visible above the scrim and the panel is sized to the space under it, less a
+ * `--space-2` gap (`--sheet-gap`, M3 decision 59) so the open drawer doesn't touch the strip.
  *
  * The dock only pins once the page has scrolled to it, so opening a sheet scrolls the page until
  * the dock sits under the header. If the page is too short to scroll that far, it gets extra room
@@ -18,6 +19,9 @@ export function dockSheetBelowStrip(dialog: HTMLElement): () => void {
   const headerBottom = () => header?.getBoundingClientRect().bottom ?? 0;
   const place = () =>
     dialog.style.setProperty("--sheet-top", `${dock.getBoundingClientRect().bottom}px`);
+  // The panel starts one space-2 under the dock's bottom border (decision 59); the scrim, which
+  // fills the dialog from `--sheet-top`, covers the gap.
+  dialog.style.setProperty("--sheet-gap", "var(--space-2)");
 
   // Where the page was before the sheet opened; closing puts it back (M3 decision 46).
   const startY = window.scrollY;

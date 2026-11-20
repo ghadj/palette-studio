@@ -5,9 +5,10 @@
  * point.x × view.scale`, and the same for y). M3-T15 adds dragging.
  *
  * Each swatch with a point gets a ring in its base color (the color found in the image; the palette
- * swatch shows the adjusted result, spec 3.7), a light outer and a dark inner stroke, and its
- * number beside it. The selected marker has an accent ring and sits on top (z-index, so the tab order stays by swatch). Rings closer than the
- * 44 px hit area fan their labels out around the group (plan D9). Pointer enter and keyboard focus
+ * swatch shows the adjusted result, spec 3.7), a light outer and a dark inner stroke. There is no
+ * number beside it (M3 decision 60, a user departure from spec 3.7); the accessible name carries the
+ * swatch number. The selected marker has an accent ring and sits on top (z-index, so the tab order
+ * stays by swatch). Pointer enter and keyboard focus
  * set `hoveredSwatchId`, and a marker whose swatch is that one carries `data-linked`; a tap or
  * click selects the swatch. Markers show only in the Image view, and only while
  * `markersVisible` is on.
@@ -52,50 +53,11 @@ import type { ImagePoint, Swatch } from "../types";
 import { cropFromImage, Loupe, type LoupePixels } from "./Loupe";
 import { markerPress } from "./markerPress";
 
-/** Rings closer than this on screen (the hit area, `--touch-target`) fan their labels out. */
-const CLOSE = 44;
-/** Distance from a ring's center to its label's center, in px. */
-const LABEL_RADIUS = 22;
-
 interface Placed {
   swatch: Swatch;
-  /** 1-based swatch number. */
+  /** 1-based swatch number, for the accessible name. */
   n: number;
   point: ImagePoint;
-  /** Position in the well, in px. */
-  x: number;
-  y: number;
-  /** Label direction, in radians (0 is right). */
-  angle: number;
-}
-
-/** Groups rings within CLOSE px of each other and gives each ring of a group its own direction. */
-export function fanOut(rings: ReadonlyArray<{ x: number; y: number }>): number[] {
-  const angles = rings.map(() => 0);
-  const seen = new Set<number>();
-  rings.forEach((_, start) => {
-    if (seen.has(start)) return;
-    const group: number[] = [];
-    const queue = [start];
-    seen.add(start);
-    while (queue.length > 0) {
-      const i = queue.pop() as number;
-      group.push(i);
-      rings.forEach((other, j) => {
-        const ring = rings[i];
-        if (seen.has(j) || !ring) return;
-        if (Math.hypot(ring.x - other.x, ring.y - other.y) < CLOSE) {
-          seen.add(j);
-          queue.push(j);
-        }
-      });
-    }
-    group.sort((a, b) => a - b);
-    group.forEach((index, rank) => {
-      angles[index] = group.length > 1 ? (rank * 2 * Math.PI) / group.length : 0;
-    });
-  });
-  return angles;
 }
 
 /** A press must move this far, in px, before it is a drag; a tap or click only selects. */
@@ -338,14 +300,7 @@ export function MarkerLayer() {
       swatch,
       n: i + 1,
       point: swatch.point,
-      x: (view.x + swatch.point.x * view.scale) * size.width,
-      y: (view.y + swatch.point.y * view.scale) * size.height,
-      angle: 0,
     });
-  });
-  const angles = fanOut(placed);
-  placed.forEach((p, i) => {
-    p.angle = angles[i] ?? 0;
   });
   return (
     <div ref={layer} class="marker-layer">
@@ -393,15 +348,6 @@ export function MarkerLayer() {
             >
               <span class="marker__ring" data-user-content="" style={{ backgroundColor: hex }}>
                 {isSelected && <span class="marker__accent" data-marker-accent="" />}
-              </span>
-              <span
-                class="marker__label"
-                aria-hidden="true"
-                style={{
-                  transform: `translate(calc(-50% + ${Math.cos(p.angle) * LABEL_RADIUS}px), calc(-50% + ${Math.sin(p.angle) * LABEL_RADIUS}px))`,
-                }}
-              >
-                {p.n}
               </span>
             </button>
           );

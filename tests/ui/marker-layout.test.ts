@@ -1,38 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { LOUPE_SIZE, loupePosition } from "../../src/ui/Loupe";
-import { fanOut } from "../../src/ui/MarkerLayer";
-
-describe("fanOut (spec 3.7, plan D9)", () => {
-  it("leaves rings 44 px or more apart with their label to the right", () => {
-    expect(
-      fanOut([
-        { x: 0, y: 0 },
-        { x: 44, y: 0 },
-        { x: 200, y: 200 },
-      ]),
-    ).toEqual([0, 0, 0]);
-  });
-
-  it("gives rings closer than 44 px their own directions", () => {
-    const [a, b, c] = fanOut([
-      { x: 0, y: 0 },
-      { x: 20, y: 0 },
-      { x: 40, y: 0 },
-    ]);
-    expect(a).toBeCloseTo(0);
-    expect(b).toBeCloseTo((2 * Math.PI) / 3);
-    expect(c).toBeCloseTo((4 * Math.PI) / 3);
-  });
-
-  it("links rings through a chain of neighbours", () => {
-    const angles = fanOut([
-      { x: 0, y: 0 },
-      { x: 40, y: 0 },
-      { x: 80, y: 0 },
-    ]);
-    expect(new Set(angles.map((a) => a.toFixed(3))).size).toBe(3);
-  });
-});
 
 describe("loupePosition (spec 3.7)", () => {
   const well = { width: 600, height: 400 };
