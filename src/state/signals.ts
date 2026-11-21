@@ -102,8 +102,6 @@ export const imageView = signal<ImageView>(fitView());
 
 /** The selected gradient stop (plan T1): view state, never in undo (3.6). */
 export const selectedStopId = signal<string | null>(null);
-/** Gradient preview options (4.4, plan D22): view state, not saved, never in undo. */
-
 /** The swatch whose card or marker is hovered, linking the two (3.7). */
 export const hoveredSwatchId = signal<string | null>(null);
 /** The show/hide toggle for all markers (3.7). */

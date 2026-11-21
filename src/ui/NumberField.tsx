@@ -47,7 +47,9 @@ export function NumberField({
     const raw = (event.currentTarget as HTMLInputElement).value;
     setText(raw);
     const n = parse(raw);
-    if (n !== null && (!deferred || stepping.current)) onCommit(n);
+    // A stepper click fires a plain event, not an InputEvent with an inputType; that is a step too.
+    const stepped = stepping.current || !(event as InputEvent).inputType;
+    if (n !== null && (!deferred || stepped)) onCommit(n);
   };
   return (
     <input

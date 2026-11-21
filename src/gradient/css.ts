@@ -198,15 +198,11 @@ function easedStops(
 }
 
 /**
- * The gradient as native CSS with an `in <space>` clause (spec 4.5 path 1); `space` overrides the
- * gradient's own, for compare mode (plan D22).
+ * The gradient as native CSS with an `in <space>` clause (spec 4.5 path 1).
  */
-export function nativeCss(
-  stops: readonly ResolvedStop[],
-  gradient: Gradient,
-  space: InterpolationSpace = gradient.space,
-): string {
-  const g = space === gradient.space ? gradient : { ...gradient, space };
+export function nativeCss(stops: readonly ResolvedStop[], gradient: Gradient): string {
+  const g = gradient;
+  const space = g.space;
   return `${head(g, clause(space, clauseHue(g, space)))}, ${nativeList(stops, g)})`;
 }
 

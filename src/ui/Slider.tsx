@@ -86,6 +86,7 @@ export function Slider({
           decimals={decimals}
           disabled={disabled}
           describedBy={describedBy}
+          deferred={deferred}
           onCommit={onChange}
         />
       ) : (

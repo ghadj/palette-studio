@@ -48,8 +48,7 @@ export type MockupRow =
   | "cvd"
   | "interpolation"
   | "stop"
-  | "geometry"
-  | "preview";
+  | "geometry";
 const ROWS: readonly MockupRow[] = [
   "filters",
   "advanced",
@@ -61,7 +60,6 @@ const ROWS: readonly MockupRow[] = [
   "interpolation",
   "stop",
   "geometry",
-  "preview",
 ];
 
 /**

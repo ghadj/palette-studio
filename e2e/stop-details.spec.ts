@@ -135,8 +135,10 @@ test.describe("Stop row (M4-T8)", () => {
   }, info) => {
     await open(page);
     await position(page).fill("25");
+    await position(page).press("Enter");
     await expect(preview(page)).toHaveAttribute("data-stops", "#1DB07A@0,#D4527F@25,#5039B0@100");
     await position(page).fill("33,5");
+    await position(page).press("Enter");
     await expect(preview(page)).toHaveAttribute("data-stops", "#1DB07A@0,#D4527F@33.5,#5039B0@100");
     if (isPhoneProject(info)) {
       await expect(page.getByRole("dialog")).toHaveAccessibleName("Stop 2 of 3");
@@ -154,6 +156,7 @@ test.describe("Stop row (M4-T8)", () => {
       .click();
     await expect(position(page)).toHaveValue(String((width * 0.5).toFixed(1)));
     await position(page).fill(String(width / 4));
+    await position(page).press("Enter");
     await expect(preview(page)).toHaveAttribute("data-stops", /#D4527F@25,/);
   });
 
@@ -266,6 +269,29 @@ test.describe("Stop row (M4-T8)", () => {
     expect(await undoDepth()).toBe(before);
   });
 
+  test("Position commits on Enter or blur, not per keystroke; typing is one undo step", async ({
+    page,
+  }) => {
+    await open(page);
+    await position(page).click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("25");
+    await expect(preview(page)).toHaveAttribute("data-stops", STOPS);
+    await page.keyboard.press("Enter");
+    await expect(preview(page)).toHaveAttribute("data-stops", /#D4527F@25,/);
+    await undo(page);
+    await expect(preview(page)).toHaveAttribute("data-stops", STOPS);
+    await position(page).click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("60");
+    await expect(preview(page)).toHaveAttribute("data-stops", STOPS);
+    await position(page).evaluate((el) => (el as HTMLElement).blur());
+    await expect(preview(page)).toHaveAttribute("data-stops", /#D4527F@60,/);
+    await position(page).focus();
+    await page.keyboard.press("ArrowUp");
+    await expect(preview(page)).toHaveAttribute("data-stops", /#D4527F@60\.1,/);
+  });
+
   test("phone: fields are 16 px with inputmode=decimal; the HEX field has autocorrect off; the sheet sits below the dock", async ({
     page,
   }, info) => {
@@ -301,6 +327,7 @@ test.describe("Stop row (M4-T8)", () => {
     await open(page);
     await expect(position(page)).toHaveValue("50.0");
     await position(page).fill("12,5");
+    await position(page).press("Enter");
     await expect(preview(page)).toHaveAttribute("data-stops", /#D4527F@12\.5,/);
     await position(page).blur();
     await expect(position(page)).toHaveValue("12.5");

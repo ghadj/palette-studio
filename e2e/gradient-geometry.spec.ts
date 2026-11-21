@@ -66,6 +66,40 @@ test.describe("Type chips and Geometry (M4-T6)", () => {
     await expect(preview(page)).toHaveAttribute("data-type", "linear");
   });
 
+  test("Angle and Center commit on Enter or blur, not per keystroke; one undo step", async ({
+    page,
+  }, info) => {
+    await open(page, info);
+    const panel = page.getByTestId("geometry-panel");
+    const angle = panel.locator("#geometry-angle-field");
+    await angle.click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("45");
+    await expect(preview(page)).toHaveAttribute("data-angle", "90");
+    await page.keyboard.press("Enter");
+    await expect(preview(page)).toHaveAttribute("data-angle", "45");
+    await angle.evaluate((el) => (el as HTMLElement).blur());
+    await undo(page);
+    await expect(preview(page)).toHaveAttribute("data-angle", "90");
+    await angle.click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("120");
+    await expect(preview(page)).toHaveAttribute("data-angle", "90");
+    await angle.evaluate((el) => (el as HTMLElement).blur());
+    await expect(preview(page)).toHaveAttribute("data-angle", "120");
+  });
+
+  test("the eight angle presets form a 4 by 2 grid", async ({ page }, info) => {
+    await open(page, info);
+    const buttons = page.getByTestId("angle-presets").getByRole("button");
+    await expect(buttons).toHaveCount(8);
+    const tops = await buttons.evaluateAll((els) =>
+      els.map((el) => Math.round(el.getBoundingClientRect().top)),
+    );
+    expect(new Set(tops).size).toBe(2);
+    expect(tops.filter((t) => t === tops[0])).toHaveLength(4);
+  });
+
   test("dragging the dial to the right of its center sets data-angle 90; the 45 preset sets 45", async ({
     page,
   }, info) => {

@@ -239,8 +239,8 @@ describe("mockup state gradient parameters (M4 plan D28)", () => {
     expect(state.openRows).toEqual(["interpolation", "stop", "geometry"]);
   });
 
-  it("rows=preview is a known row, and technique=derived uses swatch 3", () => {
-    expect(parseMockupParams("?demo=mockup&rows=preview")?.rows).toEqual(["preview"]);
+  it("rows=preview is not a row (the Preview row was removed), and technique=derived uses swatch 3", () => {
+    expect(parseMockupParams("?demo=mockup&rows=preview")?.rows ?? []).toEqual([]);
     const state = buildMockupState(
       parseMockupParams("?demo=mockup&technique=derived"),
       parseMockupGradient("?demo=mockup&technique=derived"),

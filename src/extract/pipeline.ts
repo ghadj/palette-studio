@@ -68,7 +68,7 @@ export interface KeptPixels {
 }
 
 /**
- * The keep mask (spec 2.1 step 3) that extraction and the cluster map share: the pixel filters
+ * The keep mask (spec 2.1 step 3) that extraction uses: the pixel filters
  * (alpha cutoff, ignore dark and light, minimum chroma), then, with Ignore background on Auto, the
  * background pixels connected to the border (decision 4).
  */
@@ -90,7 +90,7 @@ export function keepPixels(image: AnalysisImage, settings: ExtractionSettings): 
 
 /**
  * Keeps the pixels (spec 2.1 step 3), then extracts with the spatial weights (decision 9). A keep
- * mask already made by `keepPixels` can be passed in, so the cluster map uses the same one. When
+ * mask already made by `keepPixels` can be passed in. When
  * nothing is kept, the result is empty with the reason "all-filtered", so the app can ask the user
  * to loosen a filter.
  */

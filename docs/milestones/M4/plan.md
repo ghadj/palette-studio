@@ -660,7 +660,7 @@ Shrunk by decision 68: the Preview row, text check, lowest contrast and vision w
 ### M4-T16: Remove the surround feature (user request; decision 70)
 - Departs from spec 6.2's preview surround; supersedes Q3a to Q3c and T13.
 - Removed: the theme menu's Surround group (System, Light and Dark again, with the three-item keyboard behavior), `src/state/surround.ts`, `initSurround()`, `signals.surround`, the `palette-studio:surround` key, the `surround=` demo parameter, `data-surround` on the well and stage with their CSS, the `--surround-*` tokens and their discovery in `e2e/helpers/tokens.ts`, the screens and shots `gradient-surround-desktop` and `surround-menu-desktop`, and their tests.
-- Kept: the checkerboard behind transparency, and the `menu=theme` demo parameter (it opens the theme menu; no shot uses it now).
+- Kept: the checkerboard behind transparency. The `menu=theme` demo parameter was removed with the surround shots (it only opened the theme menu for them).
 - The preview's stage uses `--color-surface`.
 - Orphaned baselines (to remove through the baselines workflow): `gradient-surround-desktop-{light,dark}.png` and `surround-menu-desktop-{light,dark}.png`, if present. The gradient shots lose the stage's sunken background and need regenerating.
 - [x] Done
@@ -697,9 +697,7 @@ Keep the existing four lines, and add these:
 | `overlay` | `on` | Text check on, with White text |
 | `cvd` | `protanopia`, `deuteranopia`, `tritanopia`, `achromatopsia` | Vision simulation |
 | `aspect` | `1:1`, `16:9`, `9:16`, `4:3`, `banner` | Preview aspect |
-| `surround` | `mid-gray`, `white`, `black` | Preview surround, for this page load only |
 | `technique` | `palette-order`, `sorted`, `smooth-path`, `image-sample`, `derived`, `random`, `population` | Applies that technique with its defaults (`image-sample` samples the default line on the fixture; `derived` uses swatch 3) |
-| `menu` | `theme` | Opens the theme menu |
 
 ## Acceptance checklist (copied from the spec)
 
@@ -710,7 +708,7 @@ Keep the existing four lines, and add these:
 - [ ] Stop sources: Palette order, Sorted, Smooth path (nearest neighbor plus 2-opt), Subset (by hand or N most distinct), Image sample (line, horizontal, vertical, radial scan), Derived (analogous, complementary, monochrome, warm-to-cool), Constrained random (seeded, minimum ΔE and contrast, Shuffle), Population-weighted. (spec 4.2, 7.6)
 - [ ] The Image sample technique can take its stops from the markers, ordered by x, by y, or along a drawn path. (spec 3.7)
 - [ ] Interpolation settings (spec 4.3; repeat length, mesh and banding are M5 and M6):
-  - color space (10 spaces, OKLab default) with compare
+  - color space (10 spaces, OKLab default) ~~with compare~~ (compare removed by the user, decision 68)
   - hue method (polar spaces only); premultiplied alpha
   - stops: click to add, drag to move, % or length, per-stop alpha, per-stop lock, draggable midpoint hint, linked by id; typing detaches, with an unlink icon and Relink; deleting a swatch fixes its stops
   - easing: linear, ease-in, ease-out, ease-in-out, smoothstep, cubic-bezier, as 8 to 32 intermediate stops per segment
@@ -718,11 +716,11 @@ Keep the existing four lines, and add these:
   - geometry: angle with dial and presets, center, shape and size, reverse, mirror
 - ~~Preview: aspect ratios (free, 1:1, 16:9, 9:16, 4:3, banner, custom px), compare mode for two interpolation spaces, text-overlay check with contrast ratio, CVD preview, checkerboard for alpha. (spec 4.4)~~ (removed by the user, decision 68)
 - [ ] The live preview is a native CSS gradient with an explicit `in <space>` clause, feature-detected with `CSS.supports`; baked stops render identically everywhere. (spec 4.5 paths 1 and 2)
-- [ ] CVD simulation is applied to gradients. (spec 3.5)
-- [ ] Undo and redo cover gradients; view state (selection, open panel, preview options, surround) isn't recorded. (spec 3.6)
+- ~~CVD simulation is applied to gradients. (spec 3.5)~~ (removed by the user, decision 68)
+- [ ] Undo and redo cover gradients; view state (selection, open panel) isn't recorded. (spec 3.6) (preview options and surround removed by decisions 68 and 70)
 - [ ] During a marker drag, the gradient preview updates live. (spec 3.7 "Dragging")
 - [ ] 60 fps gradient preview while dragging. (spec 7.7, a target to validate)
-- [ ] Content is never themed: the gradient preview, stop handles, stop bar and thumbnails look identical in both themes. A preview-surround setting (Match theme, Mid-gray, White, Black) changes only the surround. (spec 6.2)
+- [ ] Content is never themed: the gradient preview, stop handles, stop bar and thumbnails look identical in both themes. ~~A preview-surround setting (Match theme, Mid-gray, White, Black) changes only the surround.~~ (surround removed by the user, decision 70). Technique chips show their exact color, picked or not (decision 71). (spec 6.2)
 - ~~The text-overlay check uses the preview background, never the UI theme. (spec 6.2 "Background-dependent tools")~~ (removed by the user, decision 68)
 - [ ] Theme 3: swatch, image and gradient colors are identical in both themes (a screenshot comparison of the preview areas). (spec 6.2)
 - [ ] Theme 4: all text and controls meet AA contrast in both themes. (spec 6.2)
@@ -757,7 +755,7 @@ Keep the existing four lines, and add these:
   - native and baked look the same
 - ~~Judge the interpolation spaces side by side with compare (OKLab against OKLCH, and sRGB's gray dip on complementary colors), and the easing curves, on real palettes. There are no reference values for "looks right".~~ (removed by the user, decision 68). The easing curves still need a look on real palettes.
 - ~~Compare the CVD preview with Chrome DevTools' "Emulate vision deficiencies", and a few text-check ratios with an external WCAG checker.~~ (removed by the user, decision 68)
-- [ ] The Mid-gray, White and Black surrounds, in both themes.
+- ~~The Mid-gray, White and Black surrounds, in both themes.~~ (removed by the user, decision 70)
 - [ ] Time a stop drag and a marker drag on a mid-range phone (the 60 fps target, 7.7).
 - [ ] Open `artifacts/visual-review/index.html`, compare it with the mockups and the contract, and sign off or list changes.
 - [ ] Design review of the not-drawn items in "Screens affected".
@@ -960,3 +958,7 @@ Notes on spec conflicts, as the plan resolves them:
    - **Feature budget (spec 6.6 rule 5)** is no longer at issue: Q4 B keeps the inline rows to the two drawn ones.
 - **Decision 69 (user, 2026-11-20): the cluster map is removed (task T15; departs from spec 2.6).** "Cluster map and highlighting on hover is already indirectly accessible through Palette view on source image... remove cluster map option and highlighting on hover completely, it just overcomplicates stuff." Removed: the hover and focus highlight over the image, the Cluster map toggle, the "x% of the image" share in the selection label (it is "Swatch N" again), the `cluster=` demo parameter and everything behind them. The Palette view's share bar and legend stay. Not an M5 task.
 - **Decision 70 (user, 2026-11-20): the surround is removed (task T16; departs from spec 6.2's preview surround).** "Remove the surround feature completely. It overcomplicates things." Supersedes Q3a to Q3c and T13. The theme menu is System, Light and Dark; the preview stage and the image well use the normal backgrounds; the checkerboard behind transparency stays.
+- **Decision 71 (orchestrator, 2026-11-21, evaluator round 1; spec 6.2): Technique chips never change the swatch fill.** The Colors/Picked and Derived From chips no longer dim unpicked chips with opacity; every chip shows its exact color, and a picked or chosen chip carries a small check badge in its corner (themed UI tokens, not an outline). State stays in `aria-pressed` and `aria-checked`. Also in round 1: the numeric gradient fields (Position, Angle, Center X and Y, Count, Min ΔE, Min contrast, sample Count) commit on Enter, blur or an arrow step; a locked stop handle has `aria-disabled` and "locked" in its name; Custom easing ends Interpolation options flush; "Needs an image." is a sentence in a live region; the Gamut select wraps below its label instead of clipping; the eight angle presets are a 4 by 2 grid; the preview has no inset.
+
+### Round 1 fixes
+- [x] M4-F1: evaluator round 1 fixes (decision 71).

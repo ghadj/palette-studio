@@ -240,6 +240,7 @@ function PositionRow({ stop, id }: { stop: GradientStop; id: string }) {
           decimals={1}
           step={shownUnit === "px" ? 1 : 0.1}
           disabled={stop.locked}
+          deferred
           onCommit={(v) => setSelectedPosition(unitToFraction(v, shownUnit, width))}
         />
         <button

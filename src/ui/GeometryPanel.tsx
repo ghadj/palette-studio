@@ -139,6 +139,7 @@ function AngleRow({ field, label }: { field: "angle" | "from"; label: string }) 
           value={value}
           min={0}
           max={360}
+          deferred
           onCommit={(n) => change({ [field]: n % 360 }, name)}
         />
       </span>
@@ -190,6 +191,7 @@ function CenterRows() {
             value={Math.round(g.center[axis] * 100)}
             min={0}
             max={100}
+            deferred
             onChange={(v) =>
               change({ center: { ...gradient.peek().geometry.center, [axis]: v / 100 } }, "Center")
             }

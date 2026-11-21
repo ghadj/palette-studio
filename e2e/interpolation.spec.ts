@@ -278,12 +278,22 @@ test.describe("Interpolation row and options (M4-T9)", () => {
       const group = await row.locator(".setting-row__label-group").boundingBox();
       const value = await row.locator(".setting-row__value").boundingBox();
       if (!group || !value) throw new Error("no label group or value");
-      expect(group.y).toBeLessThan(value.y + value.height);
-      expect(value.y).toBeLessThan(group.y + group.height);
-      expect(
-        Math.abs(group.y + group.height / 2 - (value.y + value.height / 2)),
-      ).toBeLessThanOrEqual(2);
-      expect(group.x + group.width).toBeLessThanOrEqual(value.x + 1);
+      // Either they share one line, or the value wraps whole below the label group (M2 decision
+      // 23's fallback; M4 round 1: the select shows its full value rather than clip it).
+      const below = value.y >= group.y + group.height - 1;
+      if (!below) {
+        expect(group.y).toBeLessThan(value.y + value.height);
+        expect(value.y).toBeLessThan(group.y + group.height);
+        expect(
+          Math.abs(group.y + group.height / 2 - (value.y + value.height / 2)),
+        ).toBeLessThanOrEqual(2);
+        expect(group.x + group.width).toBeLessThanOrEqual(value.x + 1);
+      }
+      const select = await row.locator("select").evaluate((el) => {
+        const s = el as HTMLSelectElement;
+        return s.scrollWidth <= s.clientWidth + 1;
+      });
+      expect(select, "the select's value is not clipped").toBe(true);
       for (const part of [group, value]) {
         expect(part.x).toBeGreaterThanOrEqual(b.x - 1);
         expect(part.x + part.width).toBeLessThanOrEqual(b.x + b.width + 1);

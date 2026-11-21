@@ -82,6 +82,33 @@ for (const theme of THEMES) {
     }
   });
 
+  test(`${theme}: Custom easing ends Interpolation options flush with one divider`, async ({
+    page,
+  }, info) => {
+    test.skip(isPhoneProject(info), "desktop only");
+    await page.setViewportSize({ width: 1280, height: 1100 });
+    await page.goto(demo(`theme=${theme}&rows=interpolation`));
+    await expect(page.getByTestId("row-interpolation")).toBeVisible();
+    await page.locator("#interp-easing").selectOption("cubic-bezier");
+    await expect(page.getByTestId("bezier-field")).toHaveCount(4);
+    const m = await page.evaluate(() => {
+      const px = (v: string) => Number.parseFloat(v) || 0;
+      const group = document.querySelector<HTMLElement>("[data-testid=row-interpolation]");
+      const bezier = document.querySelector<HTMLElement>("[data-testid=bezier-fields]");
+      if (!group || !bezier) return null;
+      const g = getComputedStyle(group);
+      return {
+        gap: group.getBoundingClientRect().bottom - bezier.getBoundingClientRect().bottom,
+        lines: px(getComputedStyle(bezier).borderBottomWidth) + px(g.borderBottomWidth),
+        lastIsBezier: bezier.parentElement?.lastElementChild === bezier,
+      };
+    });
+    expect(m).not.toBeNull();
+    expect(m?.lastIsBezier).toBe(true);
+    expect(m?.gap).toBeLessThanOrEqual(1);
+    expect(m?.lines).toBe(1);
+  });
+
   test(`${theme}: inline Technique rows sit flush with one divider`, async ({ page }, info) => {
     test.skip(isPhoneProject(info), "desktop only");
     await page.setViewportSize({ width: 1280, height: 1100 });

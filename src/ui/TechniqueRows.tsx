@@ -304,6 +304,7 @@ function ColorsRows({ t }: { t: Technique }) {
             min={MIN_PICKED}
             max={Math.max(MIN_PICKED, swatches.length)}
             onChange={(count) => update({ colors: { ...t.colors, count } }, "Colors")}
+            deferred
             {...stepDrag("Colors")}
           />
         </SettingRow>
@@ -359,6 +360,7 @@ function RandomRows({ t }: { t: Technique }) {
           step={0.01 * scale}
           decimals={decimals}
           onChange={(shown) => update({ minDeltaE: Number((shown / scale).toFixed(6)) }, "Min ΔE")}
+          deferred
           {...stepDrag("Min ΔE")}
         />
       </SettingRow>
@@ -372,6 +374,7 @@ function RandomRows({ t }: { t: Technique }) {
           step={0.1}
           decimals={1}
           onChange={(minContrast) => update({ minContrast }, "Min contrast")}
+          deferred
           {...stepDrag("Min contrast")}
         />
       </SettingRow>
@@ -440,10 +443,17 @@ function SampleRows({ t }: { t: Technique }) {
   const hasImage =
     displayImage.value !== null || masterThread.value !== null || imageSrc.value !== null;
   const { mode, count } = t.sample;
-  const note = hasImage ? null : "Needs an image";
+  const note = hasImage ? null : "Needs an image.";
   return (
     <>
-      <SettingRow label="Mode" htmlFor={id} note={note} noteId={`${id}-note`} disabled={!hasImage}>
+      <SettingRow
+        label="Mode"
+        htmlFor={id}
+        note={note}
+        noteId={`${id}-note`}
+        live
+        disabled={!hasImage}
+      >
         <TechSelect<Technique["sample"]["mode"]>
           id={id}
           value={mode}
@@ -465,6 +475,7 @@ function SampleRows({ t }: { t: Technique }) {
             max={MAX_SAMPLES}
             disabled={!hasImage}
             onChange={(next) => update({ sample: { ...t.sample, count: next } }, "Sample count")}
+            deferred
             {...stepDrag("Sample count")}
           />
         </SettingRow>

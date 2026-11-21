@@ -862,6 +862,12 @@ fieldset {
   max-width: max-content;
 }
 
+/* Interpolation options: a select asks for the width of its longest option, so the value wraps
+   below the label rather than clip ("Reduce chroma" at 320 px; M4 round 1). */
+.interpolation-options .setting-row__value:has(.select) {
+  flex: 0 1 max-content;
+}
+
 /* The value keeps its width and wraps under the label and note when they don't fit together. */
 .setting-row__value {
   display: inline-flex;
@@ -1586,14 +1592,23 @@ fieldset {
   border-bottom: var(--stroke) solid var(--color-divider);
 }
 
-/* A group that ends with a setting row ends with that row's divider: no padding or second line
-   below it (user report, M4-T14). A group that ends in a chart keeps its own closing line. */
-.chevron-row__content:has(.setting-row:last-child) {
+/* A group that ends with a setting row (or the Custom easing's bezier fields, which close with a
+   divider like a row) ends with that divider: no padding or second line below it (user report,
+   M4-T14). Only the group's own last element counts: its direct child, or the last child of its
+   one wrapper. A group that ends in a chart keeps its own closing line. */
+.chevron-row__content:has(
+  > :is(.setting-row, .bezier):last-child,
+  > :last-child > :is(.setting-row, .bezier):last-child
+) {
   padding-bottom: 0;
   border-bottom: 0;
 }
 
-.chevron-row__content:has(.setting-row:last-child) > :last-child {
+.chevron-row__content:has(
+    > :is(.setting-row, .bezier):last-child,
+    > :last-child > :is(.setting-row, .bezier):last-child
+  )
+  > :last-child {
   padding-bottom: 0;
 }
 
@@ -2669,9 +2684,8 @@ fieldset {
 }
 
 .angle-presets {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-2);
   padding: var(--space-2) 0;
   border-bottom: var(--stroke) solid var(--color-divider);
@@ -2873,8 +2887,9 @@ fieldset {
 /* ---- end M4-T9 ---- */
 
 /* ---- M4-T11 technique rows (TechniqueRows.tsx, ImageSampleThumb.tsx) ---- */
-/* The Colors chips (Picked) and the Derived From chips: 44 px fills; the pressed or chosen ones
-   have the accent border, the others are dimmed, so state is never color alone. */
+/* The Colors chips (Picked) and the Derived From chips: 44 px fills that always show their exact
+   color (spec 6.2). A chosen chip carries a check badge in its corner, so state is never color
+   alone and never an outline or a dimmed fill. */
 .technique-chips {
   display: flex;
   flex-wrap: wrap;
@@ -2884,19 +2899,39 @@ fieldset {
 }
 
 .technique-chip {
+  position: relative;
   flex: 0 0 auto;
   width: var(--touch-target);
   height: var(--touch-target);
   border: var(--stroke) solid var(--color-border-control);
   border-radius: var(--radius-input);
   cursor: pointer;
-  opacity: 0.4;
 }
 
-.technique-chip[aria-pressed="true"],
-.technique-chip[aria-checked="true"] {
-  border: var(--stroke-selected) solid var(--color-accent);
-  opacity: 1;
+.technique-chip[aria-pressed="true"]::after,
+.technique-chip[aria-checked="true"]::after {
+  content: "";
+  position: absolute;
+  right: var(--space-1);
+  bottom: var(--space-1);
+  width: var(--space-4);
+  height: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-inverse);
+}
+
+.technique-chip[aria-pressed="true"]::before,
+.technique-chip[aria-checked="true"]::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  right: calc(var(--space-1) + var(--space-1) + var(--stroke));
+  bottom: calc(var(--space-1) + var(--space-1) + var(--space-1) - var(--stroke-selected));
+  width: var(--space-2);
+  height: var(--space-1);
+  border-left: var(--stroke-selected) solid var(--color-text-inverse);
+  border-bottom: var(--stroke-selected) solid var(--color-text-inverse);
+  transform: rotate(-45deg);
 }
 
 .technique-note {
@@ -2999,13 +3034,12 @@ fieldset {
 
 /* ---- M4-T12 gradient preview (GradientPreview.tsx) ---- */
 /*
- * The stage is a plain panel. The frame sets the aspect, 2:1 at full width (plan
+ * The stage is a plain panel with no inset: the preview is the full column width. The frame sets the aspect, 2:1 at full width (plan
  * D22), and carries the checkerboard; the preview (data-user-content, never themed) fills it. On
  * phones the dock holds the preview and the stop bar within about 35% of the screen (decision 67):
  * the frame's height is capped at 35dvh less the stop bar and the paddings (104px, thirteen --space-2 units).
  */
 .gradient-stage {
-  padding: var(--space-2);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }

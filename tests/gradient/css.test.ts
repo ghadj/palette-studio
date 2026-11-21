@@ -67,10 +67,6 @@ describe("native CSS (spec 4.5 path 1; plan D9)", () => {
     );
   });
 
-  it("the space argument overrides the gradient's own, for compare mode", () => {
-    expect(nativeCss(FIXTURE(), grad(), "oklch")).toMatch(/^linear-gradient\(90deg in oklch, /);
-  });
-
   it("a hint at 0.6 of the first segment: `#1DB07A 0%, 30%, #D4527F 50%`", () => {
     const stops = FIXTURE();
     stops[0] = { ...(stops[0] as (typeof stops)[0]), hint: 0.6 };

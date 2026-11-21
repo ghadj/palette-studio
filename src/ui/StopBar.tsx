@@ -338,7 +338,8 @@ export function StopBar() {
             tabIndex={0}
             data-stop-id={stop.id}
             data-testid="stop-handle"
-            aria-label={nameOf(stop.id, i)}
+            aria-label={storedStop?.locked ? `${nameOf(stop.id, i)}, locked` : nameOf(stop.id, i)}
+            aria-disabled={storedStop?.locked ? "true" : undefined}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={pct(stop.position)}

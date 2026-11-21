@@ -38,6 +38,23 @@ async function dragTo(page: Page, n: number, to: number, release = true) {
 }
 
 test.describe("Stop bar (M4-T7)", () => {
+  test("a locked stop's handle is aria-disabled and its name says locked", async ({
+    page,
+  }, info) => {
+    await open(page, info);
+    await expect(handle(page, 2)).not.toHaveAttribute("aria-disabled", /.*/);
+    await page.goto(demo(isPhoneProject(info) ? "tab=gradient&rows=stop" : "rows=stop"));
+    await expect(page.getByTestId("stop-handle")).toHaveCount(3);
+    const lock = page.getByRole("switch", { name: "Lock" });
+    await lock.click();
+    await expect(lock).toHaveAttribute("aria-checked", "true");
+    await expect(handle(page, 2)).toHaveAttribute("aria-disabled", "true");
+    await expect(handle(page, 2)).toHaveAttribute("aria-label", "Stop 2, Swatch 4, 50%, locked");
+    await lock.click();
+    await expect(handle(page, 2)).not.toHaveAttribute("aria-disabled", /.*/);
+    await expect(handle(page, 2)).toHaveAttribute("aria-label", "Stop 2, Swatch 4, 50%");
+  });
+
   test("fixture: 3 handles; the 50% one has the accent ring", async ({ page }, info) => {
     await open(page, info);
     await expect(page.locator(".stop-handle[data-selected]")).toHaveCount(1);

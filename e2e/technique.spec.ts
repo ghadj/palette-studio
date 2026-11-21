@@ -228,6 +228,93 @@ test.describe("Technique rows (M4-T11)", () => {
     await expect.poll(async () => (await stops(page)).length).toBe(4);
   });
 
+  test("typing a Count or a threshold commits on Enter or blur, not per keystroke", async ({
+    page,
+  }, info) => {
+    await open(page, info, "technique=palette-order");
+    await pick(page, "Colors", "Most distinct");
+    const count = rows(page).getByRole("spinbutton", { name: "Count", exact: true });
+    await count.click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("3");
+    await expect.poll(async () => (await stops(page)).length).toBe(4);
+    await page.keyboard.press("Enter");
+    await expect.poll(async () => (await stops(page)).length).toBe(3);
+    await undoButton(page, "Colors").click();
+    await expect.poll(async () => (await stops(page)).length).toBe(4);
+    // Min delta E: the draft waits for blur, then is one undo step.
+    await pick(page, "Technique", "Constrained random");
+    const before = await stops(page);
+    const minDe = rows(page).getByRole("spinbutton", { name: "Min ΔE", exact: true });
+    await minDe.click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("0.2");
+    await expect(undoButton(page, "Min ΔE")).toHaveCount(0);
+    await minDe.evaluate((el) => (el as HTMLElement).blur());
+    await expect(undoButton(page, "Min ΔE")).toBeVisible();
+    expect(before.length).toBeGreaterThan(0);
+  });
+
+  // Spec 6.2: content is never themed. Every chip, picked or not, shows its exact swatch color.
+  for (const scheme of ["light", "dark"] as const) {
+    test(`${scheme}: chip centers equal the swatch HEX, picked or not`, async ({ page }, info) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      for (const query of ["", "technique=derived"]) {
+        await open(page, info, query);
+        const chips = rows(page).getByTestId("technique-chip");
+        const count = await chips.count();
+        expect(count).toBeGreaterThanOrEqual(6);
+        const states = new Set<string | null>();
+        for (let i = 0; i < count; i += 1) {
+          const chipEl = chips.nth(i);
+          await chipEl.scrollIntoViewIfNeeded();
+          states.add(
+            (await chipEl.getAttribute("aria-pressed")) ??
+              (await chipEl.getAttribute("aria-checked")),
+          );
+          const expected = await chipEl.evaluate((el) => {
+            const probe = document.createElement("canvas").getContext("2d");
+            if (!probe) throw new Error("no 2d context");
+            probe.fillStyle = (el as HTMLElement).style.background;
+            probe.fillRect(0, 0, 1, 1);
+            return [...probe.getImageData(0, 0, 1, 1).data].slice(0, 3);
+          });
+          const box = await chipEl.boundingBox();
+          if (!box) throw new Error("no chip box");
+          const png = await page.screenshot({
+            clip: {
+              x: box.x + box.width / 2 - 2,
+              y: box.y + box.height / 2 - 2,
+              width: 4,
+              height: 4,
+            },
+          });
+          const actual = await page.evaluate(async (b64) => {
+            const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+            const bitmap = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const ctx = canvas.getContext("2d");
+            if (!ctx) throw new Error("no 2d context");
+            ctx.drawImage(bitmap, 0, 0);
+            const d = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
+            const n = d.length / 4;
+            const sum = [0, 0, 0];
+            for (let k = 0; k < n; k += 1)
+              for (let c = 0; c < 3; c += 1) sum[c] = (sum[c] ?? 0) + (d[k * 4 + c] ?? 0);
+            return sum.map((v) => v / n);
+          }, png.toString("base64"));
+          for (let c = 0; c < 3; c += 1) {
+            expect(
+              Math.abs((actual[c] ?? 0) - (expected[c] ?? 0)),
+              `${query} chip ${i} channel ${c} in ${scheme}`,
+            ).toBeLessThanOrEqual(1);
+          }
+        }
+        if (query === "") expect(states).toEqual(new Set(["true", "false"]));
+      }
+    });
+  }
+
   test("the Stop row never shows an empty state: the first stop is selected by default", async ({
     page,
   }, info) => {

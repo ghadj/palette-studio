@@ -155,7 +155,7 @@ test.describe("gradient preview (M4-T12)", () => {
     const b = await preview(page).boundingBox();
     const s = await stage(page).boundingBox();
     expect(Math.abs((b?.width ?? 0) / (b?.height ?? 1) - 2)).toBeLessThan(0.02);
-    expect((s?.width ?? 0) - (b?.width ?? 0)).toBeLessThanOrEqual(20);
+    expect(Math.abs((s?.width ?? 0) - (b?.width ?? 0))).toBeLessThanOrEqual(1);
   });
 
   test("the checkerboard shows only while a stop has alpha below 1", async ({ page }, info) => {

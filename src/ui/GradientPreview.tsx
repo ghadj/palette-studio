@@ -2,7 +2,8 @@
  * The gradient preview (ui-contract column 3 item 1; spec 4.4, 4.5, 6.2; plan M4-T12, D22, D23,
  * decision 68).
  *
- * - A stage in the normal panel background (the surround was removed by decision 70).
+ * - The preview fills the column width, in the normal panel background, with no inset or
+ *   surround (decision 70).
  * - The preview at one fixed aspect, 2:1 at full width. On phones its height is capped so the dock
  *   (preview and stop bar) stays within about 35% of the screen (decision 67).
  * - It draws `render.css` (native or baked, `data-render`). A checkerboard sits behind it only while
