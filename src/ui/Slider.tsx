@@ -22,6 +22,7 @@ export function Slider({
   decimals = 0,
   disabled = false,
   describedBy,
+  deferred = false,
   onChange,
   onDragStart,
   onDragEnd,
@@ -38,6 +39,8 @@ export function Slider({
   decimals?: number;
   disabled?: boolean;
   describedBy?: string | undefined;
+  /** The whole-number field commits on Enter, blur or an arrow step, not per keystroke. */
+  deferred?: boolean;
   /** Every new value, live while dragging. */
   onChange: (value: number) => void;
   onDragStart?: () => void;
@@ -83,6 +86,7 @@ export function Slider({
           decimals={decimals}
           disabled={disabled}
           describedBy={describedBy}
+          deferred={deferred}
           onCommit={onChange}
         />
       ) : (
@@ -93,6 +97,7 @@ export function Slider({
           max={max}
           disabled={disabled}
           describedBy={describedBy}
+          deferred={deferred}
           onCommit={onChange}
         />
       )}

@@ -27,7 +27,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: DESKTOP,
     mockup: { light: "01-studio-light.png", dark: "02-studio-dark.png" },
     frame:
-      "Whole frame. The header has Export where the mockup has Share, and there is no export bar under the columns (D10). Column 2 has the chevron rows and the Lock and Ramp pills (M3-T2); markers, hint, L/C/H and HEX arrive in later M3 tasks, gradient controls in M4.",
+      "Whole frame. The header has Export where the mockup has Share, and there is no export bar under the columns (D10). Column 2 has the chevron rows and the Lock and Ramp pills (M3-T2). Column 3 is built in M4: the preview pinned at the top (D12), the type chips, the stop bar, the Interpolation and Technique rows, then the Interpolation options, Stop, and Geometry chevron rows (Q4, decision 68).",
   },
   {
     // M2-T7. Taller than the other desktop shots, so the open Advanced rows fit in column 1
@@ -59,7 +59,8 @@ export const M1_SHOTS: readonly Shot[] = [
     path: "./?demo=mockup&tab=gradient",
     viewport: PHONE,
     mockup: { light: "09-mobile-light.png", dark: "10-mobile-dark.png" },
-    frame: "Middle phone. M1 shows a one-line hint; gradients arrive in M4.",
+    frame:
+      "Middle phone: the preview pinned under the header, the type chips, the stop bar, the Interpolation and Technique rows (the angle is whatever the state holds, D1), then the Interpolation options, Stop, and Geometry rows (Q4, D12).",
   },
   {
     name: "studio-tablet",
@@ -114,23 +115,6 @@ export const M1_SHOTS: readonly Shot[] = [
     mockup: null,
     frame: "M2 decision 2b: the Filters chevron row on the Source tab, open.",
   },
-  // M2-T14: the cluster overlay and the share label are not drawn; they go to design review.
-  {
-    name: "cluster-map-desktop",
-    path: "./?demo=mockup&cluster=3",
-    viewport: DESKTOP,
-    mockup: null,
-    frame:
-      "M2 decision 13: swatch 3's cluster map over the image (other pixels dimmed toward mid-gray, about 70%) and 'Swatch 3 · 0.5% of the image' in the selection label (not drawn).",
-  },
-  {
-    name: "cluster-map-phone",
-    path: "./?demo=mockup&cluster=3",
-    viewport: PHONE,
-    mockup: null,
-    frame:
-      "M2 decision 13: the Source tab with swatch 3's cluster map over the image (not drawn). The Cluster map toggle is in swatch-sheet-phone (13d).",
-  },
   // M3 (plan "Screens affected"), registered by M3-T2. Until a shot's task lands it shows that
   // task's stub ("Coming in a later version"). The desktop row shots are taller, so the open row
   // fits in column 2 without scrolling it, as advanced-desktop does for column 1.
@@ -140,7 +124,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: TALL_DESKTOP,
     mockup: null,
     frame:
-      "Not drawn (M3 decision 5a). Column 2 with the Swatch chevron row open in place: formats, Name with its suggestion, Copy, Duplicate, Delete, Reset to extracted, Sample radius, Mean or Median, Cluster map.",
+      "Not drawn (M3 decision 5a). Column 2 with the Swatch chevron row open in place: formats, Name with its suggestion, Copy, Duplicate, Delete, Reset to extracted, Sample radius, Mean or Median.",
   },
   {
     name: "adjustments-desktop",
@@ -226,7 +210,7 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: PHONE,
     mockup: null,
     frame:
-      "Not drawn (contract 'Not drawn': bottom sheets for the swatch editor). The Swatch sheet over the Palette tab, with the Cluster map toggle (M2 decision 13d).",
+      "Not drawn (contract 'Not drawn': bottom sheets for the swatch editor). The Swatch sheet over the Palette tab.",
   },
   {
     name: "adjustments-sheet-phone",
@@ -255,6 +239,94 @@ export const M1_SHOTS: readonly Shot[] = [
     viewport: PHONE,
     mockup: null,
     frame: "Not drawn. The CVD sheet over the Palette tab.",
+  },
+  // M4 (plan "Screens affected"), registered by M4-T2. Until a shot's task lands it shows that
+  // task's stub ("Coming in a later version"). The desktop row shots are taller, so the open row
+  // fits in column 3 without scrolling it.
+  {
+    name: "interp-options-desktop",
+    path: "./?demo=mockup&rows=interpolation&space=oklch",
+    viewport: TALL_DESKTOP,
+    mockup: null,
+    frame:
+      "Not drawn (M4 plan Q4). Column 3 with the Interpolation options row open in place, in OKLCH so Hue shows: Hue, Easing and, only when they apply, Premultiplied and Gamut; the header has an accent dot, a count and a reset-all icon while an option differs from its default.",
+  },
+  {
+    name: "gradient-stop-desktop",
+    path: "./?demo=mockup&rows=stop",
+    viewport: TALL_DESKTOP,
+    mockup: null,
+    frame:
+      "Not drawn. Column 3 with the Stop row open: the 50% stop's color (HEX with the Relink icon), position in % or px, alpha, Lock, midpoint and Delete (spec 4.3, plan D29, D30).",
+  },
+  {
+    name: "gradient-geometry-desktop",
+    path: "./?demo=mockup&rows=geometry",
+    viewport: TALL_DESKTOP,
+    mockup: null,
+    frame:
+      "Not drawn (contract 'Not drawn': gradient geometry controls). Column 3 with the Geometry row open for a linear gradient: the angle dial with its field and presets, Reverse and Mirror (spec 4.3, plan D21).",
+  },
+  {
+    name: "gradient-radial-desktop",
+    path: "./?demo=mockup&gradient=radial&rows=geometry",
+    viewport: TALL_DESKTOP,
+    mockup: null,
+    frame:
+      "Not drawn. A radial gradient with the Geometry row open: shape, size keyword and center, Reverse and Mirror (spec 4.3).",
+  },
+  {
+    name: "gradient-technique-desktop",
+    path: "./?demo=mockup&technique=image-sample",
+    viewport: TALL_DESKTOP,
+    mockup: null,
+    frame:
+      "Not drawn. The Image sample technique: its parameter rows and the thumbnail with the sample line (spec 4.2, plan D18).",
+  },
+  {
+    name: "gradient-conic-desktop",
+    path: "./?demo=mockup&gradient=conic",
+    viewport: DESKTOP,
+    mockup: { light: "01-studio-light.png", dark: "02-studio-dark.png" },
+    frame:
+      "Column 3 with the Conic chip selected. The mockup draws a linear gradient; compare the layout, not the type (D1).",
+  },
+  {
+    name: "interp-options-sheet-phone",
+    path: "./?demo=mockup&tab=gradient&rows=interpolation&space=oklch",
+    viewport: PHONE,
+    mockup: null,
+    frame:
+      "Not drawn. The Interpolation options drawer on the Gradient tab, below the pinned preview, in OKLCH so Hue shows (plan Q2, Q4).",
+  },
+  {
+    name: "stop-sheet-phone",
+    path: "./?demo=mockup&tab=gradient&rows=stop",
+    viewport: PHONE,
+    mockup: null,
+    frame: "Not drawn. The Stop drawer, titled 'Stop 2 of 3', below the pinned preview (plan D29).",
+  },
+  {
+    name: "geometry-sheet-phone",
+    path: "./?demo=mockup&tab=gradient&rows=geometry",
+    viewport: PHONE,
+    mockup: null,
+    frame: "Not drawn. The Geometry drawer below the pinned preview (spec 6.1).",
+  },
+  {
+    name: "gradient-technique-phone",
+    path: "./?demo=mockup&tab=gradient&technique=image-sample",
+    viewport: PHONE,
+    mockup: null,
+    frame:
+      "Not drawn. The Image sample technique on the Gradient tab: parameter rows and the thumbnail with the sample line (plan D18).",
+  },
+  {
+    name: "gradient-tablet",
+    path: "./?demo=mockup&tab=gradient",
+    viewport: TABLET,
+    mockup: null,
+    frame: "Not drawn. The Gradient tab at tablet width: the phone layout, centered (spec 6.1).",
   },
 ];
 

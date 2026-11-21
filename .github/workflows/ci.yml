@@ -43,6 +43,8 @@ jobs:
       - run: npx playwright install --with-deps chromium webkit firefox
       # Token and accessibility tests run in their own job below.
       - run: npm run e2e -- --grep-invert "@tokens|@a11y"
+      # Long-task timing checks run alone, on one worker (e2e/perf.spec.ts).
+      - run: npm run e2e:perf
       - if: failure()
         uses: actions/upload-artifact@v7
         with:

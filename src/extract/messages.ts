@@ -1,7 +1,7 @@
 /**
  * Messages between the UI thread and the image worker (spec 7.1 "Workers", 7.4). M3-T2 reserves
  * `sample`, `place` and `view` and the `extracted` reply's `points`, so M3-T10 and M3-T11 build
- * them without changing this file.
+ * them without changing this file. M4-T2 reserves `ring` the same way, for M4-T5.
  */
 import type { Oklab } from "../color/convert";
 import type { MasterWindow } from "../image/tiers";
@@ -13,7 +13,6 @@ import type {
   SampleStat,
   ViewSettings,
 } from "../types";
-import type { ClusterMap } from "./cluster-map";
 import type { BackgroundStatus } from "./pipeline";
 import type { ExtractedColor } from "./postprocess";
 
@@ -34,29 +33,6 @@ export type ToWorker =
   /** Extract a palette from the master's analysis copy, or from the pixels given (fallback). */
   | { type: "extract"; jobId: number; settings: ExtractionSettings; pixels: PixelBuffer | null }
   /**
-   * Rebuild the cluster map for the given palette (OKLab, in palette order) without extracting:
-   * the settings give the filters and the working space (spec 2.6).
-   */
-  | {
-      type: "assign";
-      jobId: number;
-      colors: Oklab[];
-      settings: ExtractionSettings;
-      pixels: PixelBuffer | null;
-    }
-  /**
-   * Build the overlay pixels of one swatch's cluster map (spec 2.6, decision 13b) from a copy of
-   * the map's labels, so the UI thread never loops over them (spec 7.4).
-   */
-  | {
-      type: "overlay";
-      jobId: number;
-      width: number;
-      height: number;
-      labels: ArrayBuffer;
-      index: number;
-    }
-  /**
    * Sample the patch under a marker (spec 3.7, M3-T10): the color within `radius` of `point`
    * (normalized) on the working master, and the loupe's crop. `window` is null when the worker
    * holds the master; the main-thread fallback sends the master pixels around the point.
@@ -72,7 +48,7 @@ export type ToWorker =
   /**
    * Place markers (spec 3.7, M3-T10) for the swatches at `indexes` of the palette `colors` (OKLab,
    * in palette order). The settings give the analysis copy, the filters and the working space,
-   * as for `assign`; `pixels` is the fallback's analysis copy.
+   * as for `extract`; `pixels` is the fallback's analysis copy.
    */
   | {
       type: "place";
@@ -98,6 +74,20 @@ export type ToWorker =
       /** The user's alpha cutoff, 0 to 255 (spec 2.4). */
       alphaCutoff: number;
       pixels: PixelBuffer | null;
+    }
+  /**
+   * The mean color of an annulus of the working master (plan D18, M4-T5): `center` and the radii
+   * `r0` and `r1` are normalized, the radii as fractions of the image's width. It reads the master
+   * at display size, so `version` and `pixels` work as for `view`.
+   */
+  | {
+      type: "ring";
+      jobId: number;
+      version: number;
+      center: ImagePoint;
+      r0: number;
+      r1: number;
+      pixels: PixelBuffer | null;
     };
 
 export type FromWorker =
@@ -118,15 +108,10 @@ export type FromWorker =
       reason: "all-filtered" | null;
       /** Ignore background's outcome (M2 decision 4); absent while it is off. */
       background?: BackgroundStatus;
-      /** The cluster map for these colors; its labels' buffer is transferred (spec 2.6). */
-      map: ClusterMap;
       /** One marker point per color, normalized (spec 3.7). M3-T10 fills it in. */
       points?: ImagePoint[];
       ms: number;
     }
-  | { type: "assigned"; jobId: number; map: ClusterMap }
-  /** RGBA overlay pixels, `width` × `height`; the buffer is transferred. */
-  | { type: "overlaid"; jobId: number; width: number; height: number; data: ArrayBuffer }
   /** The patch color in OKLab, and the loupe's crop (15 × 15 RGBA; the buffer is transferred). */
   | { type: "sampled"; jobId: number; color: Oklab; crop: PixelBuffer }
   /** One normalized point per requested index, in the request's order. */
@@ -141,4 +126,6 @@ export type FromWorker =
       shares: number[];
       bandShares: number[];
     }
+  /** The annulus' mean color in OKLab. */
+  | { type: "ringed"; jobId: number; color: Oklab }
   | { type: "error"; jobId: number; message: string };

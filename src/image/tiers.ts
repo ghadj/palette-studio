@@ -12,8 +12,6 @@ import type { ImagePoint, Resampling, SampleSize } from "../types";
 
 export const MASTER_MAX = 4096;
 export const DISPLAY_MAX = 2048;
-/** The cluster map is made at the display copy's resolution, but at most this many px (M3 decision 36). */
-export const MAP_MAX = 1024;
 
 export interface Size {
   width: number;
@@ -36,12 +34,6 @@ export const masterSize = (width: number, height: number): Size =>
 
 export const displaySize = (width: number, height: number): Size =>
   fitWithin(width, height, DISPLAY_MAX);
-
-/** The cluster map's size: the display copy's, capped at MAP_MAX on the longest edge. */
-export const mapSize = (width: number, height: number): Size => {
-  const display = displaySize(width, height);
-  return fitWithin(display.width, display.height, MAP_MAX);
-};
 
 /** The analysis copy for a master of this size. "full" uses the master size. */
 export function analysisSize(width: number, height: number, sampleSize: SampleSize): Size {

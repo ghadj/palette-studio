@@ -1,7 +1,7 @@
 /**
- * The cluster map (spec 2.6): which swatch each analysis pixel belongs to. A swatch's pixels are
+ * The pixel assignment (marker placement, spec 3.7): which swatch each analysis pixel belongs to. A swatch's pixels are
  * those that pass the filters and are nearest to it in the working space (M2 decision 13a); the
- * whole image is used (no region of interest, decision 15a). Pure; runs in the worker, so the UI
+ * whole image is used. Pure; runs in the worker, so the UI
  * thread never loops over the pixels (spec 7.4).
  */
 import { type Oklab, oklabToLab, oklabToLinearRgb, oklabToRgb } from "../color/convert";
@@ -13,16 +13,14 @@ import type { AnalysisImage } from "./pipeline";
 export const FILTERED = 255;
 
 /** The most swatches a map can label: the indices 0 to 254, since 255 marks filtered pixels. */
-export const MAX_MAP_COLORS = FILTERED;
+export const MAX_ASSIGN_COLORS = FILTERED;
 
-export interface ClusterMap {
+export interface PixelAssignment {
   /** Size of the analysis copy the map was made from. */
   width: number;
   height: number;
   /** One entry per analysis pixel, row by row: the nearest swatch's index, or FILTERED. */
   labels: Uint8Array;
-  /** Each swatch's share of the kept pixels, in palette order; they sum to 1 (all 0 if none kept). */
-  shares: number[];
 }
 
 /** An OKLab color in working-space coordinates, unclamped, to compare with converted pixels. */
@@ -54,20 +52,18 @@ export function assignPixels(
   keep: Uint8Array,
   colors: readonly Oklab[],
   space: WorkingSpace,
-): ClusterMap {
-  if (colors.length > MAX_MAP_COLORS) {
-    throw new Error(`A cluster map labels at most ${MAX_MAP_COLORS} colors`);
+): PixelAssignment {
+  if (colors.length > MAX_ASSIGN_COLORS) {
+    throw new Error(`A pixel assignment labels at most ${MAX_ASSIGN_COLORS} colors`);
   }
   const count = image.width * image.height;
   const labels = new Uint8Array(count).fill(FILTERED);
   const k = colors.length;
   const centers = new Float64Array(k * 3);
   for (const [i, c] of colors.entries()) centers.set(toWorking(space, c), i * 3);
-  const counts = new Float64Array(k);
   const convert = rgb8ToWorking(space);
   const p = new Float64Array(3);
   const data = image.data;
-  let kept = 0;
   // Consecutive pixels often share a color, so the last answer is reused.
   let lastKey = -1;
   let lastLabel = 0;
@@ -96,32 +92,6 @@ export function assignPixels(
       lastLabel = best;
     }
     labels[i] = lastLabel;
-    counts[lastLabel] = (counts[lastLabel] ?? 0) + 1;
-    kept += 1;
   }
-  const shares = Array.from(counts, (n) => (kept > 0 ? n / kept : 0));
-  return { width: image.width, height: image.height, labels, shares };
-}
-
-/** The neutral mid-gray the overlay dims other pixels toward (M2 decision 13b), as sRGB 0 to 255. */
-export const OVERLAY_GRAY = 128;
-/** How far other pixels are dimmed toward OVERLAY_GRAY: about 70% (decision 13b), as alpha. */
-export const OVERLAY_ALPHA = Math.round(0.7 * 255);
-
-/**
- * The overlay for one swatch's cluster map (spec 2.6), as RGBA pixels the size of the map: the
- * swatch's pixels are clear, so the image shows through unchanged, and every other pixel, filtered
- * ones included, is OVERLAY_GRAY at OVERLAY_ALPHA. It is the same in both themes. Runs in the worker.
- */
-export function overlayPixels(labels: Uint8Array, index: number): Uint8ClampedArray {
-  const rgba = new Uint8ClampedArray(labels.length * 4);
-  for (let i = 0; i < labels.length; i += 1) {
-    if (labels[i] === index) continue;
-    const o = i * 4;
-    rgba[o] = OVERLAY_GRAY;
-    rgba[o + 1] = OVERLAY_GRAY;
-    rgba[o + 2] = OVERLAY_GRAY;
-    rgba[o + 3] = OVERLAY_ALPHA;
-  }
-  return rgba;
+  return { width: image.width, height: image.height, labels };
 }

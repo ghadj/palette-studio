@@ -194,13 +194,6 @@ test.describe("markers on the image (spec 3.7)", () => {
     expect(t.x + t.width).toBeLessThanOrEqual(z.x);
   });
 
-  test("the cluster overlay and the markers can show together", async ({ page }) => {
-    await page.goto(demo("cluster=3"));
-    await expect(page.locator(".image-well__overlay")).toBeVisible();
-    await expect(page.locator("[data-marker]")).toHaveCount(6);
-    await expect(marker(page, 1)).toBeVisible();
-  });
-
   test("loupe=3 shows #14386B", async ({ page }) => {
     await page.goto(demo("loupe=3"));
     const loupe = page.getByTestId("loupe");

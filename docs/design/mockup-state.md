@@ -15,17 +15,19 @@ A fixed demo state that reproduces the mockups' content, so screenshots of the r
 | `library` | `open`, `menu`, `undo` | Opens the library drawer or Projects sheet; `menu` also opens the current project's ⋯ menu; `undo` shows the toast after deleting "Old test" | `07`, `11` |
 | `brands` | comma-separated brand names, such as `Brand A,Brand C` | Sets the brand filter on the Materials view | `13` |
 | `filters` | `all`, `medium` | Phone only: opens the Filters sheet in the All brands or By medium scope | `13` |
-| `cluster` | `1` to `6` | Shows that swatch's cluster map over the image, as hovering or focusing the swatch does (spec 2.6, M2 decisions 13 and 14b) | not drawn |
 | `zoom` | `2`, `4`, `8` | Opens the image at that zoom, centered on the image (M2 decision 15g). Zoom is view state, so nothing stores it | not drawn |
-| `rows` | `filters`, `advanced`, `swatch`, `adjustments`, `ramp`, `contrast`, `cvd`, or several comma-separated | Opens chevron rows: Filters and Advanced under the image (M2); Swatch, Adjustments, Contrast and CVD in the Palette column, and the editor's Ramp panel (M3, plan D20). On desktop they expand in place; on phones and tablets the M3 ones open as bottom sheets, which show on the Palette tab (`tab=palette`) | not drawn |
+| `rows` | `filters`, `advanced`, `swatch`, `adjustments`, `ramp`, `contrast`, `cvd`, `interpolation`, `stop`, `geometry`, or several comma-separated | Opens chevron rows: Filters and Advanced under the image (M2); Swatch, Adjustments, Contrast and CVD in the Palette column, and the editor's Ramp panel (M3, plan D20); Interpolation options, Stop and Geometry in the Gradient column (M4). On desktop they expand in place; on phones and tablets the M3 and M4 ones open as bottom sheets, which show on their tab (`tab=palette`, `tab=gradient`) | not drawn |
 | `loupe` | `1` to `6` | Shows the loupe over that swatch's marker, as during a drag (spec 3.7, M3 plan D20) | not drawn |
+| `gradient` | `linear` (default), `radial`, `conic` | Gradient type (M4) | not drawn |
+| `space` | an interpolation space: `srgb`, `srgb-linear`, `display-p3`, `lab`, `oklab` (default), `lch`, `oklch`, `hsl`, `hwb`, `xyz` | Interpolation space (M4) | not drawn |
+| `technique` | `palette-order`, `sorted`, `smooth-path`, `image-sample`, `derived`, `random`, `population` | Applies that technique with its defaults: Colors set to All; `image-sample` samples the default line on the fixture; `derived` uses swatch 3 (M4) | not drawn |
 | `theme` | `light`, `dark` | Overrides the theme for this page load only | all |
 
 Rules:
 - It works in production builds too, since it reads only files bundled with the app. It's not linked from the UI.
 - It never reads or writes autosave and never touches IndexedDB or localStorage, so it can't overwrite a user's work or library (spec 5.3, 5.5, 6.2). Its library is an in-memory fixture (below).
 - It loads its state directly, without running extraction. Screenshots then don't change when extraction algorithms change. The image views are computed from the fixture image as usual (spec 3.8), so the values below are real assertions.
-- The cluster map (spec 2.6) is computed too: the worker prepares `mockup-scene.png` and assigns its pixels to the six swatches, without extracting. The image well still shows the fixture image. Its shares match the Palette view's area shares below.
+- The worker prepares `mockup-scene.png` as the image master, without extracting, so the image views can be drawn. The image well still shows the fixture image. There is no cluster map and no `cluster` parameter (ui-contract D13).
 - The clock is fixed at 17 November 2026, 12:00 local time, so relative labels such as "Edited yesterday" don't change between runs.
 - An "Example data" banner is not shown, so screenshots match. The tab title gets a "(demo)" suffix instead.
 
@@ -64,6 +66,12 @@ Swatch 3 is selected, so its marker and swatch show as selected.
 - Stops linked to swatch 2 at 0%, swatch 4 at 50% and swatch 6 at 100%.
 - Interpolation OKLab; the technique field shows Smooth path.
 - The 50% stop is selected.
+- Geometry (M4): angle 90°, ellipse, farthest-corner, center 50% 50%, conic start 0°, reverse and mirror off.
+- Interpolation options (M4): OKLab, so Hue stays Shorter and is hidden (OKLab isn't polar); premultiplied on, hidden because no stop has alpha; easing Linear; gamut Reduce chroma, hidden because everything is in gamut. The drawer shows only Easing, and its header has no badge.
+- Technique (M4): Smooth path, with Colors set to Picked: swatches 2, 4 and 6. The stops are the technique's output, not stored: the gradient is live, not Custom.
+- Stops (M4): swatch 2 at 0%, swatch 4 at 50% and swatch 6 at 100%, all linked, alpha 100%, midpoints 50%, unlocked. The 50% stop is selected.
+- Preview (M4): one fixed 2:1 aspect, no surround (ui-contract D14). Compare, the text check, Vision and the aspect control were removed (decision 68); the `compare`, `overlay`, `cvd`, `aspect` and `menu=theme` parameters were removed with them.
+- Expected native CSS: `linear-gradient(90deg in oklab, #1DB07A 0%, #D4527F 50%, #5039B0 100%)`. The preview's `data-stops` attribute reads `#1DB07A@0,#D4527F@50,#5039B0@100`: the resolved stops after reverse and mirror, as `HEX@percent` entries (8-digit HEX when a stop is not opaque), with `~percent` entries for midpoints other than 50%, such as `#1DB07A@0,~30,#D4527F@50,#5039B0@100`. The preview also carries `data-type`, `data-angle`, `data-space`, `data-hue`, `data-easing`, `data-render` (`native` or `baked`).
 
 **Image views** (defaults unless the URL says otherwise): Image view, grid off, 5 bands, close-in-value threshold 0.03, Colors from Palette, dither off, 6 squares across, labels on.
 

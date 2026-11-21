@@ -8,7 +8,8 @@
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { activeTab } from "../state/signals";
 import type { Tab } from "../types";
-import { GradientPanel, MaterialsPanel } from "./GradientPanel";
+import { GradientPanel } from "./GradientPanel";
+import { MaterialsPanel } from "./MaterialsPanel";
 import { PalettePanel } from "./PalettePanel";
 import { SourcePanel } from "./SourcePanel";
 import { panelId, TabBar, tabId } from "./TabBar";

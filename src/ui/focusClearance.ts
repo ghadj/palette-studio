@@ -1,13 +1,13 @@
 /**
- * Keeps the focused control clear of the sticky header, the pinned swatch strip and the fixed tab
- * bar below 1024 px (spec 8 v1 acceptance 10; WCAG 2.2 SC 2.4.11). `scroll-padding` in app.css
+ * Keeps the focused control clear of the sticky header, the pinned dock (the swatch strip, or the
+ * gradient preview on the Gradient tab) and the fixed tab bar below 1024 px (spec 8 v1 acceptance 10; WCAG 2.2 SC 2.4.11). `scroll-padding` in app.css
  * does this in Chromium; WebKit and Firefox ignore it for focus scrolling, so after focus lands
  * this nudges the page by whatever the chrome still covers.
  */
 const PHONE = "(max-width: 1023.98px)";
 const GAP = 8;
 /** The sticky or fixed chrome itself, its menus and open sheets (a `<dialog>` has no role attribute): focus inside never scrolls the page. */
-const CHROME = "header, [data-testid=strip-dock], .tabbar, [role=menu], [role=dialog], dialog";
+const CHROME = "header, [data-dock], .tabbar, [role=menu], [role=dialog], dialog";
 
 const keyboardFocus = (el: Element): boolean => {
   try {
@@ -18,13 +18,13 @@ const keyboardFocus = (el: Element): boolean => {
 };
 
 /**
- * From 1024 px the strip pins inside column 2's scroll container (M3 decision 45). Firefox and
- * WebKit ignore `scroll-padding` for focus scrolling there too, so scroll that container by
- * whatever the pinned strip still covers.
+ * From 1024 px the dock pins inside its column's scroll container (M3 decision 45; M4 plan Q2).
+ * Firefox and WebKit ignore `scroll-padding` for focus scrolling there too, so scroll that
+ * container by whatever the pinned dock still covers.
  */
 function nudgeColumnClear(el: Element): void {
   const scroller = el.closest<HTMLElement>(".column__scroll");
-  const dock = scroller?.querySelector<HTMLElement>("[data-testid=strip-dock]");
+  const dock = scroller?.querySelector<HTMLElement>("[data-dock]");
   if (!scroller || !dock || dock.contains(el)) return;
   const covered = dock.getBoundingClientRect().bottom + GAP;
   const r = el.getBoundingClientRect();
@@ -40,7 +40,7 @@ export function nudgeFocusClear(): void {
   }
   // Taps and clicks never scroll, and neither does focus inside the chrome (M2 decision 19).
   if (el.closest(CHROME) || !keyboardFocus(el)) return;
-  const top = ["header", "[data-testid=strip-dock]"].reduce((edge, selector) => {
+  const top = ["header", "[data-dock]"].reduce((edge, selector) => {
     const chrome = document.querySelector(selector);
     return chrome ? Math.max(edge, chrome.getBoundingClientRect().bottom) : edge;
   }, 0);

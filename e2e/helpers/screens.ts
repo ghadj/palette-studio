@@ -17,6 +17,8 @@ export interface Screen {
 const DESKTOP = { width: 1280, height: 800 };
 const TABLET = { width: 820, height: 1180 };
 const PHONE = { width: 390, height: 844 };
+/** Desktop screens with an open row in a column, tall enough that the column doesn't scroll. */
+const TALL_DESKTOP = { width: 1280, height: 1280 };
 
 export const M1_SCREENS: readonly Screen[] = [
   {
@@ -62,15 +64,6 @@ export const M1_SCREENS: readonly Screen[] = [
     viewport: PHONE,
     device: "phone",
   },
-  // M2-T14: swatch 3's cluster map over the image (mockup-state `cluster=3`). The Palette tab
-  // with the Cluster map toggle is swatch-sheet-phone below (13d).
-  {
-    name: "cluster-map-desktop",
-    path: "./?demo=mockup&cluster=3",
-    viewport: DESKTOP,
-    device: "desktop",
-  },
-  { name: "cluster-map-phone", path: "./?demo=mockup&cluster=3", viewport: PHONE, device: "phone" },
   // M3 (plan "Screens affected"), registered by M3-T2 so token and axe tests cover each screen
   // from the start. The tasks that build them fill them in; no task edits this list.
   // Desktop: each Palette-column row open in place (`rows=`), the loupe, and the image views.
@@ -113,6 +106,49 @@ export const M1_SCREENS: readonly Screen[] = [
       device: "phone",
     }),
   ),
+  // M4 (plan "Screens affected"), registered by M4-T2 so token and axe tests cover each screen from
+  // the start. The tasks that build them fill them in; no task edits this list.
+  // Desktop: column 3's rows open in place (`rows=`), the gradient types and the
+  // technique parameters.
+  ...(
+    [
+      ["interp-options-desktop", "rows=interpolation&space=oklch", TALL_DESKTOP],
+      ["gradient-stop-desktop", "rows=stop", TALL_DESKTOP],
+      ["gradient-geometry-desktop", "rows=geometry", TALL_DESKTOP],
+      ["gradient-radial-desktop", "gradient=radial&rows=geometry", TALL_DESKTOP],
+      ["gradient-technique-desktop", "technique=image-sample", TALL_DESKTOP],
+      ["gradient-conic-desktop", "gradient=conic", DESKTOP],
+    ] as const
+  ).map(
+    ([name, query, viewport]): Screen => ({
+      name,
+      path: `./?demo=mockup&${query}`,
+      viewport,
+      device: "desktop",
+    }),
+  ),
+  // Phone: each Gradient-tab drawer open below the pinned preview and stop bar, and the technique.
+  ...(
+    [
+      ["interp-options-sheet-phone", "rows=interpolation&space=oklch"],
+      ["stop-sheet-phone", "rows=stop"],
+      ["geometry-sheet-phone", "rows=geometry"],
+      ["gradient-technique-phone", "technique=image-sample"],
+    ] as const
+  ).map(
+    ([name, query]): Screen => ({
+      name,
+      path: `./?demo=mockup&tab=gradient&${query}`,
+      viewport: PHONE,
+      device: "phone",
+    }),
+  ),
+  {
+    name: "gradient-tablet",
+    path: "./?demo=mockup&tab=gradient",
+    viewport: TABLET,
+    device: "tablet",
+  },
 ];
 
 export const THEMES = ["light", "dark"] as const;

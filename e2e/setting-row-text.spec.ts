@@ -48,7 +48,7 @@ for (const width of [390, 820] as const) {
       };
     });
     expect(s.rows).toEqual(["15px", "15px", "15px", "15px"]);
-    // The sheet holds the swatch fields (Format, HEX, Name, ...) and the Cluster map row.
+    // The sheet holds the swatch fields (Format, HEX, Name, ...).
     expect(s.sheet.length).toBeGreaterThan(1);
     for (const size of s.sheet) expect(size).toBe("15px");
   });

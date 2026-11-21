@@ -117,17 +117,6 @@ test.describe("Palette view (spec 3.8)", () => {
     const colors = await canvasColors(page, "palette");
     expect(colors).not.toContain("#1DB07A");
   });
-
-  test("the selected swatch's label gives its share in the Palette view", async ({
-    page,
-  }, info) => {
-    await openView(page, "palette");
-    await goToTab(page, "Palette", info);
-    await page.locator("[data-testid=swatch-strip]:visible [data-swatch]").nth(1).click();
-    await expect(page.locator("[data-testid=selection-label]:visible")).toHaveText(
-      /^Swatch 2 · 8[23]\.\d% of the image$/,
-    );
-  });
 });
 
 test.describe("Values view (spec 3.8)", () => {

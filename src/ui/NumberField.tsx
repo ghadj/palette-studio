@@ -3,7 +3,7 @@
  * input, so it has a stepper (spec 6.1), with inputmode decimal and the 16 px touch size of
  * `.number-field`. Moved out of SettingsControls in M3-T2 so `Slider` can use it.
  */
-import { useLayoutEffect, useState } from "preact/hooks";
+import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
 /** A number field that accepts typing freely and commits valid integers in range. */
 export function NumberField({
@@ -14,6 +14,7 @@ export function NumberField({
   label,
   disabled = false,
   describedBy,
+  deferred = false,
   onCommit,
 }: {
   id: string;
@@ -23,9 +24,15 @@ export function NumberField({
   label?: string;
   disabled?: boolean;
   describedBy?: string | undefined;
+  /**
+   * Commit on Enter, blur or an arrow-key step, not per keystroke, so typing "50" over "100" is
+   * one commit and one undo step (M4-T14). Without it a valid value commits as it is typed.
+   */
+  deferred?: boolean;
   onCommit: (value: number) => void;
 }) {
   const [text, setText] = useState<string | null>(null);
+  const stepping = useRef(false);
   const parse = (raw: string): number | null => {
     const n = Number(raw.trim());
     return raw.trim() !== "" && Number.isInteger(n) && n >= min && n <= max ? n : null;
@@ -40,7 +47,9 @@ export function NumberField({
     const raw = (event.currentTarget as HTMLInputElement).value;
     setText(raw);
     const n = parse(raw);
-    if (n !== null) onCommit(n);
+    // A stepper click fires a plain event, not an InputEvent with an inputType; that is a step too.
+    const stepped = stepping.current || !(event as InputEvent).inputType;
+    if (n !== null && (!deferred || stepped)) onCommit(n);
   };
   return (
     <input
@@ -56,6 +65,12 @@ export function NumberField({
       disabled={disabled}
       value={text ?? String(value)}
       onInput={onInput}
+      onKeyDown={(event) => {
+        if (/^(Arrow(Up|Down)|Page(Up|Down))$/.test(event.key)) stepping.current = true;
+      }}
+      onKeyUp={() => {
+        stepping.current = false;
+      }}
       onChange={(event) => {
         // On commit (blur or Enter), clamp out-of-range numbers instead of dropping them.
         const n = Number((event.currentTarget as HTMLInputElement).value.trim());
@@ -64,7 +79,10 @@ export function NumberField({
         }
         setText(null);
       }}
-      onBlur={() => setText(null)}
+      onBlur={() => {
+        stepping.current = false;
+        setText(null);
+      }}
     />
   );
 }

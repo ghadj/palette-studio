@@ -34,6 +34,7 @@ export function DecimalField({
   label,
   disabled = false,
   describedBy,
+  deferred = false,
   onCommit,
 }: {
   id: string;
@@ -46,6 +47,8 @@ export function DecimalField({
   label?: string;
   disabled?: boolean;
   describedBy?: string | undefined;
+  /** Commit on Enter, blur or an arrow step, not per keystroke: one commit, one undo step. */
+  deferred?: boolean;
   onCommit: (value: number) => void;
 }) {
   const [text, setText] = useState<string | null>(null);
@@ -83,7 +86,7 @@ export function DecimalField({
         const raw = event.currentTarget.value;
         setText(raw);
         const n = parseDecimal(raw);
-        if (inRange(n)) onCommit(round(n));
+        if (!deferred && inRange(n)) onCommit(round(n));
       }}
       onKeyDown={(event) => {
         const steps = STEP_KEYS[event.key];
@@ -98,7 +101,10 @@ export function DecimalField({
         // read it in units that have changed since, such as the merge threshold's after a metric
         // switch, so only out-of-range values are clamped and committed.
         const n = parseDecimal(event.currentTarget.value);
-        if (n !== null && !inRange(n)) onCommit(round(clamp(n)));
+        if (n !== null && deferred) {
+          const next = round(clamp(n));
+          if (next !== value) onCommit(next);
+        } else if (n !== null && !inRange(n)) onCommit(round(clamp(n)));
         setText(null);
       }}
       onBlur={() => setText(null)}

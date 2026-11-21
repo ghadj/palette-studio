@@ -3,13 +3,13 @@
  * only re-renders what depends on it.
  */
 import { batch, computed, signal } from "@preact/signals";
-import type { ClusterMap } from "../extract/cluster-map";
 import { fitView, type View as ImageView } from "../image/viewport";
 import { applyAdjustments } from "../palette/adjust";
 import type {
   Adjustments,
   ExtractionSettings,
   EyedropperMode,
+  Gradient,
   ImageMeta,
   Project,
   Swatch,
@@ -20,6 +20,7 @@ import type {
 import {
   clampColors,
   DEFAULT_ADJUSTMENTS,
+  DEFAULT_GRADIENT,
   DEFAULT_SETTINGS,
   DEFAULT_VIEW_SETTINGS,
   SCHEMA_VERSION,
@@ -41,6 +42,9 @@ export const outputPalette = computed(() =>
 export const imageMeta = signal<ImageMeta | null>(null);
 /** View settings (7.5, 3.8): part of the project, but never in undo history (3.6). */
 export const viewSettings = signal<ViewSettings>({ ...DEFAULT_VIEW_SETTINGS });
+
+/** The gradient (7.5): in undo history (3.6). Read stops through `effectiveStops`, not `stops`. */
+export const gradient = signal<Gradient>({ ...DEFAULT_GRADIENT });
 
 /** The project's name; it belongs to the library entry (5.5) and is shown in the header. */
 export const projectName = signal<string>("Untitled");
@@ -82,13 +86,6 @@ export const emptyRoles = signal<readonly string[]>([]);
  */
 export const backgroundNotFound = signal(false);
 
-/**
- * The cluster map of the current palette (spec 2.6): each analysis pixel's nearest swatch, by
- * palette index, and each swatch's share. Made in the worker with the palette; null when there
- * is none. Not part of the project.
- */
-export const clusterMap = signal<ClusterMap | null>(null);
-
 /** True once loading or extraction has taken longer than about 300 ms (spec 7.4, 6.3). */
 export const progressVisible = signal(false);
 
@@ -103,6 +100,8 @@ export const activeView = signal<View>("studio");
  */
 export const imageView = signal<ImageView>(fitView());
 
+/** The selected gradient stop (plan T1): view state, never in undo (3.6). */
+export const selectedStopId = signal<string | null>(null);
 /** The swatch whose card or marker is hovered, linking the two (3.7). */
 export const hoveredSwatchId = signal<string | null>(null);
 /** The show/hide toggle for all markers (3.7). */
@@ -130,10 +129,11 @@ export function loadProject(project: Project, name: string): void {
     schemaVersion.value = project.schemaVersion;
     settings.value = { ...project.settings, colors: clampColors(project.settings.colors) };
     palette.value = project.palette;
-    clusterMap.value = null;
     adjustments.value = project.adjustments;
     imageMeta.value = project.image;
     viewSettings.value = project.view;
+    gradient.value = project.gradient;
+    selectedStopId.value = null;
     projectName.value = name;
     selectedSwatchId.value = null;
     activeTab.value = "source";

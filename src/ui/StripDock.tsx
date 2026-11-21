@@ -59,7 +59,7 @@ export function StripDock({ host }: { host: "source" | "palette" }) {
   }, []);
   const palette = host === "palette";
   return (
-    <div ref={dock} class="strip-dock" data-testid="strip-dock" data-host={host}>
+    <div ref={dock} class="strip-dock" data-dock="" data-testid="strip-dock" data-host={host}>
       <SwatchStrip showAdd={palette} />
       {/* The strip's marks pin with it (M3-T2); the close-pair mark is the Palette tab's. */}
       <StripMarks closePairs={palette} />

@@ -23,13 +23,11 @@ import type {
   SampleStat,
   ViewSettings,
 } from "../types";
-import type { ClusterMap } from "./cluster-map";
 import type { DrawnViewMode, FromWorker, PixelBuffer, ToWorker } from "./messages";
 import type { ExtractionResult } from "./pipeline";
 
-/** An extraction's result with the cluster map for its colors (spec 2.6). */
+/** An extraction's result, with the marker points when the worker sends them. */
 export interface Extraction extends ExtractionResult {
-  map: ClusterMap;
   /** One marker point per color (spec 3.7), once M3-T10 sends them. */
   points?: ImagePoint[];
 }
@@ -290,10 +288,7 @@ export class ImageClient {
     return this.mainMaster;
   }
 
-  /**
-   * Runs extraction on the current image's analysis copy (spec 2.1, 2.4), with the cluster map
-   * for the colors it finds (spec 2.6).
-   */
+  /** Runs extraction on the current image's analysis copy (spec 2.1, 2.4). */
   async extract(settings: ExtractionSettings): Promise<Extraction> {
     const pixels = await this.analysisPixels(settings);
     const jobId = this.nextJob++;
@@ -302,43 +297,12 @@ export class ImageClient {
       pixels ? [pixels.data] : [],
     );
     if (reply.type === "extracted") {
-      const { colors, reason, map, background, points } = reply;
-      const extraction: Extraction = { colors, reason, map };
+      const { colors, reason, background, points } = reply;
+      const extraction: Extraction = { colors, reason };
       if (background) extraction.background = background;
       if (points) extraction.points = points;
       return extraction;
     }
-    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
-  }
-
-  /**
-   * Rebuilds the cluster map of the current image for a palette (OKLab, in palette order),
-   * without extracting (spec 2.6). The settings give the filters and the working space.
-   */
-  async assign(colors: readonly Oklab[], settings: ExtractionSettings): Promise<ClusterMap> {
-    const pixels = await this.analysisPixels(settings);
-    const jobId = this.nextJob++;
-    const reply = await this.request(
-      { type: "assign", jobId, colors: [...colors], settings, pixels },
-      pixels ? [pixels.data] : [],
-    );
-    if (reply.type === "assigned") return reply.map;
-    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
-  }
-
-  /**
-   * The RGBA overlay pixels for one swatch of a cluster map (spec 2.6, decision 13b), built in the
-   * worker from a copy of the labels, so the map itself stays usable here. No master is needed.
-   */
-  async overlay(map: ClusterMap, index: number): Promise<Uint8ClampedArray<ArrayBuffer>> {
-    await this.connect();
-    const labels = map.labels.slice().buffer as ArrayBuffer;
-    const jobId = this.nextJob++;
-    const reply = await this.request(
-      { type: "overlay", jobId, width: map.width, height: map.height, labels, index },
-      [labels],
-    );
-    if (reply.type === "overlaid") return new Uint8ClampedArray(reply.data);
     throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
   }
 
@@ -381,22 +345,29 @@ export class ImageClient {
   }
 
   /**
+   * The display-size pixels to send with a request that reads the master at that size: none when
+   * the worker holds it, and in the fallback only the first time for each image (the worker keeps
+   * them by version).
+   */
+  private displayPixels(master: AnyCanvas | null, version: number): PixelBuffer | null {
+    if (!master || this.displaySent === version) return null;
+    const size = displaySize(master.width, master.height);
+    const canvas = resample(master, size, "smooth", createMainCanvas);
+    const data = readPixels(canvas).data;
+    canvas.width = 0;
+    canvas.height = 0;
+    this.displaySent = version;
+    return { width: size.width, height: size.height, data: data.buffer as ArrayBuffer };
+  }
+
+  /**
    * Draws the Palette or Values view (spec 3.8, M3-T11) of the current image at display size.
    * The fallback sends the display-size pixels once per image; the worker keeps them.
    */
   async view(request: ViewRequest): Promise<ViewResult> {
     const master = await this.fallbackMaster();
     const version = this.version;
-    let pixels: PixelBuffer | null = null;
-    if (master && this.displaySent !== version) {
-      const size = displaySize(master.width, master.height);
-      const canvas = resample(master, size, "smooth", createMainCanvas);
-      const data = readPixels(canvas).data;
-      canvas.width = 0;
-      canvas.height = 0;
-      pixels = { width: size.width, height: size.height, data: data.buffer as ArrayBuffer };
-      this.displaySent = version;
-    }
+    const pixels = this.displayPixels(master, version);
     const jobId = this.nextJob++;
     const reply = await this.request(
       {
@@ -416,6 +387,24 @@ export class ImageClient {
       const { width, height, data, shares, bandShares } = reply;
       return { width, height, data: new Uint8ClampedArray(data), shares, bandShares };
     }
+    throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
+  }
+
+  /**
+   * The mean OKLab color of an annulus of the current image (plan D18, M4-T5): `center` is
+   * normalized and the radii `r0` and `r1` are fractions of the image's width. Reserved by M4-T2;
+   * the worker's `ringMean` is not built yet, so this rejects until M4-T5.
+   */
+  async ring(center: ImagePoint, r0: number, r1: number): Promise<Oklab> {
+    const master = await this.fallbackMaster();
+    const version = this.version;
+    const pixels = this.displayPixels(master, version);
+    const jobId = this.nextJob++;
+    const reply = await this.request(
+      { type: "ring", jobId, version, center: { ...center }, r0, r1, pixels },
+      pixels ? [pixels.data] : [],
+    );
+    if (reply.type === "ringed") return reply.color;
     throw new Error(reply.type === "error" ? reply.message : "Unexpected reply");
   }
 }

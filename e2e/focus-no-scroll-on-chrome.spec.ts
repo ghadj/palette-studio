@@ -65,7 +65,7 @@ for (const size of SIZES) {
       await page.locator("[data-testid=strip-dock] [data-swatch]").last().focus();
       await page.keyboard.press(tab);
       await settle(page); // let the focus nudge finish before moving the page
-      // A focused swatch shows its cluster map, which can shorten the page: scroll as far as it allows.
+      // A focused swatch can shorten the page: scroll as far as it allows.
       await page.evaluate(() => window.scrollTo(0, 600));
       await settle(page);
       const before = await scrollY(page);

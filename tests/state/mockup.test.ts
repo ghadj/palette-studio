@@ -2,9 +2,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { hexToOklab, oklchToHex } from "../../src/color/convert";
+import { resolveStops } from "../../src/gradient/model";
+import { buildStops } from "../../src/gradient/sources";
 import { SPEC_DEFAULT_SETTINGS } from "../../src/state/defaults";
 import {
   buildMockupState,
+  parseMockupGradient,
   parseMockupImage,
   parseMockupLoupe,
   parseMockupParams,
@@ -22,6 +25,37 @@ const POINTS = [
 
 describe("mockup state (mockup-state.md)", () => {
   const state = buildMockupState();
+
+  it("the fixture gradient is linear at 90°, in OKLab, Smooth path over picked swatches 2, 4 and 6, not custom, with the 50% stop selected", () => {
+    const g = state.project.gradient;
+    expect(g.type).toBe("linear");
+    expect(g.geometry).toMatchObject({
+      angle: 90,
+      shape: "ellipse",
+      size: "farthest-corner",
+      center: { x: 0.5, y: 0.5 },
+      from: 0,
+      reverse: false,
+      mirror: false,
+    });
+    expect(g.space).toBe("oklab");
+    expect(g.technique.kind).toBe("smooth-path");
+    expect(g.technique.colors).toMatchObject({
+      mode: "picked",
+      ids: ["mockup-2", "mockup-4", "mockup-6"],
+    });
+    expect(g.custom).toBe(false);
+    expect(g.stops).toEqual([]);
+    expect(g.easing.kind).toBe("linear");
+    expect(g.premultiplied).toBe(true);
+    expect(g.gamut).toBe("chroma");
+    const stops = buildStops(g.technique, state.project.palette);
+    expect(stops.map((s) => s.position)).toEqual([0, 0.5, 1]);
+    expect(state.selectedStopId).toBe(stops[1]?.id);
+    const resolved = resolveStops(g, stops, state.project.palette);
+    expect(resolved.map((s) => oklchToHex(s.color))).toEqual(["#1DB07A", "#D4527F", "#5039B0"]);
+    expect(resolved.every((s) => s.alpha === 1 && s.hint === 0.5)).toBe(true);
+  });
 
   it("fixture has the six mockup-state hexes in order with their points", () => {
     expect(state.name).toBe("Harbor mural");
@@ -183,5 +217,58 @@ describe("M3 mockup parameters (plan D20, M3-T2)", () => {
       theme: null,
       rows: [],
     });
+  });
+});
+
+describe("mockup state gradient parameters (M4 plan D28)", () => {
+  const all =
+    "?demo=mockup&gradient=conic&space=oklch&rows=interpolation,stop,geometry&technique=image-sample";
+
+  it("parses gradient=conic, space=oklch, rows=interpolation,stop,geometry, technique=image-sample", () => {
+    expect(parseMockupGradient(all)).toEqual({
+      type: "conic",
+      space: "oklch",
+      technique: "image-sample",
+    });
+    const params = parseMockupParams(all);
+    expect(params?.rows).toEqual(["interpolation", "stop", "geometry"]);
+    const state = buildMockupState(params, parseMockupGradient(all));
+    expect(state.project.gradient.type).toBe("conic");
+    expect(state.project.gradient.space).toBe("oklch");
+    expect(state.project.gradient.technique.kind).toBe("image-sample");
+    expect(state.openRows).toEqual(["interpolation", "stop", "geometry"]);
+  });
+
+  it("rows=preview is not a row (the Preview row was removed), and technique=derived uses swatch 3", () => {
+    expect(parseMockupParams("?demo=mockup&rows=preview")?.rows ?? []).toEqual([]);
+    const state = buildMockupState(
+      parseMockupParams("?demo=mockup&technique=derived"),
+      parseMockupGradient("?demo=mockup&technique=derived"),
+    );
+    expect(state.project.gradient.technique.derive.from).toBe(state.project.palette[2]?.id);
+    expect(state.project.gradient.technique.colors.mode).toBe("all");
+  });
+
+  it("ignores unknown values", () => {
+    const params = "?demo=mockup&gradient=mesh&space=cmyk&technique=magic&rows=nope";
+    expect(parseMockupGradient(params)).toEqual({
+      type: null,
+      space: null,
+      technique: null,
+    });
+    const state = buildMockupState(parseMockupParams(params), parseMockupGradient(params));
+    expect(state.project.gradient.type).toBe("linear");
+    expect(state.project.gradient.space).toBe("oklab");
+    expect(state.project.gradient.technique.kind).toBe("smooth-path");
+    expect(state.openRows).toEqual([]);
+  });
+
+  it("no parameters give the fixture: linear, OKLab", () => {
+    const state = buildMockupState(
+      parseMockupParams("?demo=mockup"),
+      parseMockupGradient("?demo=mockup"),
+    );
+    expect(state.project.gradient.type).toBe("linear");
+    expect(state.project.gradient.space).toBe("oklab");
   });
 });

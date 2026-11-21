@@ -484,55 +484,6 @@ fieldset {
   touch-action: inherit;
 }
 
-/*
- * The cluster-map overlay (spec 2.6, M2 decision 13b): user content over the image, in the same
- * layer so it follows zoom and pan. The map is at display resolution (at most 1024 px), so it scales smoothly (M3 decision 36).
- * While a new palette is extracted, the old map is dimmed like the strip (spec 6.3).
- */
-.image-well__overlay {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-/*
- * A short glow-in when the map appears (M3 decision 61): the overlay fades in with a light glow
- * that settles to the plain overlay. Only opacity and a filter on the canvas change, never its
- * colors. The duration is two slow steps, 0 ms under reduced motion (spec 6.4), and the media query
- * below drops the animation outright.
- */
-.image-well__overlay:not([data-settling]) {
-  animation: overlay-glow-in calc(var(--duration-slow) * 2) var(--ease-out);
-}
-
-@keyframes overlay-glow-in {
-  from {
-    opacity: 0;
-    filter: drop-shadow(0 0 var(--space-3) var(--marker-ring-outer));
-  }
-  40% {
-    opacity: 1;
-    filter: drop-shadow(0 0 var(--space-2) var(--marker-ring-outer));
-  }
-  to {
-    opacity: 1;
-    filter: drop-shadow(0 0 0 transparent);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .image-well__overlay:not([data-settling]) {
-    animation: none;
-  }
-}
-
-.image-well__overlay[data-busy] {
-  opacity: 0.6;
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-
 /* The toolbar row under the image well (decision 42): Markers and Eyedropper on the left, Zoom out,
    Fit and Zoom in on the right. Nothing in it covers the image. */
 .image-toolbar {
@@ -764,6 +715,7 @@ fieldset {
       var(--header-height) +
       env(safe-area-inset-top) +
       var(--strip-dock-height, 0px) +
+      var(--dock-height, 0px) +
       var(--space-2)
     );
     scroll-padding-bottom: calc(
@@ -786,7 +738,11 @@ fieldset {
 /* From 1024 px the strip pins at the top of column 2's scroll container (M3 decision 45). */
 @media (min-width: 1024px) {
   .column__scroll {
-    scroll-padding-top: calc(var(--strip-dock-height, 0px) + var(--space-2));
+    scroll-padding-top: calc(
+      var(--strip-dock-height, 0px) +
+      var(--dock-height, 0px) +
+      var(--space-2)
+    );
   }
 
   .strip-dock {
@@ -802,7 +758,8 @@ fieldset {
   }
 }
 
-.strip-dock[data-stuck] {
+.strip-dock[data-stuck],
+.gradient-dock[data-stuck] {
   box-shadow: 0 var(--stroke) 0 var(--color-border);
 }
 
@@ -903,6 +860,12 @@ fieldset {
   flex: 1 1 calc(var(--space-8) * 3);
   min-width: var(--hit);
   max-width: max-content;
+}
+
+/* Interpolation options: a select asks for the width of its longest option, so the value wraps
+   below the label rather than clip ("Reduce chroma" at 320 px; M4 round 1). */
+.interpolation-options .setting-row__value:has(.select) {
+  flex: 0 1 max-content;
 }
 
 /* The value keeps its width and wraps under the label and note when they don't fit together. */
@@ -1358,7 +1321,7 @@ fieldset {
 
 .export-drawer__panel {
   position: absolute;
-  top: calc(var(--header-height) + var(--stroke));
+  top: var(--export-top, var(--header-height));
   right: 0;
   bottom: 0;
   display: flex;
@@ -1607,6 +1570,12 @@ fieldset {
   border-top: var(--stroke) solid var(--color-divider);
 }
 
+/* The Gradient column's setting rows and chevron rows read as one list: the first block's last
+   divider is the only line between them. */
+.row-list > .chevron-rows {
+  border-top: 0;
+}
+
 /* A button version of the summary: it keeps the summary's padding and touch text size (M2 F4, F7). */
 .chevron-row__button {
   width: 100%;
@@ -1621,6 +1590,26 @@ fieldset {
 .chevron-row__content {
   padding: var(--space-2) 0 var(--space-3);
   border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+/* A group that ends with a setting row (or the Custom easing's bezier fields, which close with a
+   divider like a row) ends with that divider: no padding or second line below it (user report,
+   M4-T14). Only the group's own last element counts: its direct child, or the last child of its
+   one wrapper. A group that ends in a chart keeps its own closing line. */
+.chevron-row__content:has(
+  > :is(.setting-row, .bezier):last-child,
+  > :last-child > :is(.setting-row, .bezier):last-child
+) {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.chevron-row__content:has(
+    > :is(.setting-row, .bezier):last-child,
+    > :last-child > :is(.setting-row, .bezier):last-child
+  )
+  > :last-child {
+  padding-bottom: 0;
 }
 
 /* The editor's HEX, Lock and Ramp row (ui-contract column 2 item 4). */
@@ -2372,7 +2361,7 @@ fieldset {
 /* ---- M3-T14 Palette and Values views (ViewLayer.tsx, *ViewRows.tsx, StripMarks.tsx) ---- */
 /*
  * The image view layer: user content over the image in the zoomed layer (spec 3.8, 6.2), the same
- * in both themes. While a new view is computed the old one dims, like the cluster overlay.
+ * in both themes. While a new view is computed the old one dims, like the strip.
  */
 .image-well__view {
   position: absolute;
@@ -2506,7 +2495,7 @@ fieldset {
 
 /* ---- end M3-T16 ---- */
 
-/* The Cluster map row follows other rows, whose divider already closes them. */
+/* Rows in the Swatch row follow other rows, whose divider already closes them. */
 .swatch-details .setting-rows {
   border-top: none;
 }
@@ -2607,3 +2596,497 @@ fieldset {
     padding: 0 var(--space-2);
   }
 }
+
+/*
+ * ==== M4 ====
+ * One labelled section per M4 UI task (plan M4-T2, "Parallel execution"). Each task adds its rules
+ * only inside its own section, below its "styles go here" line, so parallel branches touch
+ * separate hunks. Don't reformat or reorder the sections. The rules a stub needs are the first
+ * lines of its task's section; the task replaces them.
+ */
+
+/* ---- M4-T2 gradient dock (GradientDock.tsx, GradientPanel.tsx) ---- */
+/*
+ * The preview's pinned container (plan Q2; ui-contract D12), as .strip-dock is for the swatch
+ * strip: sticky under the header below 1024 px (the rule below covers the gutters)
+ * and at the top of column 3's scroll container from 1024 px. Opaque, with a divider while pinned
+ * (the data-stuck rule beside .strip-dock[data-stuck]). It writes --dock-height.
+ */
+.gradient-dock {
+  position: sticky;
+  top: calc(var(--header-height) + env(safe-area-inset-top));
+  z-index: 5;
+  margin: calc(-1 * var(--space-2)) 0;
+  padding: var(--space-2) 0;
+  background: var(--color-surface);
+}
+
+/* Where the shell fills the screen the dock also covers the gutters (keep 640px equal to
+   .shell--phone's max-width, as for .strip-dock), and from 1024 px it pins at the top of column 3's
+   scroll container. Both come after the base rule, which wins by source order otherwise. */
+@media (max-width: 640px) {
+  .gradient-dock {
+    margin-inline: calc(-1 * var(--space-4));
+    padding-inline: var(--space-4);
+  }
+}
+
+@media (min-width: 1024px) {
+  .gradient-dock {
+    top: calc(-1 * var(--space-1));
+  }
+}
+
+/* ---- end M4-T2 ---- */
+
+/* ---- M4-T6 type chips and geometry (GradientTypeChips.tsx, GeometryPanel.tsx, AngleDial.tsx) ---- */
+.gradient-types .segment {
+  flex: 1 1 0;
+}
+
+/* Angle dial: a round slider with a needle; touch drags don't scroll the page. */
+.angle-dial {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--hit);
+  height: var(--hit);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+}
+
+.angle-dial__needle {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.angle-dial__needle::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: var(--space-1);
+  height: calc(50% - var(--space-1));
+  width: var(--stroke-selected);
+  transform: translateX(-50%);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+.angle-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.angle-presets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.angle-presets .chip {
+  padding: 0 var(--space-2);
+}
+/* ---- end M4-T6 ---- */
+
+/* ---- M4-T7 stop bar (StopBar.tsx) ---- */
+/* The bar is inset so the handles at 0% and 100% stay inside the column. */
+.stop-bar {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  /* The track sits in the top 44 px; the midpoint diamonds hang below it, so a click on the track never lands on one. */
+  height: calc(var(--touch-target) * 3 / 2 + var(--space-1));
+  /* Half a touch target, so the hit areas of the end handles stay inside the column. */
+  margin-inline: calc(var(--touch-target) / 2);
+  touch-action: pan-y;
+  cursor: copy;
+}
+
+.stop-bar__track {
+  margin-top: calc((var(--touch-target) - var(--space-3)) / 2);
+  width: 100%;
+  height: var(--space-3);
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.stop-handle {
+  position: absolute;
+  top: calc(var(--touch-target) / 2);
+  width: calc(var(--space-1) * 5);
+  height: calc(var(--space-1) * 5);
+  border: var(--stroke-selected) solid var(--marker-ring-outer);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 0 var(--stroke) var(--marker-ring-inner);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+
+/* The 44 px hit area, round like the handle's ring so it doesn't cover the bar beside it. */
+.stop-handle::before,
+.stop-diamond::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  transform: translate(-50%, -50%);
+}
+
+.stop-handle[data-dragging] {
+  cursor: grabbing;
+}
+
+.stop-handle[data-selected] {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 var(--stroke) var(--marker-ring-outer);
+}
+
+/* The midpoint diamond: a 44 px hit area around a small rotated square. */
+.stop-diamond {
+  position: absolute;
+  top: calc(var(--touch-target) + var(--space-1));
+  z-index: 1;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.stop-diamond__mark {
+  width: var(--space-3);
+  height: var(--space-3);
+  background: var(--color-surface);
+  border: var(--stroke-selected) solid var(--color-text);
+  transform: rotate(45deg);
+}
+
+.stop-diamond[data-dragging] .stop-diamond__mark {
+  border-color: var(--color-accent);
+}
+/* ---- end M4-T7 ---- */
+
+/* ---- M4-T8 stop row (StopDetails.tsx) ---- */
+/* The Color row's value: the HEX field with the copy and unlink icons beside it. */
+.stop-details .stop-hex-field {
+  width: calc(var(--space-8) * 3);
+  text-align: left;
+}
+
+.stop-relink {
+  min-width: var(--hit);
+  min-height: var(--hit);
+}
+
+/* The swatch chips link the stop to a swatch: 44 px fills with an accent border when linked. */
+.stop-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.stop-chip {
+  flex: 0 0 auto;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+}
+
+.stop-chip[aria-checked="true"] {
+  border: var(--stroke-selected) solid var(--color-accent);
+}
+
+/* The position field and its unit button. */
+.stop-position {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.stop-unit {
+  min-width: var(--hit);
+  color: var(--color-text);
+}
+
+.stop-remove {
+  min-width: var(--hit);
+  min-height: var(--hit);
+}
+
+.stop-remove[aria-disabled="true"],
+.stop-relink[aria-disabled="true"] {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+/* ---- end M4-T8 ---- */
+
+/* ---- M4-T9 interpolation row and options (InterpolationRow.tsx, InterpolationOptions.tsx) ---- */
+/* The four bezier fields sit under the Easing row, one per column, so they fit at 320 px. */
+.bezier {
+  padding: var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.bezier__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.bezier__cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.bezier__field {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.bezier__field[aria-invalid="true"] {
+  border-color: var(--color-text);
+}
+
+.bezier__note {
+  min-height: 0;
+  margin: var(--space-1) 0 0;
+}
+
+.bezier__note:empty {
+  display: none;
+}
+/* ---- end M4-T9 ---- */
+
+/* ---- M4-T11 technique rows (TechniqueRows.tsx, ImageSampleThumb.tsx) ---- */
+/* The Colors chips (Picked) and the Derived From chips: 44 px fills that always show their exact
+   color (spec 6.2). A chosen chip carries a check badge in its corner, so state is never color
+   alone and never an outline or a dimmed fill. */
+.technique-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.technique-chip {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: var(--stroke) solid var(--color-border-control);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+}
+
+.technique-chip[aria-pressed="true"]::after,
+.technique-chip[aria-checked="true"]::after {
+  content: "";
+  position: absolute;
+  right: var(--space-1);
+  bottom: var(--space-1);
+  width: var(--space-4);
+  height: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-inverse);
+}
+
+.technique-chip[aria-pressed="true"]::before,
+.technique-chip[aria-checked="true"]::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  right: calc(var(--space-1) + var(--space-1) + var(--stroke));
+  bottom: calc(var(--space-1) + var(--space-1) + var(--space-1) - var(--stroke-selected));
+  width: var(--space-2);
+  height: var(--space-1);
+  border-left: var(--stroke-selected) solid var(--color-text-inverse);
+  border-bottom: var(--stroke-selected) solid var(--color-text-inverse);
+  transform: rotate(-45deg);
+}
+
+.technique-note {
+  margin: 0;
+  padding: var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+/* The Image sample thumbnail: the image, the scan drawn on it, dots at the sample points. Its
+   height is capped at four touch targets. The handles overflow it, so their 44 px reach the edge. */
+.sample-thumb-row {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+  border-bottom: var(--stroke) solid var(--color-divider);
+}
+
+.sample-thumb {
+  position: relative;
+  width: min(100%, calc(var(--touch-target) * 4 / var(--sample-aspect, 1)));
+  aspect-ratio: 1 / var(--sample-aspect, 1);
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-input);
+}
+
+.sample-thumb[data-busy] {
+  opacity: 0.8;
+}
+
+.sample-thumb__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-input);
+  object-fit: fill;
+}
+
+.sample-thumb__lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sample-thumb__line,
+.sample-thumb__ring {
+  fill: none;
+  stroke: var(--marker-ring-outer);
+  stroke-width: var(--stroke-selected);
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 1px var(--marker-ring-inner));
+}
+
+.sample-dot {
+  position: absolute;
+  width: var(--space-2);
+  height: var(--space-2);
+  background: var(--marker-ring-outer);
+  border: var(--stroke) solid var(--marker-ring-inner);
+  border-radius: var(--radius-pill);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* A line endpoint: a 44 px target around a small ring, as the stop handles are. */
+.sample-handle {
+  position: absolute;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  transform: translate(-50%, -50%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+  z-index: 2;
+}
+
+.sample-handle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--space-1) * 5);
+  height: calc(var(--space-1) * 5);
+  border: var(--stroke-selected) solid var(--marker-ring-outer);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 0 var(--stroke) var(--marker-ring-inner);
+  transform: translate(-50%, -50%);
+}
+
+.sample-handle:focus-visible::before {
+  border-color: var(--color-accent);
+}
+/* ---- end M4-T11 ---- */
+
+/* ---- M4-T12 gradient preview (GradientPreview.tsx) ---- */
+/*
+ * The stage is a plain panel with no inset: the preview is the full column width. The frame sets the aspect, 2:1 at full width (plan
+ * D22), and carries the checkerboard; the preview (data-user-content, never themed) fills it. On
+ * phones the dock holds the preview and the stop bar within about 35% of the screen (decision 67):
+ * the frame's height is capped at 35dvh less the stop bar and the paddings (104px, thirteen --space-2 units).
+ */
+.gradient-stage {
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.gradient-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+}
+
+/* The checkerboard (--checker-*, 8 px cells) shows through a gradient with alpha. */
+.gradient-frame[data-checker] {
+  background:
+    conic-gradient(
+      var(--checker-dark) 25%,
+      var(--checker-light) 0 50%,
+      var(--checker-dark) 0 75%,
+      var(--checker-light) 0
+    )
+    0 0 / calc(2 * var(--space-2)) calc(2 * var(--space-2));
+}
+
+.gradient-preview {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: var(--stroke) solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+@media (max-width: 1023.98px) {
+  .gradient-frame {
+    max-height: calc(35dvh - 13 * var(--space-2));
+  }
+}
+
+/* Whole pixels, so everything below the dock sits on whole pixels too (drag targets, sheets). */
+@supports (height: round(down, 1.5px, 1px)) {
+  @media (max-width: 1023.98px) {
+    .gradient-frame {
+      max-height: round(down, calc(35dvh - 13 * var(--space-2)), 1px);
+    }
+  }
+}
+
+/* ---- end M4-T12 ---- */
+
+/* ---- end M4 ---- */

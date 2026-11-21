@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "e2e": "playwright test --project=chromium --project=webkit --project=firefox --project=phone-webkit --project=phone-chromium",
+    "e2e:perf": "playwright test --project=perf --workers=1",
     "visual:review": "node -e \"require('node:fs').rmSync('artifacts/visual-review',{recursive:true,force:true})\" && playwright test --project=visual-review && tsx tools/visual-review.ts"
   },
   "dependencies": {

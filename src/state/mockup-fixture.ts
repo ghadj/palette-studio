@@ -23,7 +23,7 @@ export const MOCKUP_SWATCHES: ReadonlyArray<{ hex: string; point: ImagePoint }> 
 /**
  * Each swatch's population, in swatch order: the Palette-view area shares of mockup-state.md
  * (swatch 2 83.2%, swatch 1 14.7%, swatches 3 to 6 0.5% each), normalized to sum 1 (M2 decision
- * 14a). They are fixed, so screenshots don't depend on the cluster map.
+ * 14a). They are fixed, so screenshots don't depend on extraction.
  */
 const RAW_POPULATIONS = [0.147, 0.832, 0.005, 0.005, 0.005, 0.005] as const;
 const RAW_TOTAL = RAW_POPULATIONS.reduce((a, b) => a + b, 0);
@@ -31,3 +31,11 @@ export const MOCKUP_POPULATIONS: readonly number[] = RAW_POPULATIONS.map((p) => 
 
 /** Swatch 3 is selected (zero-based index 2). */
 export const MOCKUP_SELECTED_INDEX = 2;
+
+/**
+ * The fixture gradient's swatches (mockup-state.md "Gradient"): Smooth path over swatches 2, 4 and
+ * 6, as zero-based palette indexes. Its stops are the technique's output, not stored.
+ */
+export const MOCKUP_GRADIENT_PICKS: readonly number[] = [1, 3, 5];
+/** The 50% stop is selected. */
+export const MOCKUP_SELECTED_STOP_POSITION = 0.5;

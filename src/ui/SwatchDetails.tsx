@@ -4,15 +4,15 @@
  * a format choice (HEX, RGB, HSL, OKLCH) with editable fields, Name with the nearest CSS color name
  * as a chip (D15), a copy icon beside the color code (D14; decision 39: no Duplicate or Delete here,
  * the strip's X removes a swatch, decision 38), Reset to extracted with the
- * ΔE (D13), the sample radius and Mean or Median (D8), and the Cluster map toggle, which shows on
- * desktop too (D21; it was phone-only in M2, decisions 13d and 13f). M3-T13 adds Place on image.
+ * ΔE (D13), the sample radius and Mean or Median (D8).
+ * M3-T13 adds Place on image.
  *
  * The fields show the displayed (output) color, like the strip, Copy and the color editor. An edit
  * sets the base color and pins the swatch (decision 24).
  * Edits commit on Enter or blur (D16).
  * Every button here is one undo step.
  */
-import { batch, signal } from "@preact/signals";
+import { signal } from "@preact/signals";
 import { Copy } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 import { useId, useLayoutEffect, useState } from "preact/hooks";
@@ -31,7 +31,6 @@ import {
   setSwatchColor,
   swatchHex,
 } from "../palette/model";
-import { clusterPinned, clusterToggle } from "../state/cluster";
 import { placeOnImage } from "../state/extraction";
 import { commit } from "../state/history";
 import { changeSampling } from "../state/resample";
@@ -46,7 +45,6 @@ import {
 import type { SampleRadius, SampleStat, Swatch } from "../types";
 import { SettingRow } from "./SettingRow";
 import { showToast } from "./Toast";
-import { Toggle } from "./Toggle";
 
 export type SwatchFormat = "hex" | "rgb" | "hsl" | "oklch";
 
@@ -261,31 +259,6 @@ function Field({
     <SettingRow label={label} {...(htmlFor ? { htmlFor } : {})}>
       {children}
     </SettingRow>
-  );
-}
-
-/**
- * The cluster map's path without hover (spec 6.1 "No hover"): a toggle that shows the selected
- * swatch's map over the image. It shows everywhere (D21), so desktop and phone hold the same
- * controls (spec 6.6 rule 6).
- */
-function ClusterMapRow() {
-  return (
-    <div class="setting-rows">
-      <SettingRow label="Cluster map" htmlFor="cluster-map-toggle">
-        <Toggle
-          id="cluster-map-toggle"
-          checked={clusterToggle.value}
-          onChange={(on) =>
-            batch(() => {
-              clusterToggle.value = on;
-              // The toggle takes over from the mockup state's `cluster` parameter.
-              clusterPinned.value = null;
-            })
-          }
-        />
-      </SettingRow>
-    </div>
   );
 }
 
@@ -514,7 +487,6 @@ export function SwatchDetails() {
       ) : (
         <p class="hint">Select a swatch to edit it.</p>
       )}
-      <ClusterMapRow />
     </div>
   );
 }

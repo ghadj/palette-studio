@@ -4,9 +4,7 @@ import {
   DISPLAY_MAX,
   defaultSampleSize,
   displaySize,
-  MAP_MAX,
   MASTER_MAX,
-  mapSize,
   masterSize,
 } from "../../src/image/tiers";
 
@@ -45,12 +43,5 @@ describe("image tiers (spec 7.4, 2.4)", () => {
     expect(DISPLAY_MAX).toBe(2048);
     expect(displaySize(4096, 3072)).toEqual({ width: 2048, height: 1536 });
     expect(displaySize(1600, 800)).toEqual({ width: 1600, height: 800 });
-  });
-
-  it("the cluster map is the display copy's size, capped at 1024 px (M3 decision 36)", () => {
-    expect(MAP_MAX).toBe(1024);
-    expect(mapSize(1600, 800)).toEqual({ width: 1024, height: 512 });
-    expect(mapSize(800, 600)).toEqual({ width: 800, height: 600 });
-    expect(mapSize(3072, 4096)).toEqual({ width: 768, height: 1024 });
   });
 });

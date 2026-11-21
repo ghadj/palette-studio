@@ -1,7 +1,6 @@
 /**
  * The Swatch row and sheet (M3-T4; spec 3.2, 3.7; plan D13 to D15, D21): format fields, Name with
- * the CSS-name suggestion, the copy icon, the D shortcut, Reset to extracted, the sample settings and the
- * Cluster map toggle. The mockup state selects swatch 3 (#14386B); `rows=swatch` opens the row in
+ * the CSS-name suggestion, the copy icon, the D shortcut, Reset to extracted, and the sample settings. The mockup state selects swatch 3 (#14386B); `rows=swatch` opens the row in
  * place on desktop and as the sheet on phones.
  */
 import { expect, type Page, test } from "@playwright/test";
@@ -285,30 +284,6 @@ test.describe("resampling (decision 31)", () => {
       "aria-pressed",
       "true",
     );
-  });
-});
-
-test.describe("cluster map toggle (D21, 13d)", () => {
-  test("the toggle in the swatch row shows the overlay on desktop too", async ({ page }, info) => {
-    test.skip(isPhoneProject(info), "the phone case is below");
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await open(page, "rows=swatch");
-    await details(page).locator("#cluster-map-toggle").click();
-    await expect(page.locator("[data-testid=cluster-overlay]")).toBeVisible();
-  });
-
-  test("phone: the Cluster map toggle in the swatch sheet shows the overlay", async ({
-    page,
-  }, info) => {
-    test.skip(!isPhoneProject(info), "needs the phone layout");
-    await open(page);
-    const toggle = details(page).locator("#cluster-map-toggle");
-    await toggle.tap();
-    await expect(toggle).toHaveAttribute("aria-checked", "true");
-    // The map belongs to the image, on the Source tab: close the sheet and look there.
-    await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
-    await page.getByRole("tab", { name: "Source" }).tap();
-    await expect(page.locator("[data-testid=cluster-overlay]")).toBeVisible();
   });
 });
 

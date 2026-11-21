@@ -7,8 +7,6 @@
  * 5. chevron rows: Swatch (M3 decision 5a), Adjustments, Contrast and CVD. They expand in place on
  *    desktop and open bottom sheets on phones (spec 6.1).
  *
- * The Cluster map toggle lives in the Swatch row (M2 decisions 13d and 13f): see SwatchDetails.
- *
  * The layout is fixed here (M3-T2); each feature fills its own component file, so later tasks
  * don't edit this one.
  */

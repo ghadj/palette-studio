@@ -1,23 +1,35 @@
 /**
  * The mockup state, ?demo=mockup (docs/design/mockup-state.md). It never reads or writes autosave,
  * the project library or any browser storage (spec 5.5), so nothing here imports storage code.
- * M1 reads the `view`, `tab` and `theme` parameters, M2 `rows`, `zoom` and `cluster`, and M3 more
+ * M1 reads the `view`, `tab` and `theme` parameters, M2 `rows` and `zoom`, and M3 more
  * `rows`, `image` and `loupe` (plan D20); the others are ignored until their milestone.
  */
 import { hexToOklab, hexToOklch } from "../color/convert";
+import { buildStops } from "../gradient/sources";
 import { createSwatch } from "../palette/model";
-import type { ImageViewMode, Project, Tab, View } from "../types";
+import type {
+  GradientType,
+  ImageViewMode,
+  InterpolationSpace,
+  Project,
+  Tab,
+  TechniqueKind,
+  View,
+} from "../types";
 import {
   DEFAULT_ADJUSTMENTS,
+  DEFAULT_GRADIENT,
   DEFAULT_VIEW_SETTINGS,
   SCHEMA_VERSION,
   SPEC_DEFAULT_SETTINGS,
 } from "./defaults";
 import {
+  MOCKUP_GRADIENT_PICKS,
   MOCKUP_IMAGE,
   MOCKUP_POPULATIONS,
   MOCKUP_PROJECT_NAME,
   MOCKUP_SELECTED_INDEX,
+  MOCKUP_SELECTED_STOP_POSITION,
   MOCKUP_SWATCHES,
 } from "./mockup-fixture";
 
@@ -33,7 +45,10 @@ export type MockupRow =
   | "adjustments"
   | "ramp"
   | "contrast"
-  | "cvd";
+  | "cvd"
+  | "interpolation"
+  | "stop"
+  | "geometry";
 const ROWS: readonly MockupRow[] = [
   "filters",
   "advanced",
@@ -42,7 +57,65 @@ const ROWS: readonly MockupRow[] = [
   "ramp",
   "contrast",
   "cvd",
+  "interpolation",
+  "stop",
+  "geometry",
 ];
+
+/**
+ * The gradient parameters (M4 plan D28, mockup-state.md "Gradient"); each is null when absent or
+ * unknown. They are parsed apart from the others, as `parseMockupImage` is.
+ */
+export interface MockupGradientParams {
+  /** `gradient=linear|radial|conic`. */
+  type: GradientType | null;
+  /** `space=<space>`: the interpolation space. */
+  space: InterpolationSpace | null;
+  /** `technique=<kind>`: that technique with its defaults. */
+  technique: TechniqueKind | null;
+}
+
+const GRADIENT_TYPES: readonly GradientType[] = ["linear", "radial", "conic"];
+const SPACES: readonly InterpolationSpace[] = [
+  "srgb",
+  "srgb-linear",
+  "display-p3",
+  "lab",
+  "oklab",
+  "lch",
+  "oklch",
+  "hsl",
+  "hwb",
+  "xyz",
+];
+const TECHNIQUES: readonly TechniqueKind[] = [
+  "palette-order",
+  "sorted",
+  "smooth-path",
+  "image-sample",
+  "derived",
+  "random",
+  "population",
+];
+
+const NO_GRADIENT_PARAMS: MockupGradientParams = {
+  type: null,
+  space: null,
+  technique: null,
+};
+
+function option<T extends string>(value: string | null, options: readonly T[]): T | null {
+  return options.find((o) => o === value) ?? null;
+}
+
+export function parseMockupGradient(search: string): MockupGradientParams {
+  const params = new URLSearchParams(search);
+  return {
+    type: option(params.get("gradient"), GRADIENT_TYPES),
+    space: option(params.get("space"), SPACES),
+    technique: option(params.get("technique"), TECHNIQUES),
+  };
+}
 
 export interface MockupParams {
   view: View;
@@ -56,6 +129,8 @@ export interface MockupState {
   name: string;
   project: Project;
   selectedSwatchId: string | null;
+  /** The 50% stop of the fixture gradient (mockup-state.md "Gradient"). */
+  selectedStopId: string | null;
   activeView: View;
   activeTab: Tab;
   openRows: MockupRow[];
@@ -83,6 +158,7 @@ export function parseMockupParams(search: string): MockupParams | null {
 
 export function buildMockupState(
   params: MockupParams | null = { view: "studio", tab: "source", theme: null, rows: [] },
+  options: MockupGradientParams = NO_GRADIENT_PARAMS,
 ): MockupState {
   const palette = MOCKUP_SWATCHES.map(({ hex, point }, i) =>
     createSwatch(hexToOklab(hex), {
@@ -97,6 +173,36 @@ export function buildMockupState(
       extracted: { color: hexToOklch(hex), point: { ...point } },
     }),
   );
+  // Linear 90°, OKLab, Smooth path over swatches 2, 4 and 6; live, so its stops aren't stored. The
+  // `technique` parameter swaps that for the technique's defaults (mockup-state.md).
+  const base = DEFAULT_GRADIENT.technique;
+  const technique = options.technique
+    ? {
+        ...base,
+        kind: options.technique,
+        // Derived stops are made from swatch 3 (mockup-state.md).
+        derive: { ...base.derive, from: palette[MOCKUP_SELECTED_INDEX]?.id ?? null },
+      }
+    : {
+        ...base,
+        kind: "smooth-path" as const,
+        colors: {
+          mode: "picked" as const,
+          count: base.colors.count,
+          ids: MOCKUP_GRADIENT_PICKS.flatMap((i) => palette[i]?.id ?? []),
+        },
+      };
+  const gradient = {
+    ...DEFAULT_GRADIENT,
+    type: options.type ?? DEFAULT_GRADIENT.type,
+    space: options.space ?? DEFAULT_GRADIENT.space,
+    technique,
+  };
+  // The 50% stop, or the middle one when the technique has none there.
+  const stops = buildStops(gradient.technique, palette);
+  const selectedStop =
+    stops.find((s) => s.position === MOCKUP_SELECTED_STOP_POSITION) ??
+    stops[Math.floor(stops.length / 2)];
   return {
     name: MOCKUP_PROJECT_NAME,
     project: {
@@ -111,8 +217,10 @@ export function buildMockupState(
       adjustments: { ...DEFAULT_ADJUSTMENTS },
       image: { ...MOCKUP_IMAGE },
       view: { ...DEFAULT_VIEW_SETTINGS },
+      gradient,
     },
     selectedSwatchId: palette[MOCKUP_SELECTED_INDEX]?.id ?? null,
+    selectedStopId: selectedStop?.id ?? null,
     activeView: params?.view ?? "studio",
     activeTab: params?.tab ?? "source",
     openRows: [...(params?.rows ?? [])],
@@ -123,17 +231,6 @@ export function buildMockupState(
 export function parseMockupZoom(search: string): 1 | 2 | 4 | 8 {
   const zoom = new URLSearchParams(search).get("zoom");
   return zoom === "2" ? 2 : zoom === "4" ? 4 : zoom === "8" ? 8 : 1;
-}
-
-/**
- * `cluster=<1 to 6>` shows that swatch's cluster map, as hovering or focusing it does (spec 2.6,
- * decision 14b). Returns the swatch's palette index, or null for no map.
- */
-export function parseMockupCluster(search: string): number | null {
-  const n = ["1", "2", "3", "4", "5", "6"].indexOf(
-    new URLSearchParams(search).get("cluster") ?? "",
-  );
-  return n < 0 ? null : n;
 }
 
 const IMAGE_VIEWS: readonly ImageViewMode[] = ["image", "palette", "values"];

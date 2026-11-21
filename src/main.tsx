@@ -3,20 +3,19 @@ import { render } from "preact";
 import "./styles/tokens.css";
 import "./styles/app.css";
 import { centered } from "./image/viewport";
-import { clusterPinned } from "./state/cluster";
 import { duplicateSelected } from "./state/duplicate-swatch";
 import { startLiveExtraction } from "./state/extraction";
 import { redo, undo } from "./state/history";
 import {
   buildMockupState,
-  parseMockupCluster,
+  parseMockupGradient,
   parseMockupImage,
   parseMockupLoupe,
   parseMockupParams,
   parseMockupZoom,
 } from "./state/mockup";
 import { MOCKUP_IMAGE, MOCKUP_IMAGE_PATH } from "./state/mockup-fixture";
-import { loadMockupClusterMap } from "./state/mockup-map";
+import { loadMockupMaster } from "./state/mockup-master";
 import {
   activeTab,
   activeView,
@@ -26,6 +25,7 @@ import {
   initialLoupe,
   initialOpenRows,
   loadProject,
+  selectedStopId,
   selectedSwatchId,
   viewSettings,
 } from "./state/signals";
@@ -42,12 +42,13 @@ installFocusClearance();
 // The mockup state loads its fixture directly and never touches storage (mockup-state.md, spec 5.5).
 const mockup = parseMockupParams(window.location.search);
 if (mockup) {
-  const state = buildMockupState(mockup);
+  const state = buildMockupState(mockup, parseMockupGradient(window.location.search));
   batch(() => {
     demoMode.value = true;
     loadProject(state.project, state.name);
     imageSrc.value = `${import.meta.env.BASE_URL}${MOCKUP_IMAGE_PATH}`;
     selectedSwatchId.value = state.selectedSwatchId;
+    selectedStopId.value = state.selectedStopId;
     activeTab.value = state.activeTab;
     activeView.value = state.activeView;
     imageView.value = centered(parseMockupZoom(window.location.search), { width: 1, height: 1 });
@@ -55,13 +56,10 @@ if (mockup) {
     // `image=<view>` and `loupe=<n>` (plan D20). The view is view state, never in undo (3.6).
     viewSettings.value = { ...viewSettings.peek(), mode: parseMockupImage(window.location.search) };
     initialLoupe.value = parseMockupLoupe(window.location.search);
-    // `cluster=<n>` shows that swatch's map once the worker has made it (decision 14b).
-    const cluster = parseMockupCluster(window.location.search);
-    clusterPinned.value = cluster === null ? null : (state.project.palette[cluster]?.id ?? null);
   });
   document.title = `${state.name} · Palette Studio (demo)`;
-  // The fixture's cluster map comes from the worker; no extraction runs (spec 2.6).
-  void loadMockupClusterMap(`${import.meta.env.BASE_URL}${MOCKUP_IMAGE_PATH}`, MOCKUP_IMAGE.name);
+  // The fixture's master comes from the worker; no extraction runs (spec 2.6).
+  void loadMockupMaster(`${import.meta.env.BASE_URL}${MOCKUP_IMAGE_PATH}`, MOCKUP_IMAGE.name);
 }
 startLiveExtraction();
 // Undo and redo (spec 3.6, 6 "Keyboard"). In the mockup state history lives in memory only.

@@ -13,8 +13,7 @@
  * Zoom and pan (spec 6 "Image view"; M2 decision 15): the image sits in a transformed layer.
  * Ctrl/Cmd + wheel and trackpad pinch zoom about the pointer, while a plain wheel scrolls the page
  * (15f). Dragging pans once zoomed. The focused well takes + and − to zoom, 0 to fit and the arrow
- * keys to pan by 10% of the visible area (15d). Zoom is view state (spec 3.6). The cluster-map
- * overlay (spec 2.6) shares the layer, so it follows zoom and pan.
+ * keys to pan by 10% of the visible area (15d). Zoom is view state (spec 3.6).
  *
  * Touch (spec 6.1 "Gestures"): two fingers pinch-zoom and one finger pans once zoomed. At Fit the
  * well's touch-action lets a one-finger swipe scroll the page (15h); above Fit it is none.
@@ -32,7 +31,6 @@ import {
   imageView,
   masterThread,
 } from "../state/signals";
-import { ClusterOverlay } from "./ClusterOverlay";
 import { DropZone } from "./DropZone";
 import { EyedropperLayer } from "./EyedropperLayer";
 import { MarkerLayer } from "./MarkerLayer";
@@ -353,7 +351,6 @@ function ZoomableWell({
       <div class="image-well__layer" style={{ transform }}>
         {children}
         <ViewLayer />
-        <ClusterOverlay />
       </div>
       <MarkerLayer />
       <EyedropperLayer />

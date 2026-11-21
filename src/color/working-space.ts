@@ -79,7 +79,7 @@ export function rgb8ToWorking(space: WorkingSpace): ByteConverter {
   }
 }
 
-/** Converts a working-space color (such as a cluster mean) to OKLab. */
+/** Converts a working-space color (such as a quantizer mean) to OKLab. */
 export function workingToOklab(space: WorkingSpace, x: number, y: number, z: number): Oklab {
   switch (space) {
     case "oklab":

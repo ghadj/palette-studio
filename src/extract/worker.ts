@@ -1,21 +1,22 @@
 /**
  * The image worker (spec 7.4): makes the working master on an OffscreenCanvas and keeps it, sends
  * back a display copy, and runs extraction on the analysis copy (histogram, quantizer,
- * post-processing) and the cluster map (spec 2.6). Bitmaps and buffers are transferred, not copied.
+ * post-processing) and the marker placement. Bitmaps and buffers are transferred, not copied.
  *
  * M3-T2 reserves three requests whose handlers call modules later tasks build: `sample` and
  * `place` (spec 3.7; `src/image/sample.ts` and `src/extract/markers.ts`, M3-T10) and `view` (spec
  * 3.8; `src/image/views.ts`, M3-T11). Keep handler bodies thin, so T10 and T11 touch little here.
+ * M4-T2 reserves `ring` (`src/image/ring.ts`, M4-T5) the same way.
  */
 
 import type { Oklab } from "../color/convert";
+import { ringMean } from "../image/ring";
 import { autoRadius, CROP_SIZE, samplePatch } from "../image/sample";
 import {
   type AnyCanvas,
   analysisSize,
   displaySize,
   type MasterWindow,
-  mapSize,
   masterSize,
   readPixels,
   readWindow,
@@ -30,7 +31,7 @@ import type {
   SampleStat,
   ViewSettings,
 } from "../types";
-import { assignPixels, overlayPixels } from "./cluster-map";
+import { assignPixels } from "./assign";
 import { placeMarkers } from "./markers";
 import type { DrawnViewMode, FromWorker, PixelBuffer, ToWorker } from "./messages";
 import { type AnalysisImage, keepPixels, runExtraction } from "./pipeline";
@@ -45,8 +46,6 @@ const create = (width: number, height: number): AnyCanvas => new OffscreenCanvas
 
 let master: AnyCanvas | null = null;
 let analysis: { key: string; image: AnalysisImage } | null = null;
-/** The master at the cluster map's size (M3 decision 36), cached until the image changes. */
-let mapCopy: AnalysisImage | null = null;
 /** The master at display size, for the image views (spec 3.8), by image version. */
 let viewSource: { version: number; image: AnalysisImage } | null = null;
 /** The last drawn Palette and Values views, one each, by their `viewKey` (spec 3.8, M3-T11). */
@@ -71,7 +70,6 @@ async function prepare(jobId: number, bitmap: ImageBitmap): Promise<void> {
   }
   master = next;
   analysis = null;
-  mapCopy = null;
   viewSource = null;
   viewCache.clear();
   const display = resample(master, displaySize(master.width, master.height), "smooth", create);
@@ -105,32 +103,6 @@ function analysisImage(settings: ExtractionSettings): AnalysisImage {
   return analysis.image;
 }
 
-/**
- * The pixels the cluster map is made from: the master at the display copy's resolution, at most
- * 1024 px on the long side, so edges follow the image (M3 decision 36). Without a master (the
- * fallback, where the main thread sends the analysis pixels) the analysis copy stands in.
- */
-function mapImage(fallback: AnalysisImage): AnalysisImage {
-  if (!master) return fallback;
-  if (!mapCopy) {
-    const canvas = resample(master, mapSize(master.width, master.height), "smooth", create);
-    const read = readPixels(canvas);
-    canvas.width = 0;
-    canvas.height = 0;
-    mapCopy = { width: read.width, height: read.height, data: read.data };
-  }
-  return mapCopy;
-}
-
-/**
- * The cluster map for `colors`: every pixel of the map image goes to its nearest swatch, with the
- * same filters and keep mask as the extraction (spec 2.6, 2.4; M3 decision 36).
- */
-function clusterMapFor(image: AnalysisImage, colors: Oklab[], settings: ExtractionSettings) {
-  const source = mapImage(image);
-  return assignPixels(source, keepPixels(source, settings).mask, colors, settings.workingSpace);
-}
-
 /** The pixels the main thread sent (fallback), or the master's analysis copy. */
 function pixelsOrAnalysis(settings: ExtractionSettings, pixels: PixelBuffer | null): AnalysisImage {
   return pixels
@@ -145,36 +117,11 @@ function extract(jobId: number, settings: ExtractionSettings, pixels: PixelBuffe
   const result = runExtraction(image, settings, keep);
   const { colors } = result;
   const lab = colors.map((c) => c.lab);
-  // Markers come from the analysis-size map (spec 3.7); the map shown is at display resolution.
+  // Markers come from the analysis-size map (spec 3.7).
   const analysisMap = assignPixels(image, keep.mask, lab, settings.workingSpace);
   const points = placeMarkers(analysisMap.labels, image.width, image.height, lab, image);
-  const map = clusterMapFor(image, lab, settings);
   const ms = performance.now() - start;
-  scope.postMessage({ type: "extracted", jobId, ...result, map, points, ms }, [map.labels.buffer]);
-}
-
-/** Rebuilds the cluster map for a palette, without extracting (spec 2.6). */
-function assign(
-  jobId: number,
-  colors: Oklab[],
-  settings: ExtractionSettings,
-  pixels: PixelBuffer | null,
-): void {
-  const image = pixelsOrAnalysis(settings, pixels);
-  const map = clusterMapFor(image, colors, settings);
-  scope.postMessage({ type: "assigned", jobId, map }, [map.labels.buffer]);
-}
-
-/** The overlay pixels of one swatch's cluster map (spec 2.6, decision 13b). */
-function overlay(
-  jobId: number,
-  width: number,
-  height: number,
-  labels: ArrayBuffer,
-  index: number,
-): void {
-  const data = overlayPixels(new Uint8Array(labels), index).buffer as ArrayBuffer;
-  scope.postMessage({ type: "overlaid", jobId, width, height, data }, [data]);
+  scope.postMessage({ type: "extracted", jobId, ...result, points, ms });
 }
 
 /** Samples the patch under a marker (spec 3.7). The fallback sends the window it read. */
@@ -196,7 +143,7 @@ function sample(
   );
 }
 
-/** Places markers for the swatches at `indexes` (spec 3.7), from the palette's cluster map. */
+/** Places markers for the swatches at `indexes` (spec 3.7), from the palette's pixel assignment. */
 function place(
   jobId: number,
   colors: Oklab[],
@@ -273,6 +220,19 @@ function view(
   );
 }
 
+/** The mean color of an annulus of the master at display size (M4-T5 builds `ringMean`). */
+function ring(
+  jobId: number,
+  version: number,
+  center: ImagePoint,
+  r0: number,
+  r1: number,
+  pixels: PixelBuffer | null,
+): void {
+  const color = ringMean(viewImage(version, pixels), center, r0, r1);
+  scope.postMessage({ type: "ringed", jobId, color });
+}
+
 scope.addEventListener("message", (event) => {
   const message = event.data;
   try {
@@ -288,12 +248,6 @@ scope.addEventListener("message", (event) => {
       case "extract":
         extract(message.jobId, message.settings, message.pixels);
         return;
-      case "assign":
-        assign(message.jobId, message.colors, message.settings, message.pixels);
-        return;
-      case "overlay":
-        overlay(message.jobId, message.width, message.height, message.labels, message.index);
-        return;
       case "sample":
         sample(message.jobId, message.point, message.radius, message.stat, message.window);
         return;
@@ -305,6 +259,16 @@ scope.addEventListener("message", (event) => {
         view(m.jobId, m.version, m.mode, m.colors, m.bands, m.dither, m.alphaCutoff, m.pixels);
         return;
       }
+      case "ring":
+        ring(
+          message.jobId,
+          message.version,
+          message.center,
+          message.r0,
+          message.r1,
+          message.pixels,
+        );
+        return;
     }
   } catch (error) {
     if ("jobId" in message) {

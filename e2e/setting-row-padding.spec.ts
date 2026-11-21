@@ -59,7 +59,7 @@ for (const width of [320, 820] as const) {
     await sheetSettled(page);
     const rows = await measure(page);
     // The swatch fields are setting rows too, so they get the same padding.
-    expect(rows.map((r) => r.name)).toEqual(expect.arrayContaining(["Cluster map", "HEX", "Name"]));
+    expect(rows.map((r) => r.name)).toEqual(expect.arrayContaining(["HEX", "Name"]));
     // Rows that stay on one line are vertically centered (user request, M2 F4).
     for (const r of rows) {
       if (!r.value || r.value.top >= r.group.bottom - 0.5) continue;

@@ -136,20 +136,22 @@ test.describe("pixel filters (spec 2.1, 2.4)", () => {
     await settled(page);
     const after = await hexes(page);
     expect(after.slice(0, 2).sort()).toEqual([left, right].sort());
-    // At most one swatch stays near the backdrop color, and it is the enclosed patch: small (at most 5%
-    // of the kept pixels). Its rank isn't checked: the resampled edges between the subject and
+    // At most one swatch stays near the backdrop color, and it is the enclosed patch: small, at most
+    // 5% of the kept pixels. Its rank isn't checked: the resampled edges between the subject and
     // the patch can form a swatch of their own, larger than the patch in Chromium and smaller in
-    // Firefox, depending on the browser's downscale.
+    // Firefox, depending on the browser's downscale. Each swatch's population is its share of the
+    // KEPT pixels (the swatch model's `population`, on the strip's `data-population`); the Palette
+    // view's bar also counts the removed backdrop.
     const nearIndexes = after.flatMap((h, i) => (near(h) ? [i] : []));
     expect(nearIndexes.length).toBeLessThanOrEqual(1);
+    const shares = (
+      await strip(page).evaluateAll((els) => els.map((e) => e.getAttribute("data-population")))
+    ).map(Number);
+    expect(shares.reduce((sum, v) => sum + v, 0)).toBeCloseTo(1, 1);
     if (nearIndexes.length === 1) {
-      const shares = await strip(page).evaluateAll((els) =>
-        els.map((e) => Number(e.getAttribute("data-share"))),
-      );
-      // The near swatch is small next to the backdrop's own 75% share: at most 5% of the kept
-      // pixels. The bound is loose on purpose, since browsers resample the edges between the
-      // subject and the enclosed patch differently (Linux WebKit blends about 3x the patch's
-      // area into it). A backdrop left in would be far larger.
+      // The bound is loose on purpose, since browsers resample the edges between the subject and the
+      // enclosed patch differently (Linux WebKit blends about 3x the patch's area into it). A
+      // backdrop left in would be far larger.
       const nearShare = shares[nearIndexes[0] ?? 0] ?? Number.NaN;
       expect(nearShare).toBeGreaterThan(0);
       expect(nearShare).toBeLessThanOrEqual(0.05);

@@ -1,6 +1,6 @@
 /**
- * Undo and redo (spec 3.6): 50 steps of snapshots of the palette, the adjustments and the
- * extraction settings (M3 decision 3a). View state (selection, tab, zoom, view settings, markers,
+ * Undo and redo (spec 3.6): 50 steps of snapshots of the palette, the adjustments, the
+ * extraction settings (M3 decision 3a) and the gradient (M4 plan T1). View state (selection, tab, zoom, view settings, markers,
  * compare) is never recorded, so undo never moves the view.
  *
  * The store keeps the last committed state. `commit` pushes it as the "before" of a new step, so
@@ -9,8 +9,16 @@
  * state instead.
  */
 import { batch, computed, signal } from "@preact/signals";
-import type { Adjustments, ExtractionSettings, Swatch } from "../types";
-import { adjustments, palette, selectedSwatchId, settings } from "./signals";
+import type { Adjustments, ExtractionSettings, Gradient, Swatch } from "../types";
+import { effectiveStops } from "./gradient-stops";
+import {
+  adjustments,
+  gradient,
+  palette,
+  selectedStopId,
+  selectedSwatchId,
+  settings,
+} from "./signals";
 
 export const HISTORY_LIMIT = 50;
 
@@ -18,6 +26,7 @@ export interface Snapshot {
   palette: Swatch[];
   adjustments: Adjustments;
   settings: ExtractionSettings;
+  gradient: Gradient;
 }
 
 interface Step {
@@ -39,6 +48,7 @@ const capture = (): Snapshot => ({
   palette: palette.peek(),
   adjustments: adjustments.peek(),
   settings: settings.peek(),
+  gradient: gradient.peek(),
 });
 
 let committed: Snapshot = capture();
@@ -48,7 +58,10 @@ let restoring = false;
 const restoreListeners = new Set<() => void>();
 
 const same = (a: Snapshot, b: Snapshot): boolean =>
-  a.palette === b.palette && a.adjustments === b.adjustments && a.settings === b.settings;
+  a.palette === b.palette &&
+  a.adjustments === b.adjustments &&
+  a.settings === b.settings &&
+  a.gradient === b.gradient;
 
 /** The last committed state, for example to name what a pending change touched. */
 export function committedState(): Snapshot {
@@ -103,18 +116,27 @@ export function end(label?: string): void {
 function apply(snapshot: Snapshot): void {
   for (const listener of restoreListeners) listener();
   const selectedIndex = palette.peek().findIndex((s) => s.id === selectedSwatchId.peek());
+  const stopIndex = effectiveStops.peek().findIndex((s) => s.id === selectedStopId.peek());
   restoring = true;
   try {
     batch(() => {
       palette.value = snapshot.palette;
       adjustments.value = snapshot.adjustments;
       settings.value = snapshot.settings;
+      gradient.value = snapshot.gradient;
       // Selection is view state and stays put. If its swatch isn't in the restored palette, the
       // swatch at the same position stays selected, as after a re-extraction.
       const id = selectedSwatchId.peek();
       if (id !== null && !snapshot.palette.some((s) => s.id === id)) {
         const at = Math.min(selectedIndex, snapshot.palette.length - 1);
         selectedSwatchId.value = at >= 0 ? (snapshot.palette[at]?.id ?? null) : null;
+      }
+      // The same for the selected stop (M4 plan T1): the stop at the same position stays selected.
+      const stopId = selectedStopId.peek();
+      const stops = effectiveStops.peek();
+      if (stopId !== null && !stops.some((s) => s.id === stopId)) {
+        const at = Math.min(stopIndex, stops.length - 1);
+        selectedStopId.value = at >= 0 ? (stops[at]?.id ?? null) : null;
       }
     });
   } finally {

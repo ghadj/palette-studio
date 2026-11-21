@@ -1,6 +1,6 @@
 /**
  * Pieces of M3 that touch each other (M3-T17): Reset to extracted after a marker drag, and the
- * cluster map going stale when a swatch leaves its extracted color (spec 2.6, 3.7).
+ * demo touching no storage (spec 3.7, 5.5).
  */
 import { expect, type Page, test } from "@playwright/test";
 import { demo, isPhoneProject } from "./helpers/app";
@@ -36,11 +36,6 @@ async function dragMarker3To(page: Page, to: { x: number; y: number }) {
   await page.mouse.up();
 }
 
-const shares = (page: Page) =>
-  strip(page).evaluateAll((els) => els.map((e) => e.hasAttribute("data-share")));
-const hasMap = async (page: Page) => (await shares(page)).every(Boolean);
-const noMap = async (page: Page) => (await shares(page)).every((s) => !s);
-
 test.describe("palette sync (desktop)", () => {
   test.beforeEach(({ page: _page }, info) => {
     test.skip(isPhoneProject(info), "needs the image and the swatch row side by side");
@@ -58,39 +53,6 @@ test.describe("palette sync (desktop)", () => {
     expect(POINT3.x).toBeCloseTo(0.769, 3);
     await header(page, /^Undo/).first().click();
     await expect(marker(page, 3)).toHaveAttribute("aria-label", /^Swatch 3 marker, 89%, (77|78)%$/);
-  });
-
-  test("an edit, a drag and a Replace pick each drop the cluster map; Undo brings it back", async ({
-    page,
-  }) => {
-    await page.goto(demo("rows=swatch"));
-    await expect.poll(() => hasMap(page), { timeout: 15_000 }).toBe(true);
-    const undo = header(page, /^Undo/).first();
-
-    // An edit in the color fields.
-    const hex = details(page).getByLabel("HEX", { exact: true });
-    await hex.fill("#14386F");
-    await hex.press("Enter");
-    await expect(strip(page).nth(2)).toHaveAttribute("aria-label", /#14386F$/);
-    expect(await noMap(page)).toBe(true);
-    await undo.click();
-    await expect.poll(() => hasMap(page)).toBe(true);
-
-    // A marker drag.
-    await dragMarker3To(page, PATCH5);
-    await expect(strip(page).nth(2)).toHaveAttribute("aria-label", /#1E8A2E$/);
-    expect(await noMap(page)).toBe(true);
-    await undo.click();
-    await expect.poll(() => hasMap(page)).toBe(true);
-
-    // An eyedropper pick adds a swatch, so the map no longer fits.
-    await page.getByRole("button", { name: "Eyedropper" }).click();
-    const at = await screenOf(page, PATCH6);
-    await page.mouse.click(at.x, at.y);
-    await expect(strip(page).nth(6)).toHaveAttribute("aria-label", /#5039B0$/);
-    expect(await noMap(page)).toBe(true);
-    await undo.click();
-    await expect.poll(() => hasMap(page)).toBe(true);
   });
 
   test("editing, dragging, picking and undoing in the demo touch no storage (spec 5.5)", async ({
