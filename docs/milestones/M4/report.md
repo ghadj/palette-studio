@@ -85,3 +85,37 @@ Commit evaluated: milestone/M4 at 7cd23ec (`main...HEAD`: 148 files, M4-T1 to T1
 5. "Needs an image." live with a period (M4).
 6. Gamut select wraps (V2); balanced angle presets (V3).
 7. Update the plan's acceptance checklist and T16 note to match decisions 68 and 70.
+
+## Round 2 (2026-11-21, milestone/M4 at 2030572)
+
+Verdict: **PASS WITH NOTES.** The round-1 failure and every minor and visual item rechecked are fixed. No required fixes.
+
+### Checks
+
+- Lint, typecheck, build: pass. JS gzip about 100.5 kB.
+- Unit tests: 98 files, 659 tests (one fewer: the compare-mode override test went with the parameter).
+- e2e on the touched specs plus tokens, a11y, theme-content, gradient-rows-gap and layout-m4-sheets, 5 projects: 2323 passed, 72 skipped, 0 failed, 0 flaky.
+- Implementer's full run at 2030572: 4366 passed, 539 skipped, 0 failed, 0 flaky; perf 2 of 2.
+- Review page: 78 of 78 shots.
+
+### Items
+
+1. Technique chips (decision 71): exact fills in light and dark for Picked and Derived; opacity 1, no outline; check badge on picked chips only. Test: `technique.spec.ts` "chip centers equal the swatch HEX, picked or not".
+2. M1: Position, Angle, Center X, Min contrast commit on Enter, blur or arrow step only, one undo step each. Stepper clicks not verified headless (code reviewed).
+3. M2: locked handle named "…, locked" with `aria-disabled="true"`.
+4. M3: Custom easing ends flush; the `:has()` selector looks only at the group's own last element.
+5. M4: "Needs an image." with a period, live row.
+6. V2: Gamut value wraps whole below at 320 px, shares a line at 390 px; no clipping.
+7. V3: angle presets in a 4 × 2 grid, 44 px buttons.
+8. V4: preview spans the full column at 2:1.
+9. Leftovers and plan checklist: done.
+
+The edit to `e2e/interpolation.spec.ts` is legitimate: at 320 px the 96 px label minimum plus the 190 px select exceed the 288 px row, and wrapping below is M2 decision 23's fallback.
+
+For design review: V1 (type chips as one segmented control), V5 (Geometry below the fold at 1280 × 800), and the check badge (not drawn in the mockups).
+
+### Optional suggestions
+
+1. In `interpolation.spec.ts`, allow wrapping only when one line cannot fit, so Hue and Easing stay held to one line.
+2. A test for the live "Needs an image." note.
+3. An e2e test that a stepper click on a deferred field commits one step.
